@@ -31,6 +31,7 @@
 #include "peripheral-loader.h"
 #include "pil-q6v5.h"
 #include "pil-msa.h"
+#include "dirtysanta_fixup.h"
 
 /* Q6 Register Offsets */
 #define QDSP6SS_RST_EVB			0x010
@@ -790,6 +791,8 @@ static int pil_msa_mss_reset_mba_load_auth_mdt(struct pil_desc *pil,
 	ret = pil_mss_reset_load_mba(pil);
 	if (ret)
 		return ret;
+
+	dirtysanta_log_vendor0("after MBA boot before modem auth");
 
 	return pil_msa_auth_modem_mdt(pil, metadata, size,
 			modem_reg, sz_modem_reg);

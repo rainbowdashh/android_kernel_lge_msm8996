@@ -1015,10 +1015,10 @@ source "drivers/soc/qcom/memshare/Kconfig"
 source "drivers/soc/qcom/lge/Kconfig"
 
 config DIRTYSANTA_FIXUP
-	boolean "Do fixups for problems caused by DirtySanta bootloader"
+	boolean "Do fixups for problems caused by DirtySanta-style bootloaders"
 	help
-	  Workaround problems cause by the unlocked LGE V20 "DirtySanta"
-	  bootloader.
+	  Work around problems caused by unlocked LGE "DirtySanta"-style
+	  engineering bootloaders.
 	default n
 
 config DIRTYSANTA_FIXUP_DEVICENAME
@@ -1036,6 +1036,25 @@ config DIRTYSANTA_FIXUP_DEVICENAME
 	  If unset the value from the kernel parameter "model.name" will be
 	  used.  This should be the correct value, assuming the kernel
 	  command-line is correct or has been corrected somehow.
+
+config DIRTYSANTA_FIXUP_LUCYE_VENDOR0_LAYOUT
+	boolean "Use LG G6/Lucye VENDOR0 smem layout"
+	depends on DIRTYSANTA_FIXUP
+	default n
+	help
+	  Use the VENDOR0 field offsets used by LG G6/Lucye aboot:
+	  nt_code at offset 78, lg_model_name at offset 2126, sim_num
+	  at offset 2148, and flag_gpio at offset 2156.
+
+	  Leave this disabled for the original LG V20 DirtySanta layout.
+
+config DIRTYSANTA_FIXUP_NTCODE
+	string "NT code to use for VENDOR0 smem area"
+	depends on DIRTYSANTA_FIXUP
+	default ""
+	help
+	  If set, this string is written to the VENDOR0 nt_code field before
+	  the modem starts. Leave empty to preserve the bootloader value.
 
 config DIRTYSANTA_FIXUP_SIMCOUNT
 	int "Indicate SIM count for VENDOR0 smem area"
@@ -1056,3 +1075,23 @@ config DIRTYSANTA_FIXUP_SYSFS
 	default y
 	help
 	  Include sysfs interface for DirtySanta modem fixup.
+
+config DIRTYSANTA_FIXUP_DEBUG
+	boolean "Enable verbose DirtySanta discovery logging"
+	depends on DIRTYSANTA_FIXUP
+	default n
+	help
+	  Enable detailed VENDOR0 dumps and broad SMEM token scans around
+	  modem startup and subsystem restart. This is useful while bringing
+	  up new DirtySanta-style bootloader targets, but too noisy for
+	  normal builds.
+
+config DIRTYSANTA_FIXUP_IGNORE_MODEM_CRASH
+	boolean "Keep booting after DirtySanta modem crashes"
+	depends on DIRTYSANTA_FIXUP
+	default n
+	help
+	  On some engineering bootloader configurations the modem firmware
+	  asserts after boot and the subsystem restart framework is configured
+	  to reset the whole SoC. Enable this to leave the modem down instead
+	  of panicking the application processor.

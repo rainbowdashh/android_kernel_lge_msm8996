@@ -69,7 +69,20 @@ static void log_modem_sfr(void)
 static void restart_modem(struct modem_data *drv)
 {
 	log_modem_sfr();
+	dirtysanta_log_vendor0("modem restart before SSR");
 	drv->ignore_errors = true;
+
+#ifdef CONFIG_DIRTYSANTA_FIXUP_IGNORE_MODEM_CRASH
+	if (drv->subsys_desc.err_fatal_irq)
+		disable_irq_nosync(drv->subsys_desc.err_fatal_irq);
+	if (drv->subsys_desc.wdog_bite_irq)
+		disable_irq_nosync(drv->subsys_desc.wdog_bite_irq);
+
+	pr_err("DirtySanta: ignoring modem crash restart request; "
+		"leaving modem down to avoid SYSTEM-level SSR reboot\n");
+	return;
+#endif
+
 	subsystem_restart_dev(drv->subsys);
 }
 
@@ -80,6 +93,11 @@ static irqreturn_t modem_err_fatal_intr_handler(int irq, void *dev_id)
 	/* Ignore if we're the one that set the force stop GPIO */
 	if (drv->crash_shutdown)
 		return IRQ_HANDLED;
+
+#ifdef CONFIG_DIRTYSANTA_FIXUP_IGNORE_MODEM_CRASH
+	if (drv->ignore_errors)
+		return IRQ_HANDLED;
+#endif
 
 	subsys_set_crash_status(drv->subsys, CRASH_STATUS_ERR_FATAL);
 	restart_modem(drv);
@@ -139,6 +157,7 @@ static int modem_powerup(const struct subsys_desc *subsys)
 	drv->subsys_desc.ramdump_disable = 0;
 	drv->ignore_errors = false;
 	drv->q6->desc.fw_name = subsys->fw_name;
+	dirtysanta_log_vendor0("mss powerup before pil_boot");
 	return pil_boot(&drv->q6->desc);
 }
 

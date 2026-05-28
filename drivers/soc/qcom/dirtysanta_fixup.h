@@ -13,6 +13,15 @@
 
 #ifndef _DIRTYSANTA_FIXUP_H_
 #define _DIRTYSANTA_FIXUP_H_
+#if defined(CONFIG_DIRTYSANTA_FIXUP) && defined(CONFIG_DIRTYSANTA_FIXUP_DEBUG)
+extern void dirtysanta_log_vendor0(const char *stage);
+#else
+static inline void dirtysanta_log_vendor0(const char *stage)
+{
+	(void)stage;
+}
+#endif
+
 #ifdef CONFIG_DIRTYSANTA_FIXUP_SYSFS
 
 extern int dirtysanta_attach(struct device *dev);

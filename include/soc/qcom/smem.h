@@ -196,6 +196,9 @@ void *smem_get_entry(unsigned id, unsigned *size, unsigned to_proc,
  */
 void *smem_get_entry_no_rlock(unsigned id, unsigned *size_out, unsigned to_proc,
 								unsigned flags);
+#ifdef CONFIG_DIRTYSANTA_FIXUP_DEBUG
+void *smem_get_entry_global_no_rlock(unsigned id, unsigned *size_out);
+#endif
 
 /**
  * smem_virt_to_phys() - Convert SMEM address to physical address.
@@ -236,6 +239,13 @@ static inline void *smem_get_entry_no_rlock(unsigned id, unsigned *size_out,
 {
 	return NULL;
 }
+#ifdef CONFIG_DIRTYSANTA_FIXUP_DEBUG
+static inline void *smem_get_entry_global_no_rlock(unsigned id,
+					unsigned *size_out)
+{
+	return NULL;
+}
+#endif
 static inline phys_addr_t smem_virt_to_phys(void *smem_address)
 {
 	return (phys_addr_t) NULL;

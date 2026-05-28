@@ -928,6 +928,29 @@ void *smem_get_entry_no_rlock(unsigned id, unsigned *size_out, unsigned to_proc,
 }
 EXPORT_SYMBOL(smem_get_entry_no_rlock);
 
+#ifdef CONFIG_DIRTYSANTA_FIXUP_DEBUG
+/**
+ * smem_get_entry_global_no_rlock - Get existing legacy global item
+ *
+ * @id:       ID of SMEM item
+ * @size_out: Pointer to size variable for storing the result
+ * @returns:  Pointer to SMEM item, NULL if it doesn't exist, or -EPROBE_DEFER
+ *	if the driver isn't ready
+ *
+ * This bypasses secure/COMM/private partition routing and reads the legacy
+ * non-secure SMEM table directly.  It is intended for bootloader handoff
+ * discovery only.
+ */
+void *smem_get_entry_global_no_rlock(unsigned id, unsigned *size_out)
+{
+	if (!is_probe_done())
+		return ERR_PTR(-EPROBE_DEFER);
+
+	return __smem_get_entry_nonsecure(id, size_out, false, false);
+}
+EXPORT_SYMBOL(smem_get_entry_global_no_rlock);
+#endif
+
 /**
  * smem_get_remote_spinlock - Remote spinlock pointer for unit testing.
  *
