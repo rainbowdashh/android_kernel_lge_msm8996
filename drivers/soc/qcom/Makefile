@@ -111,3 +111,4 @@ obj-$(CONFIG_QTI_HW_KEY_MANAGER) += hwkm_qti.o
 hwkm_qti-y += hwkm.o
 obj-$(CONFIG_MSM_BAM_DMUX) += bam_dmux.o
 obj-$(CONFIG_MACH_LGE) += lge/
+obj-$(CONFIG_DIRTYSANTA_FIXUP_G6) += dirtysanta_fixup_g6.o

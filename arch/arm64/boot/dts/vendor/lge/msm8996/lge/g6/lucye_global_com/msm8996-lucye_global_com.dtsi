@@ -26,6 +26,10 @@
 #include "../../common-various.dtsi"
 
 / {
+	modem-identity {
+		compatible = "lge,lucye-modem-fixup";
+	};
+
 	reserved-memory {
 		crash_fb_mem: crash_fb_mem@c0100000 {
 			linux,contiguous-region;
