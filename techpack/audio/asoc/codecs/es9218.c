@@ -823,17 +823,22 @@ static ssize_t set_forced_avc_volume(struct device *dev,
     int input_vol;
     sscanf(buf, "%d", &input_vol);
     
-    if ( es9218_power_state < ESS_PS_HIFI ) {
-        pr_err("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
-        return -EINVAL;
-    }
-
     if (input_vol >= sizeof(avc_vol_tbl)/sizeof(avc_vol_tbl[0])) {
         pr_err("%s() : Invalid vol = %d return \n", __func__, input_vol);
         return -EINVAL;
     }
 
     g_avc_volume = input_vol;
+
+    /*
+     * The codec can only be programmed in HiFi state. Otherwise keep the
+     * cached value: es9218_sabre_bypass2hifi() applies g_avc_volume on
+     * the transition into HiFi.
+     */
+    if (es9218_power_state < ESS_PS_HIFI) {
+        pr_info("%s() : deferred, state = %s\n", __func__, power_state[es9218_power_state]);
+        return count;
+    }
 
     es9218_set_avc_volume(g_es9218_priv->i2c_client, g_avc_volume);
 
