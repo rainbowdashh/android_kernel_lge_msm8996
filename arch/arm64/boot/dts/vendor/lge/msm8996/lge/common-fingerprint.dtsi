@@ -153,7 +153,8 @@
 		reg = <0x075b7000 0x600>,
 			<0x07584000 0x2b000>;
 		interrupt-names = "spi_irq", "spi_bam_irq";
-		interrupts = <0 103 0>, <0 239 0>;
+		interrupts = <GIC_SPI 103 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 239 IRQ_TYPE_LEVEL_HIGH>;
 		spi-max-frequency = <19200000>;
 		qcom,infinite-mode = <0>;
 		qcom,use-bam;

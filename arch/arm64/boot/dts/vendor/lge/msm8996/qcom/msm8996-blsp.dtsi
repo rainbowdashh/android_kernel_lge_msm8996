@@ -26,7 +26,8 @@
 		reg = <0x075B8000 0x600>,
 		      <0x07584000 0x2b000>;
 		interrupt-names = "spi_irq", "spi_bam_irq";
-		interrupts = <0 104 0>, <0 239 0>;
+		interrupts = <GIC_SPI 104 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 239 IRQ_TYPE_LEVEL_HIGH>;
 		spi-max-frequency = <19200000>;
 		qcom,infinite-mode = <0>;
 		qcom,ver-reg-exists;
@@ -52,7 +53,8 @@
 		reg = <0x75ba000 0x600>,
 		      <0x7584000 0x2b000>;
 		interrupt-names = "spi_irq", "spi_bam_irq";
-		interrupts = <0 106 0>, <0 239 0>;
+		interrupts = <GIC_SPI 106 IRQ_TYPE_LEVEL_HIGH>,
+			     <GIC_SPI 239 IRQ_TYPE_LEVEL_HIGH>;
 		spi-max-frequency = <19200000>;
 		qcom,infinite-mode = <0>;
 		qcom,ver-reg-exists;

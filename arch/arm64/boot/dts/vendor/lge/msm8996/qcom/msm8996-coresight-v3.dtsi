@@ -19,7 +19,7 @@
 		      <0x3084000 0x15000>;
 		reg-names = "tmc-base", "bam-base";
 
-		interrupts = <0 270 0>;
+		interrupts = <GIC_SPI 270 IRQ_TYPE_LEVEL_HIGH>;
 		interrupt-names = "byte-cntr-irq";
 
 		arm,buffer-size = <0x400000>;

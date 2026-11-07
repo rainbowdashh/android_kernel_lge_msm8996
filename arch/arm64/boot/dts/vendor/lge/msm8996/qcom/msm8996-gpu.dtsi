@@ -61,7 +61,7 @@
 		reg = <0xb00000 0x3f000
 		       0x070000 0x04720>;
 		reg-names = "kgsl_3d0_reg_memory", "qfprom_memory";
-		interrupts = <0 300 0>;
+		interrupts = <GIC_SPI 300 IRQ_TYPE_LEVEL_HIGH>;
 		interrupt-names = "kgsl_3d0_irq";
 		qcom,id = <0>;
 
