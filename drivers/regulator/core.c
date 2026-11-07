@@ -136,6 +136,9 @@ static bool have_full_constraints(void)
 
 static bool regulator_ops_is_valid(struct regulator_dev *rdev, int ops)
 {
+	if (!rdev)
+		return false;
+
 	if (!rdev->constraints) {
 		rdev_err(rdev, "no constraints\n");
 		return false;
@@ -213,7 +216,7 @@ static void regulator_lock_supply(struct regulator_dev *rdev)
 {
 	int i;
 
-	for (i = 0; rdev; rdev = rdev_get_supply(rdev), i++)
+	for (i = 0; !IS_ERR_OR_NULL(rdev); rdev = rdev_get_supply(rdev), i++)
 		regulator_lock_nested(rdev, i);
 }
 
@@ -223,16 +226,14 @@ static void regulator_lock_supply(struct regulator_dev *rdev)
  */
 static void regulator_unlock_supply(struct regulator_dev *rdev)
 {
-	struct regulator *supply;
-
-	while (1) {
+	while (!IS_ERR_OR_NULL(rdev)) {
 		regulator_unlock(rdev);
-		supply = rdev->supply;
 
-		if (!rdev->supply)
+		if (IS_ERR_OR_NULL(rdev->supply) ||
+			IS_ERR_OR_NULL(rdev->supply->rdev))
 			return;
 
-		rdev = supply->rdev;
+		rdev = rdev->supply->rdev;
 	}
 }
 
@@ -3195,13 +3196,19 @@ static int regulator_set_voltage_unlocked(struct regulator *regulator,
 					  int min_uV, int max_uV,
 					  suspend_state_t state)
 {
-	struct regulator_dev *rdev = regulator->rdev;
-	struct regulator_voltage *voltage = &regulator->voltage[state];
+	struct regulator_dev *rdev;
+	struct regulator_voltage *voltage;
 	int ret = 0;
 	int old_min_uV, old_max_uV;
 	int current_uV;
 	int best_supply_uV = 0;
 	int supply_change_uV = 0;
+
+	if (!regulator || !regulator->rdev)
+		return -ENODEV;
+
+	rdev = regulator->rdev;
+	voltage = &regulator->voltage[state];
 
 	/* If we're setting the same range as last time the change
 	 * should be a noop (some cpufreq implementations use the same

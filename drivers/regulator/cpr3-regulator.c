@@ -4020,18 +4020,19 @@ cleanup:
 	if (!rc) {
 		cpr3_regulator_set_aging_ref_adjustment(ctrl, max_aging_volt);
 
-		cpr3_info(ctrl, "aging measurement successful; aging reference adjustment voltage=%d uV\n",
-			ctrl->aging_ref_adjust_volt);
 		ctrl->aging_succeeded = true;
 		ctrl->aging_required = false;
 	}
 
 	if (ctrl->aging_complete_vdd_mode) {
-		rc = regulator_set_mode(ctrl->vdd_regulator,
+		rc2 = regulator_set_mode(ctrl->vdd_regulator,
 					ctrl->aging_complete_vdd_mode);
-		if (rc)
+		if (rc2) {
 			cpr3_err(ctrl, "unable to configure vdd-supply for mode=%u, rc=%d\n",
-				ctrl->aging_complete_vdd_mode, rc);
+				ctrl->aging_complete_vdd_mode, rc2);
+			if (!rc)
+				rc = rc2;
+		}
 	}
 
 	/* Skip last_volt caching */
@@ -4045,6 +4046,10 @@ cleanup:
 
 	/* Stop last_volt caching on for the next request */
 	ctrl->last_corner_was_closed_loop = false;
+
+	if (!rc && !rc2)
+		cpr3_info(ctrl, "aging adjustment complete; aging reference adjustment voltage=%d uV\n",
+			ctrl->aging_ref_adjust_volt);
 
 	return rc ? rc : rc2;
 }
@@ -6442,11 +6447,12 @@ int cpr3_regulator_unregister(struct cpr3_controller *ctrl)
 	cpr3_regulator_debugfs_ctrl_remove(ctrl);
 	mutex_unlock(&cpr3_controller_list_mutex);
 
-	if (ctrl->ctrl_type == CPR_CTRL_TYPE_CPR4)
+	if (ctrl->ctrl_type == CPR_CTRL_TYPE_CPR4) {
 		rc = cpr3_ctrl_clear_cpr4_config(ctrl);
 		if (rc)
 			cpr3_err(ctrl, "failed to clear CPR4 configuration,rc=%d\n",
 				rc);
+	}
 
 	cpr3_ctrl_loop_disable(ctrl);
 
