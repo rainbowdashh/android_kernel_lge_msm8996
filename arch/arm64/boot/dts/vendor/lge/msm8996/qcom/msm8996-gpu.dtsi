@@ -10,9 +10,9 @@
  * GNU General Public License for more details.
  */
 
+#include <dt-bindings/clock/qcom,gpucc-msm8996.h>
 #include <dt-bindings/clock/qcom,mmcc-msm8996.h>
 #include <dt-bindings/clock/mdss-14nm-pll-clk.h>
-
 
 &soc {
 
@@ -101,17 +101,15 @@
 		qcom,gpmu-version = <1 0>;
 		qcom,zap-shader = "a530_zap";
 
-		clocks = <&clock_gpu clk_gpu_gx_gfx3d_clk>,
-			<&clock_gpu clk_gpu_ahb_clk>,
-			<&clock_gpu clk_gpu_gx_rbbmtimer_clk>,
+		clocks = <&clock_gpu GPU_CC_GX_GFX3D_CLK>,
+			<&clock_gpu GPU_CC_AHB_CLK>,
+			<&clock_gpu GPU_CC_GX_RBBMTIMER_CLK>,
 			<&clock_gcc GCC_BIMC_GFX_CLK>,
 			<&clock_gcc GCC_MMSS_BIMC_GFX_CLK>,
-			<&clock_mmss MMSS_MMAGIC_AHB_CLK>,
-			<&clock_gpu clk_gpu_mx_clk>;
+			<&clock_mmss MMSS_MMAGIC_AHB_CLK>;
 
 		clock-names = "core_clk", "iface_clk", "rbbmtimer_clk",
-			"mem_clk", "mem_iface_clk", "alt_mem_iface_clk",
-			"mx_clk";
+			"mem_clk", "mem_iface_clk", "alt_mem_iface_clk";
 
 		/* Bus Scale Settings */
 		qcom,gpubw-dev = <&gpubw>;
@@ -242,7 +240,7 @@
 
 		clocks = <&clock_mmss MMSS_MMAGIC_AHB_CLK>,
 			<&clock_mmss MMSS_MMAGIC_CFG_AHB_CLK>,
-			<&clock_gpu clk_gpu_ahb_clk>,
+			<&clock_gpu GPU_CC_AHB_CLK>,
 			<&clock_gcc GCC_MMSS_BIMC_GFX_CLK>,
 			<&clock_gcc GCC_BIMC_GFX_CLK>;
 		clock-names = "mmagic_ahb_clk", "mmagic_cfg_ahb_clk", "gpu_ahb_clk",

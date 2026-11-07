@@ -1,0 +1,29 @@
+Qualcomm MSM8996 graphics clock controller
+
+The graphics clocks share the MMCC register map. Describe the GPU controller
+as a child of the MMCC controller so MMCC clocks can register before graphics
+CPR, which supplies the GPU clock voltage domain.
+
+Required properties:
+- compatible: one of:
+  - "qcom,gpucc-msm8996"
+  - "qcom,gpucc-msm8996-v3", "qcom,gpucc-msm8996"
+  - "qcom,gpucc-msm8996-pro", "qcom,gpucc-msm8996"
+- #clock-cells: must be 1. IDs are defined in
+  dt-bindings/clock/qcom,gpucc-msm8996.h.
+- vdd_gfx-supply: graphics CPR corner regulator.
+- vdd_mx-supply: memory corner regulator associated with graphics CPR.
+- vdd_gpu_mx-supply: memory corner regulator for the graphics memory vote.
+- qcom,gfxfreq-speedbin0: array of frequency (Hz), graphics corner and memory
+  corner triplets. Corners are regulator voltage selectors, not microvolts.
+- qcom,gfxfreq-mx-speedbin0: array of frequency (Hz) and memory corner pairs
+  for the additional graphics memory vote.
+
+Both tables must start with a zero frequency and zero corners, contain the
+same frequencies in strictly increasing order and have nondecreasing corners.
+Optional properties qcom,gfxfreq-speedbinN and qcom,gfxfreq-mx-speedbinN replace
+the defaults for speed bin N. Both tables must exist for the selected bin;
+otherwise bin 0 is used.
+
+The parent MMCC must expose its speed-bin fuse as an "efuse" register resource.
+For MSM8996 Pro the bin is bits 29:28; otherwise it is bits 31:29.

@@ -10,9 +10,9 @@
  * GNU General Public License for more details.
  */
 
+#include <dt-bindings/clock/qcom,gpucc-msm8996.h>
 #include <dt-bindings/clock/qcom,mmcc-msm8996.h>
 #include <dt-bindings/clock/mdss-14nm-pll-clk.h>
-
 
 /*
  * As a general rule, only version-specific property overrides should be placed
@@ -38,8 +38,7 @@
 };
 
 &clock_gpu {
-	compatible = "qcom,gpucc-8996-v3";
-	qcom,gfx3d_clk_src_v2-opp-handle = <&msm_gpu>;
+	compatible = "qcom,gpucc-msm8996-v3", "qcom,gpucc-msm8996";
 	qcom,gfxfreq-speedbin0 =
 		<	   0  0  0 >,
 		<  133000000  2  4 >,
@@ -112,8 +111,8 @@
 
 &gdsc_gpu_gx {
 	clock-names = "core_clk", "core_root_clk";
-	clocks = <&clock_gpu clk_gpu_gx_gfx3d_clk>,
-		 <&clock_gpu clk_gfx3d_clk_src_v2>;
+	clocks = <&clock_gpu GPU_CC_GX_GFX3D_CLK>,
+		 <&clock_gpu GPU_CC_GFX3D_CLK_SRC>;
 };
 
 &pcie0 {
