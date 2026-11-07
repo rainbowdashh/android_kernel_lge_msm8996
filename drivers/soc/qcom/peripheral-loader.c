@@ -63,7 +63,6 @@
 
 
 static void __iomem *pil_info_base;
-static struct md_global_toc *g_md_toc;
 
 void *pil_ipc_log;
 
@@ -1472,7 +1471,8 @@ bool is_timeout_disabled(void)
 	return disable_timeouts;
 }
 
-static int collect_aux_minidump_ids(struct pil_desc *desc)
+static int collect_aux_minidump_ids(struct pil_desc *desc,
+				    struct md_global_toc *md_toc)
 {
 	u32 id;
 	const __be32 *p;
@@ -1503,7 +1503,7 @@ static int collect_aux_minidump_ids(struct pil_desc *desc)
 		of_property_for_each_u32(node, "qcom,aux-minidump-ids", prop,
 					 p, id) {
 			desc->aux_minidump_ids[i] = id;
-			aux_toc_addr = &g_md_toc->md_ss_toc[id];
+			aux_toc_addr = &md_toc->md_ss_toc[id];
 			pr_debug("Minidump: aux_toc_addr is %pa and id: %d\n",
 				 &aux_toc_addr, id);
 			memcpy(&desc->aux_minidump[i], &aux_toc_addr,
@@ -1527,6 +1527,8 @@ static int collect_aux_minidump_ids(struct pil_desc *desc)
 int pil_desc_init(struct pil_desc *desc)
 {
 	struct pil_priv *priv;
+	struct md_global_toc *md_toc;
+	size_t size;
 	void __iomem *addr;
 	void *ss_toc_addr;
 	int ret;
@@ -1554,18 +1556,27 @@ int pil_desc_init(struct pil_desc *desc)
 		strlcpy(buf, desc->name, sizeof(buf));
 		__iowrite32_copy(priv->info->name, buf, sizeof(buf) / 4);
 	}
-	if (of_property_read_u32(ofnode, "qcom,minidump-id",
-		&desc->minidump_id))
-		pr_err("minidump-id not found for %s\n", desc->name);
-	else {
-		if (g_md_toc && g_md_toc->md_toc_init == true) {
-			ss_toc_addr = &g_md_toc->md_ss_toc[desc->minidump_id];
+	if (!of_property_read_u32(ofnode, "qcom,minidump-id",
+				  &desc->minidump_id)) {
+		md_toc = qcom_smem_get(QCOM_SMEM_HOST_ANY,
+				       SBL_MINIDUMP_SMEM_ID, &size);
+		if (IS_ERR(md_toc)) {
+			ret = PTR_ERR(md_toc);
+			goto err_parse_dt;
+		}
+		if (size < sizeof(*md_toc) ||
+		    desc->minidump_id >= ARRAY_SIZE(md_toc->md_ss_toc)) {
+			ret = -EINVAL;
+			goto err_parse_dt;
+		}
+		if (md_toc->md_toc_init) {
+			ss_toc_addr = &md_toc->md_ss_toc[desc->minidump_id];
 			pr_debug("Minidump : ss_toc_addr for ss is %pa and desc->minidump_id is %d\n",
 				&ss_toc_addr, desc->minidump_id);
 			memcpy(&desc->minidump_ss, &ss_toc_addr,
 			       sizeof(ss_toc_addr));
 
-			if (collect_aux_minidump_ids(desc) < 0)
+			if (collect_aux_minidump_ids(desc, md_toc) < 0)
 				pr_err("Failed to get aux %s minidump ids\n",
 				       desc->name);
 		}
@@ -1623,6 +1634,7 @@ err:
 	kfree(desc->aux_minidump);
 	kfree(desc->aux_minidump_ids);
 	kfree(priv);
+	desc->priv = NULL;
 	return ret;
 }
 EXPORT_SYMBOL(pil_desc_init);
@@ -1667,7 +1679,6 @@ static int __init msm_pil_init(void)
 	struct device_node *np;
 	struct resource res;
 	int i;
-	size_t size;
 
 	np = of_find_compatible_node(NULL, NULL, "qcom,msm-imem-pil");
 	if (!np) {
@@ -1690,14 +1701,6 @@ static int __init msm_pil_init(void)
 	for (i = 0; i < resource_size(&res)/sizeof(u32); i++)
 		writel_relaxed(0, pil_info_base + (i * sizeof(u32)));
 
-	/* Get Global minidump ToC*/
-	g_md_toc = qcom_smem_get(QCOM_SMEM_HOST_ANY, SBL_MINIDUMP_SMEM_ID,
-				 &size);
-	pr_debug("Minidump: g_md_toc is %pa\n", &g_md_toc);
-	if (PTR_ERR(g_md_toc) == -EPROBE_DEFER) {
-		pr_err("SMEM is not initialized.\n");
-		return -EPROBE_DEFER;
-	}
 
 	pil_wq = alloc_workqueue("pil_workqueue", WQ_HIGHPRI | WQ_UNBOUND, 0);
 	if (!pil_wq)
