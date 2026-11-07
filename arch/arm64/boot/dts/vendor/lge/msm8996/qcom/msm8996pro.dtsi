@@ -13,7 +13,6 @@
 #include <dt-bindings/clock/qcom,mmcc-msm8996.h>
 #include <dt-bindings/clock/mdss-14nm-pll-clk.h>
 
-
 /*
  * As a general rule, only version-specific property overrides should be placed
  * inside this file. Common device definitions should be placed inside the
@@ -1142,7 +1141,7 @@
 };
 
 &clock_gpu {
-	compatible = "qcom,gpucc-8996-pro";
+	compatible = "qcom,gpucc-msm8996-pro", "qcom,gpucc-msm8996";
 	qcom,gfxfreq-speedbin0 =
 		<	   0  0  0 >,
 		<  133000000  2  4 >,
