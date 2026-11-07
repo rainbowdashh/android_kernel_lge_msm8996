@@ -143,3 +143,6 @@ Android.bp
 
 # Local standalone kernel builder
 /build-kernel.sh
+
+# Local bring-up notes
+/Documentation/arm64/lge-msm8996-bringup.rst
