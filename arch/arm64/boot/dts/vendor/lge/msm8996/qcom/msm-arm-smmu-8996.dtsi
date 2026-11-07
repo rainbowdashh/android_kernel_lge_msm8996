@@ -28,8 +28,8 @@
 		<GIC_SPI 360 IRQ_TYPE_LEVEL_HIGH>,
 		<GIC_SPI 468 IRQ_TYPE_LEVEL_HIGH>;
 	vdd-supply = <&gdsc_aggre0_noc>;
-	clocks = <&clock_gcc clk_gcc_smmu_aggre0_axi_clk>,
-		<&clock_gcc clk_gcc_smmu_aggre0_ahb_clk>;
+	clocks = <&clock_gcc GCC_SMMU_AGGRE0_AXI_CLK>,
+		<&clock_gcc GCC_SMMU_AGGRE0_AHB_CLK>;
 	clock-names = "smmu_aggre0_axi_clk", "smmu_aggre0_ahb_clk";
 	#clock-cells = <1>;
 	#iommu-cells = <0>;
@@ -46,7 +46,7 @@
 		<GIC_SPI 366 IRQ_TYPE_LEVEL_HIGH>,
 		<GIC_SPI 367 IRQ_TYPE_LEVEL_HIGH>;
 	#iommu-cells = <1>;
-	clocks = <&clock_gcc clk_aggre1_noc_clk>;
+	clocks = <&rpmcc RPM_SMD_AGGR1_NOC_CLK>;
 	clock-names = "smmu_aggre1_noc_clk";
 	#clock-cells = <1>;
 };
@@ -66,7 +66,7 @@
 		<GIC_SPI 462 IRQ_TYPE_LEVEL_HIGH>,
 		<GIC_SPI 463 IRQ_TYPE_LEVEL_HIGH>;
 	#iommu-cells = <1>;
-	clocks = <&clock_gcc clk_aggre2_noc_clk>;
+	clocks = <&rpmcc RPM_SMD_AGGR2_NOC_CLK>;
 	clock-names = "smmu_aggre2_noc_clk";
 	#clock-cells = <1>;
 };
@@ -90,7 +90,7 @@
 		<GIC_SPI 402 IRQ_TYPE_LEVEL_HIGH>,
 		<GIC_SPI 403 IRQ_TYPE_LEVEL_HIGH>;
 	vdd-supply = <&gdsc_hlos1_vote_lpass_adsp>;
-	clocks = <&clock_gcc clk_hlos1_vote_lpass_adsp_smmu_clk>;
+	clocks = <&clock_gcc GCC_HLOS1_VOTE_LPASS_ADSP_SMMU_CLK>;
 	clock-names = "lpass_q6_smmu_clocks";
 	#clock-cells = <1>;
 };
@@ -275,8 +275,8 @@
 	clocks = <&clock_mmss clk_mmss_mmagic_ahb_clk>,
 		<&clock_mmss clk_mmss_mmagic_cfg_ahb_clk>,
 		<&clock_gpu clk_gpu_ahb_clk>,
-		<&clock_gcc clk_gcc_mmss_bimc_gfx_clk>,
-		<&clock_gcc clk_gcc_bimc_gfx_clk>;
+		<&clock_gcc GCC_MMSS_BIMC_GFX_CLK>,
+		<&clock_gcc GCC_BIMC_GFX_CLK>;
 	clock-names = "mmagic_ahb_clk", "mmagic_cfg_ahb_clk", "gpu_ahb_clk",
 		"gcc_mmss_bimc_gfx_clk", "gcc_bimc_gfx_clk";
 	#clock-cells = <1>;

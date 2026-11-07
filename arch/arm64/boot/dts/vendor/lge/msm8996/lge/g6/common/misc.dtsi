@@ -93,8 +93,8 @@
 		reg = <0x7574000 0x100>;
 		interrupts = <0 112 0>;
 		status = "ok";
-		clocks = <&clock_gcc clk_gcc_blsp1_uart6_apps_clk>,
-				<&clock_gcc clk_gcc_blsp1_ahb_clk>;
+		clocks = <&clock_gcc GCC_BLSP1_UART6_APPS_CLK>,
+				<&clock_gcc GCC_BLSP1_AHB_CLK>;
 		clock-names = "core", "iface";
 	};
 };

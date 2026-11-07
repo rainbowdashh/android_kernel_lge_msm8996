@@ -40,8 +40,8 @@
 			qcom,base-offset = <12288>;
 			qcom,enable-only-clk;
 			clock-names = "bus_clk", "bus_a_clk";
-			clocks = <&clock_gcc clk_gcc_aggre0_snoc_axi_clk>,
-			     <&clock_gcc clk_gcc_aggre0_snoc_axi_clk>;
+			clocks = <&clock_gcc GCC_AGGRE0_SNOC_AXI_CLK>,
+			     <&clock_gcc GCC_AGGRE0_SNOC_AXI_CLK>;
 			bus-gdsc-supply = <&gdsc_aggre0_noc>;
 			bus-a-gdsc-supply = <&gdsc_aggre0_noc>;
 
@@ -57,9 +57,9 @@
 				"aggre0-cnoc-ahb-no-rate",
 				"aggre0-noc-mpu-cfg-no-rate";
 				clocks =
-				<&clock_gcc clk_gcc_aggre0_snoc_axi_clk>,
-				<&clock_gcc clk_gcc_aggre0_cnoc_ahb_clk>,
-				<&clock_gcc clk_gcc_aggre0_noc_mpu_cfg_ahb_clk>;
+				<&clock_gcc GCC_AGGRE0_SNOC_AXI_CLK>,
+				<&clock_gcc GCC_AGGRE0_CNOC_AHB_CLK>,
+				<&clock_gcc GCC_AGGRE0_NOC_MPU_CFG_AHB_CLK>;
 			};
 		};
 
@@ -72,8 +72,8 @@
 			qcom,qos-off = <4096>;
 			qcom,base-offset = <8192>;
 			clock-names = "bus_clk", "bus_a_clk";
-			clocks = <&clock_gcc  clk_aggre1_noc_clk>,
-			     <&clock_gcc  clk_aggre1_noc_a_clk>;
+			clocks = <&rpmcc RPM_SMD_AGGR1_NOC_CLK>,
+			     <&rpmcc RPM_SMD_AGGR1_NOC_A_CLK>;
 			coresight-id = <205>;
 			coresight-name = "coresight-a1noc";
 			coresight-nr-inports = <0>;
@@ -91,8 +91,8 @@
 			qcom,qos-off = <4096>;
 			qcom,base-offset = <12288>;
 			clock-names = "bus_clk", "bus_a_clk";
-			clocks = <&clock_gcc  clk_aggre2_noc_clk>,
-			     <&clock_gcc  clk_aggre2_noc_a_clk>;
+			clocks = <&rpmcc RPM_SMD_AGGR2_NOC_CLK>,
+			     <&rpmcc RPM_SMD_AGGR2_NOC_A_CLK>;
 			coresight-id = <204>;
 			coresight-name = "coresight-a2noc";
 			coresight-nr-inports = <0>;
@@ -103,9 +103,9 @@
 				clock-names = "clk-aggre2-noc-clk-no-rate",
 				"clk-gcc-ufs-axi-clk",
 				"clk-aggre2-ufs-axi-clk-no-rate";
-				clocks = <&clock_gcc clk_aggre2_noc_clk>,
-				<&clock_gcc clk_gcc_ufs_axi_clk>,
-				<&clock_gcc clk_gcc_aggre2_ufs_axi_clk>;
+				clocks = <&rpmcc RPM_SMD_AGGR2_NOC_CLK>,
+				<&clock_gcc GCC_UFS_AXI_CLK>,
+				<&clock_gcc GCC_AGGRE2_UFS_AXI_CLK>;
 			};
 		};
 
@@ -119,8 +119,8 @@
 			qcom,util-fact = <154>;
 			qcom,bus-type = <2>;
 			clock-names = "bus_clk", "bus_a_clk";
-			clocks = <&clock_gcc  clk_bimc_msmbus_clk>,
-			     <&clock_gcc  clk_bimc_msmbus_a_clk>;
+			clocks = <&rpmcc BIMC_MSMBUS_CLK>,
+			     <&rpmcc BIMC_MSMBUS_A_CLK>;
 			coresight-id = <203>;
 			coresight-name = "coresight-bimc";
 			coresight-nr-inports = <0>;
@@ -137,8 +137,8 @@
 			qcom,bypass-qos-prg;
 			qcom,bus-type = <1>;
 			clock-names = "bus_clk", "bus_a_clk";
-			clocks = <&clock_gcc clk_cnoc_msmbus_clk>,
-			     <&clock_gcc clk_cnoc_msmbus_a_clk>;
+			clocks = <&rpmcc CNOC_MSMBUS_CLK>,
+			     <&rpmcc CNOC_MSMBUS_A_CLK>;
 		};
 
 		fab_mnoc: fab-mnoc {
@@ -151,8 +151,8 @@
 			qcom,bus-type = <1>;
 			qcom,util-fact = <154>;
 			clock-names = "bus_clk", "bus_a_clk";
-			clocks = <&clock_gcc clk_mmssnoc_axi_clk>,
-				 <&clock_gcc clk_mmssnoc_axi_a_clk>;
+			clocks = <&rpmcc MMSSNOC_AXI_VOTE_CLK>,
+				 <&rpmcc MMSSNOC_AXI_A_VOTE_CLK>;
 			coresight-id = <202>;
 			coresight-name = "coresight-mnoc";
 			coresight-nr-inports = <0>;
@@ -209,8 +209,8 @@
 			qcom,bypass-qos-prg;
 			qcom,bus-type = <1>;
 			clock-names = "bus_clk", "bus_a_clk";
-			clocks = <&clock_gcc  clk_pnoc_msmbus_clk>,
-			     <&clock_gcc  clk_pnoc_msmbus_a_clk>;
+			clocks = <&rpmcc PNOC_MSMBUS_CLK>,
+			     <&rpmcc PNOC_MSMBUS_A_CLK>;
 			coresight-id = <201>;
 			coresight-name = "coresight-pnoc";
 			coresight-nr-inports = <0>;
@@ -228,8 +228,8 @@
 			qcom,qos-off = <4096>;
 			qcom,base-offset = <16384>;
 			clock-names = "bus_clk", "bus_a_clk";
-			clocks = <&clock_gcc  clk_snoc_msmbus_clk>,
-			     <&clock_gcc  clk_snoc_msmbus_a_clk>;
+			clocks = <&rpmcc SNOC_MSMBUS_CLK>,
+			     <&rpmcc SNOC_MSMBUS_A_CLK>;
 			coresight-id = <200>;
 			coresight-name = "coresight-snoc";
 			coresight-nr-inports = <0>;
@@ -845,7 +845,7 @@
 			qcom,slv-rpm-id = <ICBID_SLAVE_A0NOC_SNOC>;
 			qcom,enable-only-clk;
 			clock-names = "node_clk";
-			clocks = <&clock_gcc clk_gcc_aggre0_cnoc_ahb_clk>;
+			clocks = <&clock_gcc GCC_AGGRE0_CNOC_AHB_CLK>;
 		};
 
 		slv_a1noc_snoc: slv-a1noc-snoc {
@@ -1511,7 +1511,7 @@
 			qcom,slv-rpm-id = <ICBID_SLAVE_MNOC_BIMC>;
 			qcom,enable-only-clk;
 			clock-names = "node_clk";
-			clocks = <&clock_gcc clk_mmssnoc_axi_clk>;
+			clocks = <&rpmcc MMSSNOC_AXI_VOTE_CLK>;
 		};
 
 		slv_vmem: slv-vmem {

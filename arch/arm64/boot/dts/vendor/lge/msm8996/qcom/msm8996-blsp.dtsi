@@ -39,8 +39,8 @@
 		pinctrl-0 = <&spi_10_active>;
 		pinctrl-1 = <&spi_10_sleep>;
 		clock-names = "iface_clk", "core_clk";
-		clocks = <&clock_gcc clk_gcc_blsp2_ahb_clk>,
-			 <&clock_gcc clk_gcc_blsp2_qup4_spi_apps_clk>;
+		clocks = <&clock_gcc GCC_BLSP2_AHB_CLK>,
+			 <&clock_gcc GCC_BLSP2_QUP4_SPI_APPS_CLK>;
 		status = "disabled";
 	};
 
@@ -65,8 +65,8 @@
 		pinctrl-0 = <&spi_12_active>;
 		pinctrl-1 = <&spi_12_sleep>;
 		clock-names = "iface_clk", "core_clk";
-		clocks = <&clock_gcc clk_gcc_blsp2_ahb_clk>,
-			 <&clock_gcc clk_gcc_blsp2_qup6_spi_apps_clk>;
+		clocks = <&clock_gcc GCC_BLSP2_AHB_CLK>,
+			 <&clock_gcc GCC_BLSP2_QUP6_SPI_APPS_CLK>;
 		status = "disabled";
 	};
 };
