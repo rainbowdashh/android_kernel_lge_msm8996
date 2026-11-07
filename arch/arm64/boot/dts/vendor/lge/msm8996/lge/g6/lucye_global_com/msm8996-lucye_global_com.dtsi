@@ -66,9 +66,12 @@
 /* From pm dtsi */
 #ifndef CONFIG_MACH_MSM8996_LUCYE_GLOBAL_CA
 &pmi8994_gpios {
-	gpio@c300 {	/* GPIO 4 - NC */
-		qcom,master-en = <0>;	/* Disable GPIO */
-		status = "okay";
+	default-state {
+		gpio4 {	/* GPIO 4 - NC */
+			bias-high-impedance;
+			status = "okay";
+		};
+
 	};
 };
 #endif

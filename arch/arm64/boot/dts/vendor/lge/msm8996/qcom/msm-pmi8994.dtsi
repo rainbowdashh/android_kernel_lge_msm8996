@@ -36,72 +36,75 @@
 			};
 		};
 
-		pmi8994_gpios: gpios {
-			compatible = "qcom,qpnp-pin";
+		pmi8994_gpios: gpios@c000 {
+			compatible = "qcom,pmi8994-gpio", "qcom,spmi-gpio";
+			reg = <0xc000 0xa00>;
+			interrupts = <0x2 0xc0 0 IRQ_TYPE_NONE>,
+				     <0x2 0xc1 0 IRQ_TYPE_NONE>,
+				     <0x2 0xc2 0 IRQ_TYPE_NONE>,
+				     <0x2 0xc3 0 IRQ_TYPE_NONE>,
+				     <0x2 0xc4 0 IRQ_TYPE_NONE>,
+				     <0x2 0xc5 0 IRQ_TYPE_NONE>,
+				     <0x2 0xc6 0 IRQ_TYPE_NONE>,
+				     <0x2 0xc7 0 IRQ_TYPE_NONE>,
+				     <0x2 0xc8 0 IRQ_TYPE_NONE>,
+				     <0x2 0xc9 0 IRQ_TYPE_NONE>;
 			gpio-controller;
 			#gpio-cells = <2>;
-			#address-cells = <1>;
-			#size-cells = <1>;
-			label = "pmi8994-gpio";
+			pinctrl-names = "default";
+			pinctrl-0 = <&pmi8994_gpio_default>;
 
-			gpio@c000 {
-				reg = <0xc000 0x100>;
-				qcom,pin-num = <1>;
-				status = "disabled";
-			};
+			pmi8994_gpio_default: default-state {
+				gpio1 {
+					pins = "gpio1";
+					status = "disabled";
+				};
 
-			gpio@c100 {
-				reg = <0xc100 0x100>;
-				qcom,pin-num = <2>;
-				status = "disabled";
-			};
+				gpio2 {
+					pins = "gpio2";
+					status = "disabled";
+				};
 
-			gpio@c200 {
-				reg = <0xc200 0x100>;
-				qcom,pin-num = <3>;
-				status = "disabled";
-			};
+				gpio3 {
+					pins = "gpio3";
+					status = "disabled";
+				};
 
-			gpio@c300 {
-				reg = <0xc300 0x100>;
-				qcom,pin-num = <4>;
-				status = "disabled";
-			};
+				gpio4 {
+					pins = "gpio4";
+					status = "disabled";
+				};
 
-			gpio@c400 {
-				reg = <0xc400 0x100>;
-				qcom,pin-num = <5>;
-				status = "disabled";
-			};
+				gpio5 {
+					pins = "gpio5";
+					status = "disabled";
+				};
 
-			gpio@c500 {
-				reg = <0xc500 0x100>;
-				qcom,pin-num = <6>;
-				status = "disabled";
-			};
+				gpio6 {
+					pins = "gpio6";
+					status = "disabled";
+				};
 
-			gpio@c600 {
-				reg = <0xc600 0x100>;
-				qcom,pin-num = <7>;
-				status = "disabled";
-			};
+				gpio7 {
+					pins = "gpio7";
+					status = "disabled";
+				};
 
-			gpio@c700 {
-				reg = <0xc700 0x100>;
-				qcom,pin-num = <8>;
-				status = "disabled";
-			};
+				gpio8 {
+					pins = "gpio8";
+					status = "disabled";
+				};
 
-			gpio@c800 {
-				reg = <0xc800 0x100>;
-				qcom,pin-num = <9>;
-				status = "disabled";
-			};
+				gpio9 {
+					pins = "gpio9";
+					status = "disabled";
+				};
 
-			gpio@c900 {
-				reg = <0xc900 0x100>;
-				qcom,pin-num = <10>;
-				status = "disabled";
+				gpio10 {
+					pins = "gpio10";
+					status = "disabled";
+				};
+
 			};
 		};
 

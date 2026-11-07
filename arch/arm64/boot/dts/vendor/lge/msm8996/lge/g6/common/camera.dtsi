@@ -42,24 +42,39 @@
 
 /* PM8994 GPIO Settings */
 &pm8994_gpios {
-	gpio@c500 { /* GPIO 6 */
-		qcom,mode = <1>;
-		qcom,pull = <5>;
-		qcom,vin-sel = <2>;
-		qcom,src-sel = <0>;
-		qcom,invert = <0>;
-		qcom,master-en = <1>;
-		status = "okay";
-	};
+	default-state {
+		gpio6 { /* GPIO 6 */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-disable;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
 
-	gpio@c600 { /* GPIO 7 */
-		qcom,mode = <1>;
-		qcom,pull = <5>;
-		qcom,vin-sel = <2>;
-		qcom,src-sel = <0>;
-		qcom,invert = <0>;
-		qcom,master-en = <1>;
-		status = "okay";
+		gpio7 { /* GPIO 7 */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-disable;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
 	};
 };
 
