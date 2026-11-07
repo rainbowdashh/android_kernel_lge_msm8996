@@ -34,6 +34,21 @@
 #include "reset.h"
 #include "gdsc.h"
 
+#include "vdd-level-8996.h"
+
+static DEFINE_VDD_REGULATORS(vdd_dig, VDD_DIG_NUM, 1, vdd_corner);
+
+static int vdd_mmpll4_levels[] = {
+	RPM_REGULATOR_CORNER_NONE,		0,
+	RPM_REGULATOR_CORNER_SVS_KRAIT,		1800000,
+	RPM_REGULATOR_CORNER_SVS_SOC,		1800000,
+	RPM_REGULATOR_CORNER_NORMAL,		1800000,
+	RPM_REGULATOR_CORNER_SUPER_TURBO,	1800000,
+};
+
+static DEFINE_VDD_REGULATORS(vdd_mmpll4, VDD_DIG_NUM, 2,
+			     vdd_mmpll4_levels);
+
 enum {
 	P_XO,
 	P_MMPLL0,
@@ -285,6 +300,7 @@ static struct clk_alpha_pll_postdiv mmpll0 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 4,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 400000000, NOMINAL, 800000000),
 		.name = "mmpll0",
 		.parent_names = (const char *[]){ "mmpll0_early" },
 		.num_parents = 1,
@@ -315,6 +331,7 @@ static struct clk_alpha_pll_postdiv mmpll1 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 4,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 370000000, NOMINAL, 740000000),
 		.name = "mmpll1",
 		.parent_names = (const char *[]){ "mmpll1_early" },
 		.num_parents = 1,
@@ -341,6 +358,7 @@ static struct clk_alpha_pll_postdiv mmpll2 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 4,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP1(LOWER, 410000000),
 		.name = "mmpll2",
 		.parent_names = (const char *[]){ "mmpll2_early" },
 		.num_parents = 1,
@@ -367,6 +385,7 @@ static struct clk_alpha_pll_postdiv mmpll3 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 4,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 450000000, NOMINAL, 900000000),
 		.name = "mmpll3",
 		.parent_names = (const char *[]){ "mmpll3_early" },
 		.num_parents = 1,
@@ -393,6 +412,7 @@ static struct clk_alpha_pll_postdiv mmpll4 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 2,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_MMPLL4_FMAX_MAP2(LOWER, 480000000, NOMINAL, 960000000),
 		.name = "mmpll4",
 		.parent_names = (const char *[]){ "mmpll4_early" },
 		.num_parents = 1,
@@ -419,6 +439,7 @@ static struct clk_alpha_pll_postdiv mmpll5 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 4,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 360000000, LOW, 720000000),
 		.name = "mmpll5",
 		.parent_names = (const char *[]){ "mmpll5_early" },
 		.num_parents = 1,
@@ -445,6 +466,7 @@ static struct clk_alpha_pll_postdiv mmpll8 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 4,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP1(LOWER, 360000000),
 		.name = "mmpll8",
 		.parent_names = (const char *[]){ "mmpll8_early" },
 		.num_parents = 1,
@@ -471,6 +493,7 @@ static struct clk_alpha_pll_postdiv mmpll9 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 2,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_MMPLL4_FMAX_MAP2(LOWER, 480000000, NOMINAL, 960000000),
 		.name = "mmpll9",
 		.parent_names = (const char *[]){ "mmpll9_early" },
 		.num_parents = 1,
@@ -492,6 +515,7 @@ static struct clk_rcg2 ahb_clk_src = {
 	.parent_map = mmss_xo_mmpll0_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_ahb_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 40000000, NOMINAL, 80000000),
 		.name = "ahb_clk_src",
 		.parent_names = mmss_xo_mmpll0_gpll0_gpll0_div,
 		.num_parents = 4,
@@ -529,6 +553,8 @@ static struct clk_rcg2 maxi_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_axi_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 75000000, LOW, 171430000,
+			NOMINAL, 320000000, HIGH, 370000000),
 		.name = "maxi_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_gpll0_gpll0_div,
 		.num_parents = 5,
@@ -560,6 +586,7 @@ static struct clk_rcg2 rbbmtimer_clk_src = {
 	.parent_map = mmss_xo_mmpll0_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_rbbmtimer_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP1(LOWER, 19200000),
 		.name = "rbbmtimer_clk_src",
 		.parent_names = mmss_xo_mmpll0_gpll0_gpll0_div,
 		.num_parents = 4,
@@ -591,6 +618,7 @@ static struct clk_rcg2 rbcpr_clk_src = {
 	.parent_map = mmss_xo_mmpll0_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_rbcpr_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP1(LOWER, 19200000),
 		.name = "rbcpr_clk_src",
 		.parent_names = mmss_xo_mmpll0_gpll0_gpll0_div,
 		.num_parents = 4,
@@ -613,6 +641,8 @@ static struct clk_rcg2 video_core_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_video_core_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 75000000, LOW, 150000000,
+			NOMINAL, 320000000, HIGH, 450000000),
 		.name = "video_core_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll3_gpll0_gpll0_div,
 		.num_parents = 5,
@@ -627,6 +657,8 @@ static struct clk_rcg2 video_subcore0_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_video_core_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 75000000, LOW, 150000000,
+			NOMINAL, 320000000, HIGH, 450000000),
 		.name = "video_subcore0_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll3_gpll0_gpll0_div,
 		.num_parents = 5,
@@ -641,6 +673,8 @@ static struct clk_rcg2 video_subcore1_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_video_core_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 75000000, LOW, 150000000,
+			NOMINAL, 320000000, HIGH, 450000000),
 		.name = "video_subcore1_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll3_gpll0_gpll0_div,
 		.num_parents = 5,
@@ -654,6 +688,8 @@ static struct clk_rcg2 pclk0_clk_src = {
 	.hid_width = 5,
 	.parent_map = mmss_xo_dsi0pll_dsi1pll_map,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 175000000, LOW, 280000000,
+			NOMINAL, 350000000),
 		.name = "pclk0_clk_src",
 		.parent_names = mmss_xo_dsi0pll_dsi1pll,
 		.num_parents = 3,
@@ -668,6 +704,8 @@ static struct clk_rcg2 pclk1_clk_src = {
 	.hid_width = 5,
 	.parent_map = mmss_xo_dsi0pll_dsi1pll_map,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 175000000, LOW, 280000000,
+			NOMINAL, 350000000),
 		.name = "pclk1_clk_src",
 		.parent_names = mmss_xo_dsi0pll_dsi1pll,
 		.num_parents = 3,
@@ -695,6 +733,8 @@ static struct clk_rcg2 mdp_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll5_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_mdp_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 171430000, LOW, 240000000,
+			NOMINAL, 320000000, HIGH, 360000000),
 		.name = "mdp_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll5_gpll0_gpll0_div,
 		.num_parents = 5,
@@ -713,6 +753,8 @@ static struct clk_rcg2 extpclk_clk_src = {
 	.parent_map = mmss_xo_hdmi_map,
 	.freq_tbl = extpclk_freq_tbl,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 150000000, LOW, 300000000,
+			NOMINAL, 600000000),
 		.name = "extpclk_clk_src",
 		.parent_names = mmss_xo_hdmi,
 		.num_parents = 2,
@@ -732,6 +774,7 @@ static struct clk_rcg2 vsync_clk_src = {
 	.parent_map = mmss_xo_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_mdss_vsync_clk,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP1(LOWER, 19200000),
 		.name = "vsync_clk_src",
 		.parent_names = mmss_xo_gpll0_gpll0_div,
 		.num_parents = 3,
@@ -750,6 +793,7 @@ static struct clk_rcg2 hdmi_clk_src = {
 	.parent_map = mmss_xo_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_mdss_hdmi_clk,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP1(LOWER, 19200000),
 		.name = "hdmi_clk_src",
 		.parent_names = mmss_xo_gpll0_gpll0_div,
 		.num_parents = 3,
@@ -762,6 +806,8 @@ static struct clk_rcg2 byte0_clk_src = {
 	.hid_width = 5,
 	.parent_map = mmss_xo_dsibyte_map,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 131250000, LOW, 210000000,
+			NOMINAL, 262500000),
 		.name = "byte0_clk_src",
 		.parent_names = mmss_xo_dsibyte,
 		.num_parents = 3,
@@ -775,6 +821,8 @@ static struct clk_rcg2 byte1_clk_src = {
 	.hid_width = 5,
 	.parent_map = mmss_xo_dsibyte_map,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 131250000, LOW, 210000000,
+			NOMINAL, 262500000),
 		.name = "byte1_clk_src",
 		.parent_names = mmss_xo_dsibyte,
 		.num_parents = 3,
@@ -794,6 +842,7 @@ static struct clk_rcg2 esc0_clk_src = {
 	.parent_map = mmss_xo_dsibyte_map,
 	.freq_tbl = ftbl_mdss_esc0_1_clk,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP1(LOWER, 19200000),
 		.name = "esc0_clk_src",
 		.parent_names = mmss_xo_dsibyte,
 		.num_parents = 3,
@@ -807,6 +856,7 @@ static struct clk_rcg2 esc1_clk_src = {
 	.parent_map = mmss_xo_dsibyte_map,
 	.freq_tbl = ftbl_mdss_esc0_1_clk,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP1(LOWER, 19200000),
 		.name = "esc1_clk_src",
 		.parent_names = mmss_xo_dsibyte,
 		.num_parents = 3,
@@ -831,6 +881,8 @@ static struct clk_rcg2 camss_gp0_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_camss_gp0_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 50000000, LOW, 100000000,
+			NOMINAL, 200000000),
 		.name = "camss_gp0_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div,
 		.num_parents = 5,
@@ -845,6 +897,8 @@ static struct clk_rcg2 camss_gp1_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_camss_gp0_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 50000000, LOW, 100000000,
+			NOMINAL, 200000000),
 		.name = "camss_gp1_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div,
 		.num_parents = 5,
@@ -873,6 +927,8 @@ static struct clk_rcg2 mclk0_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_mclk0_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 33330000, LOW, 66670000,
+			NOMINAL, 68570000),
 		.name = "mclk0_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div,
 		.num_parents = 5,
@@ -887,6 +943,8 @@ static struct clk_rcg2 mclk1_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_mclk0_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 33330000, LOW, 66670000,
+			NOMINAL, 68570000),
 		.name = "mclk1_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div,
 		.num_parents = 5,
@@ -901,6 +959,8 @@ static struct clk_rcg2 mclk2_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_mclk0_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 33330000, LOW, 66670000,
+			NOMINAL, 68570000),
 		.name = "mclk2_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div,
 		.num_parents = 5,
@@ -915,6 +975,8 @@ static struct clk_rcg2 mclk3_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_mclk0_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 33330000, LOW, 66670000,
+			NOMINAL, 68570000),
 		.name = "mclk3_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div,
 		.num_parents = 5,
@@ -937,6 +999,8 @@ static struct clk_rcg2 cci_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_cci_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 50000000,
+			NOMINAL, 100000000),
 		.name = "cci_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div,
 		.num_parents = 5,
@@ -957,6 +1021,7 @@ static struct clk_rcg2 csi0phytimer_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_csi0phytimer_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 100000000, NOMINAL, 266670000),
 		.name = "csi0phytimer_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -970,6 +1035,7 @@ static struct clk_rcg2 csi1phytimer_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_csi0phytimer_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 100000000, NOMINAL, 266670000),
 		.name = "csi1phytimer_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -983,6 +1049,7 @@ static struct clk_rcg2 csi2phytimer_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_csi0phytimer_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 100000000, NOMINAL, 266670000),
 		.name = "csi2phytimer_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -1004,6 +1071,8 @@ static struct clk_rcg2 csiphy0_3p_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_csiphy0_3p_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 100000000, LOW, 200000000,
+			NOMINAL, 320000000),
 		.name = "csiphy0_3p_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -1017,6 +1086,8 @@ static struct clk_rcg2 csiphy1_3p_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_csiphy0_3p_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 100000000, LOW, 200000000,
+			NOMINAL, 320000000),
 		.name = "csiphy1_3p_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -1030,6 +1101,8 @@ static struct clk_rcg2 csiphy2_3p_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_csiphy0_3p_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 100000000, LOW, 200000000,
+			NOMINAL, 320000000),
 		.name = "csiphy2_3p_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -1053,6 +1126,8 @@ static struct clk_rcg2 jpeg0_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_jpeg0_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 75000000, LOW, 150000000,
+			NOMINAL, 320000000, HIGH, 480000000),
 		.name = "jpeg0_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -1075,6 +1150,8 @@ static struct clk_rcg2 jpeg2_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_jpeg2_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 75000000, LOW, 150000000,
+			NOMINAL, 266670000, HIGH, 320000000),
 		.name = "jpeg2_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -1088,6 +1165,8 @@ static struct clk_rcg2 jpeg_dma_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_jpeg0_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 75000000, LOW, 150000000,
+			NOMINAL, 320000000, HIGH, 480000000),
 		.name = "jpeg_dma_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -1111,6 +1190,8 @@ static struct clk_rcg2 vfe0_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_vfe0_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 75000000, LOW, 200000000,
+			NOMINAL, 480000000, HIGH, 600000000),
 		.name = "vfe0_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -1124,6 +1205,8 @@ static struct clk_rcg2 vfe1_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_vfe0_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 100000000, LOW, 200000000,
+			NOMINAL, 480000000, HIGH, 600000000),
 		.name = "vfe1_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -1146,6 +1229,8 @@ static struct clk_rcg2 cpp_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_cpp_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 100000000, LOW, 200000000,
+			NOMINAL, 480000000, HIGH, 640000000),
 		.name = "cpp_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -1168,6 +1253,8 @@ static struct clk_rcg2 csi0_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_csi0_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 100000000, LOW, 200000000,
+			NOMINAL, 480000000, HIGH, 600000000),
 		.name = "csi0_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -1181,6 +1268,8 @@ static struct clk_rcg2 csi1_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_csi0_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 100000000, LOW, 200000000,
+			NOMINAL, 480000000, HIGH, 600000000),
 		.name = "csi1_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -1194,6 +1283,8 @@ static struct clk_rcg2 csi2_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_csi0_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 100000000, LOW, 200000000,
+			NOMINAL, 480000000, HIGH, 600000000),
 		.name = "csi2_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -1207,6 +1298,8 @@ static struct clk_rcg2 csi3_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_csi0_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 100000000, LOW, 200000000,
+			NOMINAL, 480000000, HIGH, 600000000),
 		.name = "csi3_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll1_mmpll4_mmpll3_gpll0_gpll0_div,
 		.num_parents = 7,
@@ -1227,6 +1320,8 @@ static struct clk_rcg2 fd_core_clk_src = {
 	.parent_map = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div_map,
 	.freq_tbl = ftbl_fd_core_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 100000000, LOW, 200000000,
+			NOMINAL, 400000000),
 		.name = "fd_core_clk_src",
 		.parent_names = mmss_xo_mmpll0_mmpll4_gpll0_gpll0_div,
 		.num_parents = 5,
@@ -3360,6 +3455,19 @@ static int mmcc_msm8996_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	int i, ret;
 	struct regmap *regmap;
+
+	vdd_corner[VDD_DIG_LOWER] = RPM_REGULATOR_CORNER_SVS_KRAIT;
+	vdd_dig.regulator[0] = devm_regulator_get(dev, "vdd_dig");
+	if (IS_ERR(vdd_dig.regulator[0]))
+		return PTR_ERR(vdd_dig.regulator[0]);
+
+	vdd_mmpll4.regulator[0] = devm_regulator_get(dev, "mmpll4_dig");
+	if (IS_ERR(vdd_mmpll4.regulator[0]))
+		return PTR_ERR(vdd_mmpll4.regulator[0]);
+
+	vdd_mmpll4.regulator[1] = devm_regulator_get(dev, "mmpll4_analog");
+	if (IS_ERR(vdd_mmpll4.regulator[1]))
+		return PTR_ERR(vdd_mmpll4.regulator[1]);
 
 	regmap = qcom_cc_map(pdev, &mmcc_msm8996_desc);
 	if (IS_ERR(regmap))
