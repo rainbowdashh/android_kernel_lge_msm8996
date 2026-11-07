@@ -286,7 +286,7 @@ config LGE_MME_DRV
 
 config LGE_POWEROFF_TIMEOUT
 	bool "Support shutdown and reboot timeout"
-	depends on MACH_LGE
+	depends on MACH_LGE && LGE_HANDLE_PANIC
 	default y
 	help
 	  Say 'y" here to include support for shutdown and reboot timeout.
