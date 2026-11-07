@@ -519,7 +519,7 @@ static struct clk_hw *msm8916_clks[] = {
 
 static const struct rpm_smd_clk_desc rpm_clk_msm8916 = {
 	.clks = msm8916_clks,
-	.num_rpm_clks = RPM_SMD_RF_CLK2_A_PIN,
+	.num_rpm_clks = RPM_SMD_AGGR2_NOC_A_CLK,
 	.num_clks = ARRAY_SIZE(msm8916_clks),
 };
 
@@ -596,6 +596,8 @@ static const struct rpm_smd_clk_desc rpm_clk_msm8974 = {
 };
 
 /* msm8996 */
+DEFINE_CLK_SMD_RPM_BRANCH(msm8996, cxo_clk_src, cxo_clk_src_ao,
+			  QCOM_SMD_RPM_MISC_CLK, 0, 19200000);
 DEFINE_CLK_SMD_RPM(msm8996, pcnoc_clk, pcnoc_a_clk, QCOM_SMD_RPM_BUS_CLK, 0);
 DEFINE_CLK_SMD_RPM(msm8996, snoc_clk, snoc_a_clk, QCOM_SMD_RPM_BUS_CLK, 1);
 DEFINE_CLK_SMD_RPM(msm8996, cnoc_clk, cnoc_a_clk, QCOM_SMD_RPM_BUS_CLK, 2);
@@ -623,7 +625,49 @@ DEFINE_CLK_SMD_RPM_XO_BUFFER_PINCTRL(msm8996, bb_clk2_pin, bb_clk2_a_pin, 2);
 DEFINE_CLK_SMD_RPM_XO_BUFFER_PINCTRL(msm8996, rf_clk1_pin, rf_clk1_a_pin, 4);
 DEFINE_CLK_SMD_RPM_XO_BUFFER_PINCTRL(msm8996, rf_clk2_pin, rf_clk2_a_pin, 5);
 
+static DEFINE_CLK_VOTER(msm8996_pnoc_msmbus_clk, pcnoc_clk, LONG_MAX);
+static DEFINE_CLK_VOTER(msm8996_pnoc_msmbus_a_clk, pcnoc_a_clk, LONG_MAX);
+static DEFINE_CLK_VOTER(msm8996_snoc_msmbus_clk, snoc_clk, LONG_MAX);
+static DEFINE_CLK_VOTER(msm8996_snoc_msmbus_a_clk, snoc_a_clk, LONG_MAX);
+static DEFINE_CLK_VOTER(msm8996_bimc_msmbus_clk, bimc_clk, LONG_MAX);
+static DEFINE_CLK_VOTER(msm8996_bimc_msmbus_a_clk, bimc_a_clk, LONG_MAX);
+static DEFINE_CLK_VOTER(msm8996_cnoc_msmbus_clk, cnoc_clk, LONG_MAX);
+static DEFINE_CLK_VOTER(msm8996_cnoc_msmbus_a_clk, cnoc_a_clk, LONG_MAX);
+static DEFINE_CLK_VOTER(msm8996_qcedev_ce1_clk, ce1_clk, 85710000);
+static DEFINE_CLK_VOTER(msm8996_qcrypto_ce1_clk, ce1_clk, 85710000);
+static DEFINE_CLK_VOTER(msm8996_qseecom_ce1_clk, ce1_clk, 85710000);
+static DEFINE_CLK_VOTER(msm8996_mmssnoc_axi_clk, mmssnoc_axi_rpm_clk, 0);
+static DEFINE_CLK_VOTER(msm8996_mmssnoc_axi_a_clk, mmssnoc_axi_rpm_a_clk, 0);
+static DEFINE_CLK_VOTER(msm8996_mmssnoc_gds_clk, mmssnoc_axi_rpm_clk, 40000000);
+static DEFINE_CLK_BRANCH_VOTER(msm8996_cxo_dwc3_clk, cxo_clk_src);
+static DEFINE_CLK_BRANCH_VOTER(msm8996_cxo_lpm_clk, cxo_clk_src);
+static DEFINE_CLK_BRANCH_VOTER(msm8996_cxo_pil_lpass_clk, cxo_clk_src);
+static DEFINE_CLK_BRANCH_VOTER(msm8996_cxo_pil_ssc_clk, cxo_clk_src);
+
+static DEFINE_CLK_VOTER(msm8996_pnoc_keepalive_a_clk, pcnoc_a_clk, 19200000);
+
 static struct clk_hw *msm8996_clks[] = {
+	[PNOC_KEEPALIVE_A_CLK] = &msm8996_pnoc_keepalive_a_clk.hw,
+	[PNOC_MSMBUS_CLK] = &msm8996_pnoc_msmbus_clk.hw,
+	[PNOC_MSMBUS_A_CLK] = &msm8996_pnoc_msmbus_a_clk.hw,
+	[SNOC_MSMBUS_CLK] = &msm8996_snoc_msmbus_clk.hw,
+	[SNOC_MSMBUS_A_CLK] = &msm8996_snoc_msmbus_a_clk.hw,
+	[BIMC_MSMBUS_CLK] = &msm8996_bimc_msmbus_clk.hw,
+	[BIMC_MSMBUS_A_CLK] = &msm8996_bimc_msmbus_a_clk.hw,
+	[CNOC_MSMBUS_CLK] = &msm8996_cnoc_msmbus_clk.hw,
+	[CNOC_MSMBUS_A_CLK] = &msm8996_cnoc_msmbus_a_clk.hw,
+	[QCEDEV_CE1_CLK] = &msm8996_qcedev_ce1_clk.hw,
+	[QCRYPTO_CE1_CLK] = &msm8996_qcrypto_ce1_clk.hw,
+	[QSEECOM_CE1_CLK] = &msm8996_qseecom_ce1_clk.hw,
+	[MMSSNOC_AXI_VOTE_CLK] = &msm8996_mmssnoc_axi_clk.hw,
+	[MMSSNOC_AXI_A_VOTE_CLK] = &msm8996_mmssnoc_axi_a_clk.hw,
+	[MMSSNOC_GDS_CLK] = &msm8996_mmssnoc_gds_clk.hw,
+	[CXO_DWC3_CLK] = &msm8996_cxo_dwc3_clk.hw,
+	[CXO_SMD_LPM_CLK] = &msm8996_cxo_lpm_clk.hw,
+	[CXO_SMD_PIL_LPASS_CLK] = &msm8996_cxo_pil_lpass_clk.hw,
+	[CXO_SMD_PIL_SSC_CLK] = &msm8996_cxo_pil_ssc_clk.hw,
+	[RPM_SMD_XO_CLK_SRC] = &msm8996_cxo_clk_src.hw,
+	[RPM_SMD_XO_A_CLK_SRC] = &msm8996_cxo_clk_src_ao.hw,
 	[RPM_SMD_PCNOC_CLK] = &msm8996_pcnoc_clk.hw,
 	[RPM_SMD_PCNOC_A_CLK] = &msm8996_pcnoc_a_clk.hw,
 	[RPM_SMD_SNOC_CLK] = &msm8996_snoc_clk.hw,
@@ -1320,6 +1364,17 @@ static int rpm_smd_clk_probe(struct platform_device *pdev)
 		/* Hold an active set vote for the snoc_keepalive_a_clk */
 		clk_set_rate(snoc_keepalive_a_clk.hw.clk, 19200000);
 		clk_prepare_enable(snoc_keepalive_a_clk.hw.clk);
+	} else if (of_device_is_compatible(pdev->dev.of_node,
+					   "qcom,rpmcc-msm8996")) {
+		/* Keep the active XO vote while application processors run. */
+		ret = clk_prepare_enable(msm8996_cxo_clk_src_ao.hw.clk);
+		if (ret)
+			goto err;
+		ret = clk_prepare_enable(msm8996_pnoc_keepalive_a_clk.hw.clk);
+		if (ret) {
+			clk_disable_unprepare(msm8996_cxo_clk_src_ao.hw.clk);
+			goto err;
+		}
 	} else if (is_sdm660) {
 		clk_prepare_enable(sdm660_cxo_a.hw.clk);
 
