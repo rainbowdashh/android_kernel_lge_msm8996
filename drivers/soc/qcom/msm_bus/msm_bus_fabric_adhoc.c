@@ -1110,7 +1110,8 @@ int msm_bus_device_remove(struct platform_device *pdev)
 
 static int msm_bus_device_probe(struct platform_device *pdev)
 {
-	unsigned int i, ret;
+	unsigned int i;
+	int ret;
 	struct msm_bus_device_node_registration *pdata;
 
 	/* If possible, get pdata from device-tree */
@@ -1124,7 +1125,7 @@ static int msm_bus_device_probe(struct platform_device *pdev)
 
 	if (IS_ERR_OR_NULL(pdata)) {
 		MSM_BUS_ERR("No platform data found");
-		ret = -ENODATA;
+		ret = pdata ? PTR_ERR(pdata) : -ENODATA;
 		goto exit_device_probe;
 	}
 
@@ -1137,14 +1138,13 @@ static int msm_bus_device_probe(struct platform_device *pdev)
 			MSM_BUS_ERR("%s: Error during dev init for %d",
 				__func__, pdata->info[i].node_info->id);
 			ret = PTR_ERR(node_dev);
-			goto exit_device_probe;
+			goto remove_devices;
 		}
 
 		ret = msm_bus_init_clk(node_dev, &pdata->info[i]);
 		if (ret) {
 			MSM_BUS_ERR("\n Failed to init bus clk. ret %d", ret);
-			msm_bus_device_remove(pdev);
-			goto exit_device_probe;
+			goto remove_devices;
 		}
 		/*Is this a fabric device ?*/
 		if (pdata->info[i].node_info->is_fab_dev) {
@@ -1154,7 +1154,7 @@ static int msm_bus_device_probe(struct platform_device *pdev)
 			if (ret) {
 				MSM_BUS_ERR("%s: Error intializing fab %d",
 					__func__, pdata->info[i].node_info->id);
-				goto exit_device_probe;
+				goto remove_devices;
 			}
 		}
 	}
@@ -1163,7 +1163,7 @@ static int msm_bus_device_probe(struct platform_device *pdev)
 						msm_bus_setup_dev_conn);
 	if (ret) {
 		MSM_BUS_ERR("%s: Error setting up dev connections", __func__);
-		goto exit_device_probe;
+		goto remove_devices;
 	}
 
 	/*
@@ -1171,7 +1171,7 @@ static int msm_bus_device_probe(struct platform_device *pdev)
 	 * defer QoS programming to the first transaction in cases of failure
 	 * and we want to continue the probe.
 	 */
-	ret = bus_for_each_dev(&msm_bus_type, NULL, NULL, msm_bus_dev_init_qos);
+	bus_for_each_dev(&msm_bus_type, NULL, NULL, msm_bus_dev_init_qos);
 
 	/* Register the arb layer ops */
 	msm_bus_arb_setops_adhoc(&arb_ops);
@@ -1182,6 +1182,10 @@ static int msm_bus_device_probe(struct platform_device *pdev)
 
 	dev_info(&pdev->dev, "Bus scaling driver probe successful\n");
 
+	return 0;
+
+remove_devices:
+	msm_bus_device_remove(pdev);
 exit_device_probe:
 	return ret;
 }

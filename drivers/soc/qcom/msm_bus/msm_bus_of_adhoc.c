@@ -238,13 +238,15 @@ static int msm_bus_of_parse_clk_array(struct device_node *dev_node,
 	of_property_for_each_string(dev_node, "clock-names", prop, clk_name) {
 		char gdsc_string[MAX_REG_NAME];
 
-		(*clk_arr)[idx].clk = of_clk_get_by_name(dev_node, clk_name);
+		(*clk_arr)[idx].clk =
+			devm_get_clk_from_child(&pdev->dev, dev_node, clk_name);
 
-		if (IS_ERR_OR_NULL((*clk_arr)[idx].clk)) {
+		if (IS_ERR((*clk_arr)[idx].clk)) {
 			dev_err(&pdev->dev,
 				"Failed to get clk %s for bus%d\n", clk_name,
 									id);
-			continue;
+			ret = PTR_ERR((*clk_arr)[idx].clk);
+			goto exit_of_parse_clk_array;
 		}
 		if (strnstr(clk_name, "no-rate", strlen(clk_name)))
 			(*clk_arr)[idx].enable_only_clk = true;
@@ -489,6 +491,7 @@ static int get_bus_node_device_data(
 	bool enable_only;
 	bool setrate_only;
 	struct device_node *qos_clk_node;
+	int ret;
 
 	node_device->node_info = get_node_info_data(dev_node, pdev);
 	if (IS_ERR_OR_NULL(node_device->node_info)) {
@@ -530,12 +533,11 @@ static int get_bus_node_device_data(
 								setrate_only;
 		}
 
-		node_device->clk[DUAL_CTX].clk = of_clk_get_by_name(dev_node,
+		node_device->clk[DUAL_CTX].clk =
+			devm_get_clk_from_child(&pdev->dev, dev_node,
 							"bus_clk");
 
 		if (IS_ERR_OR_NULL(node_device->clk[DUAL_CTX].clk)) {
-			int ret;
-
 			dev_err(&pdev->dev,
 				"%s:Failed to get bus clk for bus%d ctx%d\n",
 				__func__, node_device->node_info->id,
@@ -552,16 +554,15 @@ static int get_bus_node_device_data(
 			scnprintf(node_device->clk[DUAL_CTX].reg_name,
 				MAX_REG_NAME, "%c", '\0');
 
-		node_device->clk[ACTIVE_CTX].clk = of_clk_get_by_name(dev_node,
+		node_device->clk[ACTIVE_CTX].clk =
+			devm_get_clk_from_child(&pdev->dev, dev_node,
 							"bus_a_clk");
 		if (IS_ERR_OR_NULL(node_device->clk[ACTIVE_CTX].clk)) {
-			int ret;
-
 			dev_err(&pdev->dev,
 				"Failed to get bus clk for bus%d ctx%d\n",
 				 node_device->node_info->id, ACTIVE_CTX);
-			ret = (IS_ERR(node_device->clk[DUAL_CTX].clk) ?
-			PTR_ERR(node_device->clk[DUAL_CTX].clk) : -ENXIO);
+			ret = (IS_ERR(node_device->clk[ACTIVE_CTX].clk) ?
+			PTR_ERR(node_device->clk[ACTIVE_CTX].clk) : -ENXIO);
 			return ret;
 		}
 
@@ -572,8 +573,11 @@ static int get_bus_node_device_data(
 			scnprintf(node_device->clk[ACTIVE_CTX].reg_name,
 				MAX_REG_NAME, "%c", '\0');
 
-		node_device->bus_qos_clk.clk = of_clk_get_by_name(dev_node,
+		node_device->bus_qos_clk.clk =
+			devm_get_clk_from_child(&pdev->dev, dev_node,
 							"bus_qos_clk");
+		if (PTR_ERR_OR_ZERO(node_device->bus_qos_clk.clk) == -EPROBE_DEFER)
+			return -EPROBE_DEFER;
 
 		if (IS_ERR_OR_NULL(node_device->bus_qos_clk.clk)) {
 			dev_dbg(&pdev->dev,
@@ -595,20 +599,21 @@ static int get_bus_node_device_data(
 						"qcom,node-qos-clks");
 
 		if (qos_clk_node) {
-			if (msm_bus_of_parse_clk_array(qos_clk_node, dev_node,
+			ret = msm_bus_of_parse_clk_array(qos_clk_node, dev_node,
 						pdev,
 						&node_device->node_qos_clks,
 						&node_device->num_node_qos_clks,
-						node_device->node_info->id)) {
-				dev_info(&pdev->dev,
-					"Bypass QoS programming\n");
-				node_device->fabdev->bypass_qos_prg = true;
-			}
+						node_device->node_info->id);
 			of_node_put(qos_clk_node);
+			if (ret)
+				return ret;
 		}
 	} else {
-		node_device->bus_qos_clk.clk = of_clk_get_by_name(dev_node,
+		node_device->bus_qos_clk.clk =
+			devm_get_clk_from_child(&pdev->dev, dev_node,
 							"bus_qos_clk");
+		if (PTR_ERR_OR_ZERO(node_device->bus_qos_clk.clk) == -EPROBE_DEFER)
+			return -EPROBE_DEFER;
 
 		if (IS_ERR_OR_NULL(node_device->bus_qos_clk.clk))
 			dev_dbg(&pdev->dev,
@@ -645,20 +650,21 @@ static int get_bus_node_device_data(
 						"qcom,node-qos-clks");
 
 		if (qos_clk_node) {
-			if (msm_bus_of_parse_clk_array(qos_clk_node, dev_node,
+			ret = msm_bus_of_parse_clk_array(qos_clk_node, dev_node,
 						pdev,
 						&node_device->node_qos_clks,
 						&node_device->num_node_qos_clks,
-						node_device->node_info->id)) {
-				dev_info(&pdev->dev,
-					"Bypass QoS programming\n");
-				node_device->fabdev->bypass_qos_prg = true;
-			}
+						node_device->node_info->id);
 			of_node_put(qos_clk_node);
+			if (ret)
+				return ret;
 		}
 
-		node_device->clk[ACTIVE_CTX].clk = of_clk_get_by_name(dev_node,
+		node_device->clk[ACTIVE_CTX].clk =
+			devm_get_clk_from_child(&pdev->dev, dev_node,
 							"node_a_clk");
+		if (PTR_ERR_OR_ZERO(node_device->clk[ACTIVE_CTX].clk) == -EPROBE_DEFER)
+			return -EPROBE_DEFER;
 
 		if (IS_ERR_OR_NULL(node_device->clk[ACTIVE_CTX].clk))
 			dev_dbg(&pdev->dev,
@@ -666,8 +672,11 @@ static int get_bus_node_device_data(
 				__func__, node_device->node_info->id,
 								ACTIVE_CTX);
 
-		node_device->clk[DUAL_CTX].clk = of_clk_get_by_name(dev_node,
+		node_device->clk[DUAL_CTX].clk =
+			devm_get_clk_from_child(&pdev->dev, dev_node,
 							"node_clk");
+		if (PTR_ERR_OR_ZERO(node_device->clk[DUAL_CTX].clk) == -EPROBE_DEFER)
+			return -EPROBE_DEFER;
 
 		if (IS_ERR_OR_NULL(node_device->clk[DUAL_CTX].clk))
 			dev_dbg(&pdev->dev,
@@ -692,11 +701,11 @@ struct msm_bus_device_node_registration
 	struct device_node *of_node, *child_node;
 	struct msm_bus_device_node_registration *pdata;
 	unsigned int i = 0, j;
-	unsigned int ret;
+	int ret = -ENOMEM;
 
 	if (!pdev) {
 		pr_err("Error: Null platform device\n");
-		return NULL;
+		return ERR_PTR(-EINVAL);
 	}
 
 	of_node = pdev->dev.of_node;
@@ -705,7 +714,7 @@ struct msm_bus_device_node_registration
 			sizeof(struct msm_bus_device_node_registration),
 			GFP_KERNEL);
 	if (!pdata)
-		return NULL;
+		return ERR_PTR(-ENOMEM);
 
 	pdata->num_devices = of_get_child_count(of_node);
 
@@ -716,7 +725,6 @@ struct msm_bus_device_node_registration
 	if (!pdata->info)
 		goto node_reg_err;
 
-	ret = 0;
 	for_each_child_of_node(of_node, child_node) {
 		ret = get_bus_node_device_data(child_node, pdev,
 				&pdata->info[i]);
@@ -755,11 +763,11 @@ struct msm_bus_device_node_registration
 	return pdata;
 
 node_reg_err_1:
+	of_node_put(child_node);
 	devm_kfree(&pdev->dev, pdata->info);
 node_reg_err:
 	devm_kfree(&pdev->dev, pdata);
-	pdata = NULL;
-	return NULL;
+	return ERR_PTR(ret);
 }
 
 static int msm_bus_of_get_ids(struct platform_device *pdev,
