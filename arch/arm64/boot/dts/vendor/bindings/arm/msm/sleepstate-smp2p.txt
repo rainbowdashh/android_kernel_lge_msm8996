@@ -3,7 +3,9 @@ Qualcomm Technologies, Inc. SMSM Point-to-Point (SMP2P) Sleepstate driver
 Required properties:
 -compatible : should be one of the following:
 - "qcom,smp2p-sleepstate"
--qcom,smem-states : the relevant outgoing smp2p entry
+-qcom,smem-states : the relevant outgoing smp2p entry and the AP awake bit.
+
+Optional incoming notification interrupt:
 - interrupt-parent: specifies the phandle to the parent interrupt controller
   this one is cascaded from
 - interrupts: specifies the interrupt number, the irq line to be used
@@ -12,7 +14,7 @@ Required properties:
 Example:
 qcom,smp2p_sleepstate {
 	compatible = "qcom,smp2p-sleepstate";
-	qcom,smem-states = <&sleepstate_smp2p_out 0>;
+	qcom,smem-states = <&sleepstate_smp2p_out 12>;
 	interrupt-parent = <&sleepstate_smp2p_in>;
 	interrupts = <0 0>;
 	interrupt-names = "smp2p-sleepstate-in";
