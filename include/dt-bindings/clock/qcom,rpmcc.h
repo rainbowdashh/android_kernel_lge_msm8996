@@ -236,4 +236,12 @@
 #define SYSMMNOC_MSMBUS_CLK			184
 #define SYSMMNOC_MSMBUS_A_CLK			185
 
+#define MMSSNOC_GDS_CLK                      186
+#define CXO_SMD_PIL_SSC_CLK                  187
+#define MMSSNOC_AXI_VOTE_CLK                 188
+#define MMSSNOC_AXI_A_VOTE_CLK               189
+
+#define PNOC_PM_CLK                          190
+#define PNOC_SPS_CLK                         191
+
 #endif
