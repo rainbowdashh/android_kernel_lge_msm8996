@@ -1,3 +1,5 @@
+subdir-$(CONFIG_ARCH_MSM8996) += msm8996
+
 ifeq ($(CONFIG_BUILD_ARM64_DT_OVERLAY),y)
 # Per Platform
 ifeq ($(CONFIG_MACH_LITO_CAYMANLM),y)
