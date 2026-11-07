@@ -9,6 +9,7 @@
 #include <linux/module.h>
 #include <linux/device.h>
 #include <linux/platform_device.h>
+#include <linux/of.h>
 #include <linux/dma-mapping.h>
 #include <linux/kernel.h>
 #include <linux/dmapool.h>
