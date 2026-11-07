@@ -181,8 +181,8 @@ static int scm_pas_enable_bw(void)
 		ret = msm_bus_scale_client_update_request(scm_perf_client, 1);
 		if (ret)
 			goto err_bus;
-		scm_pas_bw_count++;
 	}
+	scm_pas_bw_count++;
 
 	mutex_unlock(&scm_pas_bw_mutex);
 	return ret;
@@ -203,21 +203,22 @@ static void scm_pas_disable_bw(void)
 	mutex_unlock(&scm_pas_bw_mutex);
 }
 
-static void scm_pas_init(int id)
+static int scm_pas_init(int id)
 {
-	static int is_inited;
+	int ret = 0;
 
-	if (is_inited)
-		return;
+	mutex_lock(&scm_pas_bw_mutex);
+	if (!scm_perf_client) {
+		scm_pas_bw_tbl[0].vectors[0].src = id;
+		scm_pas_bw_tbl[1].vectors[0].src = id;
+		scm_perf_client =
+			msm_bus_scale_register_client(&scm_pas_bus_pdata);
+		if (!scm_perf_client)
+			ret = -EPROBE_DEFER;
+	}
+	mutex_unlock(&scm_pas_bw_mutex);
 
-	scm_pas_bw_tbl[0].vectors[0].src = id;
-	scm_pas_bw_tbl[1].vectors[0].src = id;
-
-	scm_perf_client = msm_bus_scale_register_client(&scm_pas_bus_pdata);
-	if (!scm_perf_client)
-		pr_warn("scm-pas: Unable to register bus client\n");
-
-	is_inited = 1;
+	return ret;
 }
 
 static int of_read_clocks(struct device *dev, struct clk ***clks_ref,
@@ -371,7 +372,7 @@ static int of_read_bus_pdata(struct platform_device *pdev,
 
 	d->bus_client = msm_bus_scale_register_client(pdata);
 	if (!d->bus_client)
-		pr_warn("%s: Unable to register bus client\n", __func__);
+		return -EPROBE_DEFER;
 
 	return 0;
 }
@@ -680,7 +681,7 @@ static int pil_auth_and_reset(struct pil_desc *pil)
 {
 	struct pil_tz_data *d = desc_to_data(pil);
 	int rc;
-	u32 proc, scm_ret = 0;
+	u32 proc;
 	struct scm_desc desc = {0};
 
 	if (d->subsys_desc.no_auth)
@@ -695,7 +696,7 @@ static int pil_auth_and_reset(struct pil_desc *pil)
 
 	rc = enable_regulators(d, pil->dev, d->regs, d->reg_count, false);
 	if (rc)
-		return rc;
+		goto err_bw;
 
 	rc = prepare_enable_clocks(pil->dev, d->clks, d->clk_count);
 	if (rc)
@@ -703,18 +704,19 @@ static int pil_auth_and_reset(struct pil_desc *pil)
 
 	rc = scm_call2(SCM_SIP_FNID(SCM_SVC_PIL,
 		       PAS_AUTH_AND_RESET_CMD), &desc);
-	scm_ret = desc.ret[0];
-
-	scm_pas_disable_bw();
+	if (!rc)
+		rc = desc.ret[0];
 	if (rc)
 		goto err_reset;
 
-	return scm_ret;
+	scm_pas_disable_bw();
+	return 0;
 err_reset:
 	disable_unprepare_clocks(d->clks, d->clk_count);
 err_clks:
 	disable_regulators(d, d->regs, d->reg_count, false);
-
+err_bw:
+	scm_pas_disable_bw();
 	return rc;
 }
 
@@ -1147,7 +1149,9 @@ static int pil_tz_driver_probe(struct platform_device *pdev)
 				&crypto_id);
 		}
 		of_node_put(crypto_node);
-		scm_pas_init((int)crypto_id);
+		rc = scm_pas_init((int)crypto_id);
+		if (rc)
+			goto err_deregister_bus;
 	}
 
 	rc = pil_desc_init(&d->desc);
