@@ -170,116 +170,185 @@
 };
 
 &pmi8994_gpios {
-	gpio@c000 { /* GPIO 1 - NC */
-		qcom,mode = <1>;			/* Digital output*/
-		qcom,pull = <4>;			/* Pull down 10uA */
-		qcom,vin-sel = <2>;			/* VIN2 */
-		qcom,src-sel = <0>;			/* Constant */
-		qcom,invert = <0>;			/* Disable Invert */
-		qcom,out-strength = <1>;	/* Low */
-		qcom,master-en = <0>;		/* Enable GPIO */
-		status = "okay";
-	};
+	default-state {
+		gpio1 { /* GPIO 1 - NC */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			bias-high-impedance;
+			status = "okay";
+		};
 
-	gpio@c100 { /* GPIO 2 - NC */
-		qcom,mode = <1>;			/* Digital output*/
-		qcom,pull = <0>;			/* Pull down 30uA */
-		qcom,vin-sel = <2>;			/* VIN2 */
-		qcom,src-sel = <0>;			/* Constant */
-		qcom,invert = <1>;			/* Enable Invert */
-		qcom,out-strength = <1>;	/* Low */
-		qcom,master-en = <0>;		/* Enable GPIO */
-		status = "okay";
-	};
+		gpio2 { /* GPIO 2 - NC */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			qcom,pull-up-strength = <0>;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-high;
+			qcom,drive-strength = <1>;
+			bias-high-impedance;
+			status = "okay";
+		};
 
-	gpio@c200 {	/* GPIO 3 SPKR_AMP_EN2 */
-		qcom,mode = <1>;			/* Digital output*/
-		qcom,pull = <4>;			/* Pull down */
-		qcom,vin-sel = <2>;			/* VIN2 */
-		qcom,src-sel = <0>;			/* Constant */
-		qcom,invert = <0>;			/* Disable Invert */
-		qcom,out-strength = <1>;	/* Low */
-		qcom,master-en = <1>;		/* Enable GPIO */
-		status = "okay";
-	};
+		gpio3 {	/* GPIO 3 SPKR_AMP_EN2 */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
 
-	gpio@c300 { /* GPIO 4 - EIS_LDO_EN */
-		qcom,mode = <1>;			/* Digital output*/
-		qcom,pull = <4>;			/* Pull down */
-		qcom,vin-sel = <2>;			/* VIN2 */
-		qcom,src-sel = <0>;			/* Constant */
-		qcom,invert = <0>;			/* Disable Invert */
-		qcom,out-strength = <1>;	/* Low */
-		qcom,master-en = <1>;		/* Enable GPIO */
-		status = "okay";
-	};
+		gpio4 { /* GPIO 4 - EIS_LDO_EN */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
 
-	gpio@c400 { /* GPIO 5 - NC */
-		qcom,mode = <1>;			/* Digital output*/
-		qcom,pull = <5>;			/* No pull */
-		qcom,output-type = <0>;		/* CMOS logic */
-		qcom,vin-sel = <2>;			/* VIN2 */
-		qcom,src-sel = <0>;			/* Constant */
-		qcom,invert = <0>;			/* Enable Invert */
-		qcom,out-strength = <2>;	/* Low */
-		qcom,master-en = <0>;		/* Enable GPIO */
-		status = "okay";
-	};
+		gpio5 { /* GPIO 5 - NC */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-disable;
+			/delete-property/ drive-push-pull;
+			/delete-property/ drive-open-drain;
+			/delete-property/ drive-open-source;
+			drive-push-pull;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <2>;
+			bias-high-impedance;
+			status = "okay";
+		};
 
-	gpio@c500 { /* GPIO 6 - NC */
-		qcom,mode = <1>;			/* Digital input */
-		qcom,pull = <4>;			/* Pull down */
-		qcom,vin-sel = <2>;			/* VIN2 */
-		qcom,src-sel = <0>;			/* Constant */
-		qcom,invert = <0>;			/* Disable Invert */
-		qcom,out-strength = <1>;	/* Low */
-		qcom,master-en = <0>;		/* Enable GPIO */
-		status = "okay";
-	};
+		gpio6 { /* GPIO 6 - NC */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			bias-high-impedance;
+			status = "okay";
+		};
 
-	gpio@c600 { /* GPIO 7 - NC */
-		qcom,mode = <2>;		/* Digital in & output*/
-		qcom,pull = <4>;			/* No Pull */
-		qcom,output-type = <2>;			/* Open Low */
-		qcom,vin-sel = <2>;			/* VIN2 */
-		qcom,src-sel = <0>;			/* Constant */
-		qcom,invert = <0>;			/* Enable invert */
-		qcom,out-strength = <2>;	/* Low */
-		qcom,master-en = <0>;		/* Enable GPIO */
-		status = "okay";
-	};
+		gpio7 { /* GPIO 7 - NC */
+			input-enable = <1>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			/delete-property/ drive-push-pull;
+			/delete-property/ drive-open-drain;
+			/delete-property/ drive-open-source;
+			drive-open-source;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <2>;
+			bias-high-impedance;
+			status = "okay";
+		};
 
-	gpio@c700 { /* GPIO 8 - NC */
-		qcom,mode = <1>;			/* Digital output*/
-		qcom,pull = <0>;			/* Pull up */
-		qcom,vin-sel = <2>;			/* VIN2 */
-		qcom,src-sel = <0>;			/* Constant */
-		qcom,invert = <1>;			/* Enable Invert */
-		qcom,out-strength = <1>;	/* Low */
-		qcom,master-en = <0>;		/* Enable GPIO */
-		status = "okay";
-	};
+		gpio8 { /* GPIO 8 - NC */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			qcom,pull-up-strength = <0>;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-high;
+			qcom,drive-strength = <1>;
+			bias-high-impedance;
+			status = "okay";
+		};
 
-	gpio@c800 { /* GPIO 9 - NC */
-		qcom,mode = <1>;			/* Digital output */
-		qcom,pull = <4>;			/* Pull down */
-		qcom,vin-sel = <2>;			/* Vin 2 */
-		qcom,src-sel = <0>;			/* Constant */
-		qcom,invert = <0>;			/* Disable Invert */
-		qcom,out-strength = <1>;	/* Low */
-		qcom,master-en = <0>;		/* Enable GPIO */
-		status = "okay";
-	};
+		gpio9 { /* GPIO 9 - NC */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			bias-high-impedance;
+			status = "okay";
+		};
 
-	gpio@c900 { /* GPIO 10 - NC */
-		qcom,mode = <1>;			/* Digital output */
-		qcom,pull = <4>;			/* Pull down */
-		qcom,vin-sel = <2>;			/* Vin 2 */
-		qcom,src-sel = <0>;			/* Constant */
-		qcom,invert = <0>;			/* Disable Invert */
-		qcom,out-strength = <1>;	/* Low */
-		qcom,master-en = <0>;		/* Enable GPIO */
-		status = "okay";
+		gpio10 { /* GPIO 10 - NC */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			bias-high-impedance;
+			status = "okay";
+		};
+
 	};
 };
 
@@ -343,89 +412,133 @@
 };
 
 &pm8994_gpios {
-/* Must not define the gpios(gpio 20 and 21) on here */
-	gpio@c400 { /* GPIO 5 - SWAP_CTRL_EN1 */
-		qcom,mode = <1>;			/* Digital output */
-		qcom,pull = <4>;			/* Pull down */
-		qcom,vin-sel = <0>;			/* Vin 0 */
-		qcom,src-sel = <0>;			/* Constant */
-		qcom,invert = <0>;			/* Disable Invert */
-		qcom,out-strength = <2>;	/* Middle */
-		qcom,master-en = <1>;		/* Enable GPIO */
-		status = "okay";
-	};
+	default-state {
+		gpio5 { /* GPIO 5 - SWAP_CTRL_EN1 */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <0>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <2>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
 
-	gpio@c500 { /* GPIO 6 - MENU_KEY_TOUCH_PM -> 16M_AVDD_EN */
-		qcom,mode = <1>;			/* Digital output */
-		qcom,pull = <4>;			/* Pull down */
-		qcom,vin-sel = <2>;			/* Vin 2 */
-		qcom,src-sel = <0>;			/* Constant */
-		qcom,invert = <0>;			/* Disable Invert */
-		qcom,out-strength = <1>;	/* Low */
-		qcom,master-en = <1>;		/* Enable GPIO */
-		status = "okay";
-	};
+		gpio6 { /* GPIO 6 - MENU_KEY_TOUCH_PM -> 16M_AVDD_EN */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
 
-	gpio@c600 { /* GPIO 7 - BACK_KEY_TOUCH_PM -> 8M_AVDD_EN */
-		qcom,mode = <1>;			/* Digital output */
-		qcom,pull = <4>;			/* Pull down */
-		qcom,vin-sel = <2>;			/* Vin 2 */
-		qcom,src-sel = <0>;			/* Constant */
-		qcom,invert = <0>;			/* Disable Invert */
-		qcom,out-strength = <1>;	/* Low */
-		qcom,master-en = <1>;		/* Enable GPIO */
-		status = "okay";
-	};
+		gpio7 { /* GPIO 7 - BACK_KEY_TOUCH_PM -> 8M_AVDD_EN */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
 
-	gpio@c800 { /* GPIO 9 */
-		qcom,mode = <1>;            /* Digital output */
-		qcom,pull = <4>;            /* Pull down */
-		qcom,vin-sel = <2>;         /* Vin 2 */
-		qcom,src-sel = <0>;         /* Constant */
-		qcom,invert = <0>;          /* Disable Invert */
-		qcom,out-strength = <1>;    /* Low */
-		qcom,master-en = <1>;		/* Enable GPIO */
-		status = "disabled";
-	};
+		gpio9 { /* GPIO 9 */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			/delete-property/ bias-high-impedance;
+			status = "disabled";
+		};
 
-	gpio@c900 { /* GPIO 10 - NC */
-		qcom,master-en = <0>;		/* Disable GPIO */
-		status = "okay";
-	};
+		gpio10 { /* GPIO 10 - NC */
+			bias-high-impedance;
+			status = "okay";
+		};
 
-	gpio@ca00 { /* GPIO 11 - NC */
-		qcom,master-en = <0>;		/* Disable GPIO */
-		status = "okay";
-	};
+		gpio11 { /* GPIO 11 - NC */
+			bias-high-impedance;
+			status = "okay";
+		};
 
-	gpio@cb00 { /* GPIO 12 */
-		qcom,mode = <1>;            /* Digital output */
-		qcom,pull = <4>;            /* Pull down */
-		qcom,vin-sel = <2>;         /* Vin 2 */
-		qcom,src-sel = <0>;         /* Constant */
-		qcom,invert = <0>;          /* Disable Invert */
-		qcom,master-en = <1>;		/* Enable GPIO */
-		status = "disabled";
-	};
+		gpio12 { /* GPIO 12 */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "disabled";
+		};
 
-	gpio@cc00 { /* GPIO 13 */
-		qcom,mode = <1>;            /* Digital output */
-		qcom,pull = <4>;            /* Pull down */
-		qcom,vin-sel = <2>;         /* Vin 2 */
-		qcom,src-sel = <0>;         /* Constant */
-		qcom,invert = <0>;          /* Disable Invert */
-		qcom,master-en = <1>;		/* Enable GPIO */
-		status = "disabled";
-	};
+		gpio13 { /* GPIO 13 */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "disabled";
+		};
 
-	gpio@cd00 { /* GPIO 14 */
-		qcom,mode = <1>;            /* Digital output */
-		qcom,pull = <4>;            /* Pull down */
-		qcom,vin-sel = <2>;         /* Vin 2 */
-		qcom,src-sel = <0>;         /* Constant */
-		qcom,invert = <0>;          /* Disable Invert */
-		qcom,master-en = <1>;		/* Enable GPIO */
-		status = "disabled";
+		gpio14 { /* GPIO 14 */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "disabled";
+		};
+
 	};
 };
 
