@@ -427,9 +427,6 @@ struct i2c_msm_dbgfs {
  * @client_hdl when zero, client is not registered with the bus scaling driver,
  *      and bus scaling functionality should not be used. When non zero, it
  *      is a bus scaling client id and may be used to vote for clock path.
- * @reg_err when true, registration error was detected and an error message was
- *      logged. i2c will attempt to re-register but will log error only once.
- *      once registration succeed, the flag is set to false.
  * @actv_only when set, votes when system active and removes the vote when
  *       system goes idle (optimises for performance). When unset, voting using
  *       runtime pm (optimizes for power).
@@ -438,7 +435,6 @@ struct qup_i2c_clk_path_vote {
 	u32                         mstr_id;
 	u32                         client_hdl;
 	struct msm_bus_scale_pdata *pdata;
-	bool                        reg_err;
 	bool                        actv_only;
 };
 
