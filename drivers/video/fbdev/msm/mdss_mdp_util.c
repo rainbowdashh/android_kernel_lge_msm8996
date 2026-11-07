@@ -1034,6 +1034,10 @@ static int mdss_mdp_get_img(struct msmfb_data *img,
 				mdss_smmu_dma_data_direction(dir));
 			if (IS_ERR(data->srcp_table)) {
 				ret = PTR_ERR(data->srcp_table);
+				dev_err_ratelimited(data->srcp_attachment->dev,
+					"display buffer map failed: size=%zu error=%d DMA op=%ps\n",
+					data->srcp_dma_buf->size, ret,
+					get_dma_ops(data->srcp_attachment->dev)->map_sg);
 				goto err_detach;
 			}
 

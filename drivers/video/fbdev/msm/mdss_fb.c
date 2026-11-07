@@ -40,6 +40,8 @@
 #include <linux/sched.h>
 #include <uapi/linux/sched/types.h>
 #include "mdss_fb.h"
+#include "mdss_dsi.h"
+#include "mdss_lucye.h"
 #include "mdss_mdp_splash_logo.h"
 #define CREATE_TRACE_POINTS
 #include "mdss_debug.h"
@@ -958,11 +960,14 @@ static int mdss_fb_create_sysfs(struct msm_fb_data_type *mfd)
 	rc = sysfs_create_group(&mfd->fbi->dev->kobj, &mdss_fb_attr_group);
 	if (rc)
 		pr_err("sysfs group creation failed, rc=%d\n", rc);
+	if (!rc)
+		rc = mdss_lucye_create_sysfs(mfd);
 	return rc;
 }
 
 static void mdss_fb_remove_sysfs(struct msm_fb_data_type *mfd)
 {
+	mdss_lucye_remove_sysfs(mfd);
 	sysfs_remove_group(&mfd->fbi->dev->kobj, &mdss_fb_attr_group);
 }
 
@@ -5274,6 +5279,25 @@ void mdss_fb_report_panel_dead(struct msm_fb_data_type *mfd)
 	pr_err("Panel has gone bad, sending uevent - %s\n", envp[0]);
 }
 
+#if IS_ENABLED(CONFIG_LGE_TOUCH_CORE_BASE)
+/* Preserve the recovery notification used by the 4.4 LG touch driver. */
+bool lge_panel_recovery_mode(void)
+{
+	struct fb_info *info = READ_ONCE(fbi_list[0]);
+	struct msm_fb_data_type *mfd;
+
+	if (!info)
+		return false;
+	mfd = info->par;
+	if (!mfd || !mdss_fb_is_power_on(mfd))
+		return false;
+
+	mdss_fb_report_panel_dead(mfd);
+	return true;
+}
+EXPORT_SYMBOL(lge_panel_recovery_mode);
+#endif
+
 
 /*
  * mdss_fb_calc_fps() - Calculates fps value.
@@ -5307,7 +5331,14 @@ void mdss_fb_calc_fps(struct msm_fb_data_type *mfd)
 
 void mdss_fb_idle_pc(struct msm_fb_data_type *mfd)
 {
-	struct mdss_overlay_private *mdp5_data = mfd_to_mdp5_data(mfd);
+	struct mdss_overlay_private *mdp5_data = NULL;
+
+	if (mfd)
+		mdp5_data = mfd_to_mdp5_data(mfd);
+	else {
+		pr_warn("%s: mfd is NULL\n", __func__);
+		return;
+	}
 
 	if (mdss_fb_is_power_off(mfd))
 		return;

@@ -36,7 +36,13 @@ obj-$(CONFIG_DEBUG_FS) += mdss_debug_frc.o
 endif
 
 mdss-dsi-objs := mdss_dsi.o mdss_dsi_host.o mdss_dsi_cmd.o mdss_dsi_status.o
-mdss-dsi-objs += mdss_dsi_panel.o
+mdss-dsi-objs += mdss_dsi_panel.o mdss_lucye.o
+ifeq ($(CONFIG_LGE_DISPLAY_HPLUS_COMMON),y)
+mdss-dsi-objs += hplus/lge_mdss_dsi_panel_hplus.o
+endif
+ifeq ($(CONFIG_MACH_MSM8996_H1),y)
+mdss-dsi-objs += mdss_h1.o
+endif
 mdss-dsi-objs += msm_mdss_io_8974.o
 mdss-dsi-objs += mdss_dsi_phy.o
 mdss-dsi-objs += mdss_dsi_phy_v3.o

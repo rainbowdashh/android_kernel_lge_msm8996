@@ -16,10 +16,12 @@
 #include <linux/pwm.h>
 #include <linux/err.h>
 #include <linux/string.h>
+#include <linux/input/lge_touch_notify.h>
 
 #include "mdss_dsi.h"
 #include "mdss_dba_utils.h"
 #include "mdss_debug.h"
+#include "mdss_lucye.h"
 
 #define DT_CMD_HDR 6
 #define DEFAULT_MDP_TRANSFER_TIME 14000
@@ -28,6 +30,24 @@
 #ifndef CONFIG_BACKLIGHT_QCOM_SPMI_WLED
 DEFINE_LED_TRIGGER(bl_led_trigger);
 #endif
+
+/* LG incell controllers consume panel reset and LCD operating mode events. */
+static void mdss_dsi_touch_notify(struct mdss_dsi_ctrl_pdata *ctrl,
+				unsigned long event, void *data)
+{
+	if (IS_REACHABLE(CONFIG_LGE_TOUCH_CORE) &&
+	    (ctrl->sw49408_panel || ctrl->h1_panel || ctrl->elsa_panel) &&
+	    ctrl->ndx == DSI_CTRL_LEFT)
+		touch_notifier_call_chain(event, data);
+}
+
+static void mdss_dsi_touch_lcd_mode(struct mdss_dsi_ctrl_pdata *ctrl, bool on)
+{
+	/* Match LG's U0 (off) and U3 (interactive) LCD mode protocol. */
+	u32 mode = on ? 3 : 0;
+
+	mdss_dsi_touch_notify(ctrl, LCD_EVENT_LCD_MODE, &mode);
+}
 
 void mdss_dsi_panel_pwm_cfg(struct mdss_dsi_ctrl_pdata *ctrl)
 {
@@ -179,7 +199,7 @@ static void mdss_dsi_panel_apply_settings(struct mdss_dsi_ctrl_pdata *ctrl,
 }
 
 
-static void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
+void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
 			struct dsi_panel_cmds *pcmds, u32 flags)
 {
 	struct dcs_cmd_req cmdreq;
@@ -407,10 +427,12 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 	pr_debug("%s: enable = %d\n", __func__, enable);
 
 	if (enable) {
-		rc = mdss_dsi_request_gpios(ctrl_pdata);
-		if (rc) {
-			pr_err("gpio request failed\n");
-			return rc;
+		if (!ctrl_pdata->sw49408_reset_retained) {
+			rc = mdss_dsi_request_gpios(ctrl_pdata);
+			if (rc) {
+				pr_err("gpio request failed\n");
+				return rc;
+			}
 		}
 		if (!pinfo->cont_splash_enabled) {
 			if (gpio_is_valid(ctrl_pdata->disp_en_gpio)) {
@@ -424,6 +446,7 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 			}
 
 			if (pdata->panel_info.rst_seq_len) {
+				mdss_dsi_touch_notify(ctrl_pdata, NOTIFY_TOUCH_RESET, NULL);
 				rc = gpio_direction_output(ctrl_pdata->rst_gpio,
 					pdata->panel_info.rst_seq[0]);
 				if (rc) {
@@ -482,7 +505,9 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 			ctrl_pdata->ctrl_state &= ~CTRL_STATE_PANEL_INIT;
 			pr_debug("%s: Reset panel done\n", __func__);
 		}
+		ctrl_pdata->sw49408_reset_retained = false;
 	} else {
+		ctrl_pdata->sw49408_reset_retained = false;
 		if (gpio_is_valid(ctrl_pdata->avdd_en_gpio)) {
 			if (ctrl_pdata->avdd_en_gpio_invert)
 				gpio_set_value((ctrl_pdata->avdd_en_gpio), 1);
@@ -495,6 +520,11 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 			gpio_set_value((ctrl_pdata->disp_en_gpio), 0);
 			gpio_free(ctrl_pdata->disp_en_gpio);
 		}
+		/* H1/Elsa have a separate touch reset. Panel power-off must
+		 * not invalidate the LPWG state they just programmed.
+		 */
+		if (ctrl_pdata->sw49408_panel)
+			mdss_dsi_touch_notify(ctrl_pdata, NOTIFY_TOUCH_RESET, NULL);
 		gpio_set_value((ctrl_pdata->rst_gpio), 0);
 		gpio_free(ctrl_pdata->rst_gpio);
 		if (gpio_is_valid(ctrl_pdata->lcd_mode_sel_gpio)) {
@@ -956,8 +986,16 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 	if (pinfo->compression_mode == COMPRESSION_DSC)
 		mdss_dsi_panel_dsc_pps_send(ctrl, pinfo);
 
+	mdss_lucye_apply(ctrl);
 	if (ctrl->ds_registered)
 		mdss_dba_utils_video_on(pinfo->dba_data, pinfo);
+
+	/* LG in-cell panels leave Sleep Out and Display On until after PPS. */
+	if (ctrl->display_on_cmds.cmd_cnt)
+		mdss_dsi_panel_cmds_send(ctrl, &ctrl->display_on_cmds,
+					 CMD_REQ_COMMIT);
+
+	mdss_dsi_touch_lcd_mode(ctrl, true);
 
 	/* Ensure low persistence mode is set as before */
 	mdss_dsi_panel_apply_display_setting(pdata, pinfo->persist_mode);
@@ -1035,6 +1073,8 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 		mdss_dba_utils_hdcp_enable(pinfo->dba_data, false);
 	}
 
+	mdss_dsi_touch_lcd_mode(ctrl, false);
+
 end:
 	pr_debug("%s:-\n", __func__);
 	return 0;
@@ -1058,7 +1098,13 @@ static int mdss_dsi_panel_low_power_config(struct mdss_panel_data *pdata,
 	pr_debug("%s: ctrl=%pK ndx=%d enable=%d\n", __func__, ctrl, ctrl->ndx,
 		enable);
 
-	/* Any panel specific low power commands/config */
+	/* SW49408 U3/U2 sequences for Android's standard doze transitions. */
+	mdss_lucye_low_power(ctrl, enable);
+	if (ctrl->sw49408_panel) {
+		u32 mode = enable ? 2 : 3;
+
+		mdss_dsi_touch_notify(ctrl, LCD_EVENT_LCD_MODE, &mode);
+	}
 
 	pr_debug("%s:-\n", __func__);
 	return 0;
@@ -1126,8 +1172,9 @@ static void mdss_dsi_parse_trigger(struct device_node *np, char *trigger,
 }
 
 
-static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
-		struct dsi_panel_cmds *pcmds, char *cmd_key, char *link_key)
+int mdss_dsi_parse_dcs_cmds(struct device_node *np,
+		struct dsi_panel_cmds *pcmds, const char *cmd_key,
+		const char *link_key)
 {
 	const char *data;
 	int blen = 0, len;
@@ -2509,6 +2556,7 @@ int mdss_dsi_panel_timing_switch(struct mdss_dsi_ctrl_pdata *ctrl,
 		pinfo->mipi.dsi_phy_db.timing_12nm[i] = pt->phy_timing_12nm[i];
 
 	ctrl->on_cmds = pt->on_cmds;
+	ctrl->display_on_cmds = pt->display_on_cmds;
 	ctrl->post_panel_on_cmds = pt->post_panel_on_cmds;
 
 	ctrl->panel_data.current_timing = timing;
@@ -2665,6 +2713,12 @@ static int  mdss_dsi_panel_config_res_properties(struct device_node *np,
 		"qcom,mdss-dsi-on-command",
 		"qcom,mdss-dsi-on-command-state");
 
+	mdss_dsi_parse_dcs_cmds(np, &pt->display_on_cmds,
+		"qcom,mdss-display-on-command",
+		"qcom,mdss-dsi-on-command-state");
+
+	mdss_lucye_parse(np, container_of(panel_data,
+					struct mdss_dsi_ctrl_pdata, panel_data));
 	mdss_dsi_parse_dcs_cmds(np, &pt->post_panel_on_cmds,
 		"qcom,mdss-dsi-post-panel-on-command", NULL);
 
@@ -3022,6 +3076,11 @@ error:
 	return -EINVAL;
 }
 
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_HPLUS_COMMON)
+extern int mdss_hplus_panel_on(struct mdss_panel_data *pdata);
+extern int mdss_hplus_panel_off(struct mdss_panel_data *pdata);
+#endif
+
 int mdss_dsi_panel_init(struct device_node *node,
 	struct mdss_dsi_ctrl_pdata *ctrl_pdata,
 	int ndx)
@@ -3035,6 +3094,12 @@ int mdss_dsi_panel_init(struct device_node *node,
 		return -ENODEV;
 	}
 
+	ctrl_pdata->elsa_panel = IS_ENABLED(CONFIG_MACH_MSM8996_ELSA) &&
+		of_device_is_compatible(node, "lge,elsa-panel");
+	ctrl_pdata->h1_panel = IS_ENABLED(CONFIG_MACH_MSM8996_H1) &&
+		of_device_is_compatible(node, "lge,h1-panel");
+	ctrl_pdata->sw49408_panel =
+		of_device_is_compatible(node, "lge,sw49408-panel");
 	pinfo = &ctrl_pdata->panel_data.panel_info;
 
 	pr_debug("%s:%d\n", __func__, __LINE__);
@@ -3061,6 +3126,12 @@ int mdss_dsi_panel_init(struct device_node *node,
 	ctrl_pdata->on = mdss_dsi_panel_on;
 	ctrl_pdata->post_panel_on = mdss_dsi_post_panel_on;
 	ctrl_pdata->off = mdss_dsi_panel_off;
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_HPLUS_COMMON)
+	if (ctrl_pdata->elsa_panel) {
+		ctrl_pdata->on = mdss_hplus_panel_on;
+		ctrl_pdata->off = mdss_hplus_panel_off;
+	}
+#endif
 	ctrl_pdata->low_power_config = mdss_dsi_panel_low_power_config;
 	ctrl_pdata->panel_data.set_backlight = mdss_dsi_panel_bl_ctrl;
 	ctrl_pdata->panel_data.apply_display_setting =
