@@ -488,7 +488,7 @@ static int mdss_mdp_bus_scale_register(struct mdss_data_type *mdata)
 			msm_bus_scale_register_client(mdata->bus_scale_table);
 		if (!mdata->bus_hdl) {
 			pr_err("bus_client register failed\n");
-			return -EINVAL;
+			return -EPROBE_DEFER;
 		}
 
 		pr_debug("register bus_hdl=%x\n", mdata->bus_hdl);
@@ -1815,7 +1815,7 @@ void mdss_mdp_clk_ctrl(int enable)
 }
 
 static inline int mdss_mdp_irq_clk_register(struct mdss_data_type *mdata,
-					    char *clk_name, int clk_idx)
+					    const char *clk_name, int clk_idx)
 {
 	struct clk *tmp;
 
@@ -1882,57 +1882,45 @@ static int mdss_mdp_gdsc_notifier_call(struct notifier_block *self,
 	return NOTIFY_OK;
 }
 
-static int mdss_mdp_irq_clk_setup(struct mdss_data_type *mdata)
+static int mdss_mdp_get_resources(struct mdss_data_type *mdata)
 {
-	int ret;
-
-	ret = of_property_read_u32(mdata->pdev->dev.of_node,
-			"qcom,max-clk-rate", &mdata->max_mdp_clk_rate);
-	if (ret) {
-		pr_err("failed to get max mdp clock rate\n");
-		return ret;
-	}
-
-	pr_debug("max mdp clk rate=%d\n", mdata->max_mdp_clk_rate);
-
-	ret = devm_request_irq(&mdata->pdev->dev, mdss_mdp_hw.irq_info->irq,
-				mdss_irq_handler, 0x0, "MDSS", mdata);
-	if (ret) {
-		pr_err("mdp request_irq() failed!\n");
-		return ret;
-	}
-	disable_irq(mdss_mdp_hw.irq_info->irq);
+	static const struct {
+		const char *name;
+		int index;
+		bool optional;
+	} clocks[] = {
+		{ "bus_clk", MDSS_CLK_AXI, false },
+		{ "iface_clk", MDSS_CLK_AHB, false },
+		{ "core_clk", MDSS_CLK_MDP_CORE, false },
+		{ "lut_clk", MDSS_CLK_MDP_LUT, true },
+		{ "vsync_clk", MDSS_CLK_MDP_VSYNC, true },
+		{ "bimc_clk", MDSS_CLK_BIMC, true },
+		{ "mnoc_clk", MDSS_CLK_MNOC_AHB, true },
+		{ "throttle_bus_clk", MDSS_CLK_THROTTLE_AXI, true },
+	};
+	struct device_node *np = mdata->pdev->dev.of_node;
+	int i, ret;
 
 	mdata->fs = devm_regulator_get(&mdata->pdev->dev, "vdd");
-	if (IS_ERR_OR_NULL(mdata->fs)) {
-		mdata->fs = NULL;
-		pr_err("unable to get gdsc regulator\n");
-		return -EINVAL;
-	}
+	if (IS_ERR(mdata->fs))
+		return PTR_ERR(mdata->fs);
 
 	mdata->core_gdsc = devm_regulator_get_optional(&mdata->pdev->dev,
 		"gdsc-core");
-	if (IS_ERR_OR_NULL(mdata->core_gdsc)) {
+	if (IS_ERR(mdata->core_gdsc)) {
+		ret = PTR_ERR(mdata->core_gdsc);
+		if (ret != -ENODEV)
+			return ret;
 		mdata->core_gdsc = NULL;
-		pr_err("unable to get core gdsc regulator\n");
 	} else {
 		pr_debug("core gdsc regulator found\n");
 	}
-
-	mdata->fs_ena = false;
-
-	mdata->gdsc_cb.notifier_call = mdss_mdp_gdsc_notifier_call;
-	mdata->gdsc_cb.priority = 5;
-	if (regulator_register_notifier(mdata->fs, &(mdata->gdsc_cb)))
-		pr_warn("GDSC notification registration failed!\n");
-	else
-		mdata->regulator_notif_register = true;
-
 	mdata->vdd_cx = devm_regulator_get_optional(&mdata->pdev->dev,
 				"vdd-cx");
-	if (IS_ERR_OR_NULL(mdata->vdd_cx)) {
-		pr_debug("unable to get CX reg. rc=%d\n",
-					PTR_RET(mdata->vdd_cx));
+	if (IS_ERR(mdata->vdd_cx)) {
+		ret = PTR_ERR(mdata->vdd_cx);
+		if (ret != -ENODEV)
+			return ret;
 		mdata->vdd_cx = NULL;
 	} else {
 		/* Parse CX voltage settings */
@@ -1954,32 +1942,56 @@ static int mdss_mdp_irq_clk_setup(struct mdss_data_type *mdata)
 			mdata->vdd_cx_min_uv, mdata->vdd_cx_max_uv);
 	}
 
+	for (i = 0; i < ARRAY_SIZE(clocks); i++) {
+		if (clocks[i].optional &&
+		    of_property_match_string(np, "clock-names",
+					     clocks[i].name) < 0)
+			continue;
+
+		ret = mdss_mdp_irq_clk_register(mdata, clocks[i].name,
+					      clocks[i].index);
+		if (ret)
+			return ret;
+	}
+
+	return 0;
+}
+
+static int mdss_mdp_irq_clk_setup(struct mdss_data_type *mdata)
+{
+	int ret;
+
+	ret = of_property_read_u32(mdata->pdev->dev.of_node,
+			"qcom,max-clk-rate", &mdata->max_mdp_clk_rate);
+	if (ret) {
+		pr_err("failed to get max mdp clock rate\n");
+		return ret;
+	}
+
+	pr_debug("max mdp clk rate=%d\n", mdata->max_mdp_clk_rate);
+
+	ret = devm_request_irq(&mdata->pdev->dev, mdss_mdp_hw.irq_info->irq,
+				mdss_irq_handler, 0x0, "MDSS", mdata);
+	if (ret) {
+		pr_err("mdp request_irq() failed!\n");
+		return ret;
+	}
+	disable_irq(mdss_mdp_hw.irq_info->irq);
+
+	mdata->fs_ena = false;
+
+	mdata->gdsc_cb.notifier_call = mdss_mdp_gdsc_notifier_call;
+	mdata->gdsc_cb.priority = 5;
+	if (regulator_register_notifier(mdata->fs, &(mdata->gdsc_cb)))
+		pr_warn("GDSC notification registration failed!\n");
+	else
+		mdata->regulator_notif_register = true;
+
 	mdata->reg_bus_clt = mdss_reg_bus_vote_client_create("mdp\0");
 	if (IS_ERR(mdata->reg_bus_clt)) {
 		pr_err("bus client register failed\n");
 		return PTR_ERR(mdata->reg_bus_clt);
 	}
-
-	if (mdss_mdp_irq_clk_register(mdata, "bus_clk", MDSS_CLK_AXI) ||
-	    mdss_mdp_irq_clk_register(mdata, "iface_clk", MDSS_CLK_AHB) ||
-	    mdss_mdp_irq_clk_register(mdata, "core_clk", MDSS_CLK_MDP_CORE))
-		return -EINVAL;
-
-	/* lut_clk is not present on all MDSS revisions */
-	mdss_mdp_irq_clk_register(mdata, "lut_clk", MDSS_CLK_MDP_LUT);
-
-	/* vsync_clk is optional for non-smart panels */
-	mdss_mdp_irq_clk_register(mdata, "vsync_clk", MDSS_CLK_MDP_VSYNC);
-
-	/* this optional clock is needed for DDR memory access on few targets */
-	mdss_mdp_irq_clk_register(mdata, "bimc_clk", MDSS_CLK_BIMC);
-
-	/* this clk is not present on all MDSS revisions */
-	mdss_mdp_irq_clk_register(mdata, "mnoc_clk", MDSS_CLK_MNOC_AHB);
-
-	/* this clk is not present on all MDSS revisions */
-	mdss_mdp_irq_clk_register(mdata, "throttle_bus_clk",
-				  MDSS_CLK_THROTTLE_AXI);
 
 	/* Setting the default clock rate to the max supported.*/
 	mdss_mdp_set_clk_rate(mdata->max_mdp_clk_rate, false);
@@ -2973,6 +2985,10 @@ static int mdss_mdp_probe(struct platform_device *pdev)
 
 	pdev->id = 0;
 	mdata->pdev = pdev;
+	rc = mdss_mdp_get_resources(mdata);
+	if (rc)
+		return rc;
+
 	platform_set_drvdata(pdev, mdata);
 	mdss_res = mdata;
 	mutex_init(&mdata->reg_lock);
@@ -2986,7 +3002,8 @@ static int mdss_mdp_probe(struct platform_device *pdev)
 	mdss_res->mdss_util = mdss_get_util_intf();
 	if (mdss_res->mdss_util == NULL) {
 		pr_err("Failed to get mdss utility functions\n");
-		return -ENODEV;
+		rc = -ENODEV;
+		goto probe_done;
 	}
 
 	mdss_res->mdss_util->get_iommu_domain = mdss_smmu_get_domain_id;
@@ -3032,9 +3049,12 @@ static int mdss_mdp_probe(struct platform_device *pdev)
 		goto probe_done;
 	}
 
-	mdss_mdp_hw.irq_info = kzalloc(sizeof(struct irq_info), GFP_KERNEL);
-	if (!mdss_mdp_hw.irq_info)
-		return -ENOMEM;
+	mdss_mdp_hw.irq_info = devm_kzalloc(&pdev->dev,
+					 sizeof(*mdss_mdp_hw.irq_info), GFP_KERNEL);
+	if (!mdss_mdp_hw.irq_info) {
+		rc = -ENOMEM;
+		goto probe_done;
+	}
 
 	mdss_mdp_hw.irq_info->irq = res->start;
 	mdss_mdp_hw.ptr = mdata;
@@ -3228,15 +3248,30 @@ static int mdss_mdp_probe(struct platform_device *pdev)
 
 probe_done:
 	if (IS_ERR_VALUE((unsigned long) rc)) {
-		if (!num_of_display_on)
+		if (mdata->handoff_pending)
 			mdss_mdp_footswitch_ctrl_splash(false);
 
+		if (mdata->mdss_util)
+			mdata->mdss_util->mdp_probe_done = false;
 		if (mdata->regulator_notif_register)
 			regulator_unregister_notifier(mdata->fs,
 						&(mdata->gdsc_cb));
+		pm_runtime_disable(&pdev->dev);
+		mdss_mdp_bus_scale_unregister(mdata);
+		if (!IS_ERR_OR_NULL(mdata->reg_bus_clt))
+			mdss_reg_bus_vote_client_destroy(mdata->reg_bus_clt);
+		if (mdata->pp_reg_bus_clt)
+			mdss_mdp_pp_term(&pdev->dev);
+		if (mdata->irq_domain)
+			irq_domain_remove(mdata->irq_domain);
+		msm_dss_iounmap(&mdata->vbif_nrt_io);
+		msm_dss_iounmap(&mdata->vbif_io);
+		msm_dss_iounmap(&mdata->mdss_io);
 		mdss_mdp_hw.ptr = NULL;
-		mdss_mdp_pp_term(&pdev->dev);
+		mdss_mdp_hw.irq_info = NULL;
+		mdss_misc_hw.irq_info = NULL;
 		mutex_destroy(&mdata->reg_lock);
+		platform_set_drvdata(pdev, NULL);
 		mdss_res = NULL;
 	}
 
