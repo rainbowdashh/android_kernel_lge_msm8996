@@ -303,3 +303,19 @@ config LGE_QFPROM_INTERFACE
 	  LGE QFPROM DRIVER.
 
 endmenu
+
+if ARCH_MSM8996
+
+config MACH_MSM8996_LUCYE
+	bool "LG G6 (lucye)"
+	select MACH_LGE
+	help
+	  Enable the common board support for the LG G6 family.
+
+config MACH_MSM8996_LUCYE_GLOBAL_COM
+	bool "LG G6 international (h870d)"
+	depends on MACH_MSM8996_LUCYE
+	help
+	  Select the international G6 board device trees.
+
+endif
