@@ -176,7 +176,6 @@ struct rpm_cc {
 
 struct rpm_smd_clk_desc {
 	struct clk_hw **clks;
-	size_t num_rpm_clks;
 	size_t num_clks;
 };
 
@@ -519,7 +518,6 @@ static struct clk_hw *msm8916_clks[] = {
 
 static const struct rpm_smd_clk_desc rpm_clk_msm8916 = {
 	.clks = msm8916_clks,
-	.num_rpm_clks = RPM_SMD_AGGR2_NOC_A_CLK,
 	.num_clks = ARRAY_SIZE(msm8916_clks),
 };
 
@@ -591,7 +589,6 @@ static struct clk_hw *msm8974_clks[] = {
 
 static const struct rpm_smd_clk_desc rpm_clk_msm8974 = {
 	.clks = msm8974_clks,
-	.num_rpm_clks = RPM_SMD_CXO_A2_A_PIN,
 	.num_clks = ARRAY_SIZE(msm8974_clks),
 };
 
@@ -716,7 +713,6 @@ static struct clk_hw *msm8996_clks[] = {
 
 static const struct rpm_smd_clk_desc rpm_clk_msm8996 = {
 	.clks = msm8996_clks,
-	.num_rpm_clks = RPM_SMD_RF_CLK2_A_PIN,
 	.num_clks = ARRAY_SIZE(msm8996_clks),
 };
 
@@ -897,7 +893,6 @@ static struct clk_hw *bengal_clks[] = {
 
 static const struct rpm_smd_clk_desc rpm_clk_bengal = {
 	.clks = bengal_clks,
-	.num_rpm_clks = RPM_SMD_CE1_A_CLK,
 	.num_clks = ARRAY_SIZE(bengal_clks),
 };
 
@@ -1008,7 +1003,6 @@ static struct clk_hw *scuba_clks[] = {
 
 static const struct rpm_smd_clk_desc rpm_clk_scuba = {
 	.clks = scuba_clks,
-	.num_rpm_clks = RPM_SMD_CPUSS_GNOC_A_CLK,
 	.num_clks = ARRAY_SIZE(scuba_clks),
 };
 
@@ -1120,7 +1114,6 @@ static struct clk_hw *sdm660_clks[] = {
 
 static const struct rpm_smd_clk_desc rpm_clk_sdm660 = {
 	.clks = sdm660_clks,
-	.num_rpm_clks = RPM_SMD_MMSSNOC_AXI_A_CLK,
 	.num_clks = ARRAY_SIZE(sdm660_clks),
 };
 
@@ -1222,7 +1215,6 @@ static struct clk_hw *qm215_clks[] = {
 
 static const struct rpm_smd_clk_desc rpm_clk_qm215 = {
 	.clks = qm215_clks,
-	.num_rpm_clks = RPM_SMD_SYSMMNOC_A_CLK,
 	.num_clks = ARRAY_SIZE(qm215_clks),
 };
 
@@ -1304,24 +1296,21 @@ static int rpm_smd_clk_probe(struct platform_device *pdev)
 		rpm_clk_qm215.clks[RPM_SMD_BIMC_GPU_A_CLK] = NULL;
 	}
 
-	for (i = 0; i <= desc->num_rpm_clks; i++) {
+	for (i = 0; i < num_clks; i++) {
+		const struct clk_ops *ops;
+
 		if (!hw_clks[i]) {
 			clks[i] = ERR_PTR(-ENOENT);
 			continue;
 		}
 
-		ret = clk_smd_rpm_handoff(hw_clks[i]);
-		if (ret)
-			goto err;
-	}
-
-	for (i = (desc->num_rpm_clks + 1); i < num_clks; i++) {
-		if (!hw_clks[i]) {
-			clks[i] = ERR_PTR(-ENOENT);
-			continue;
-		}
-
-		ret = voter_clk_handoff(hw_clks[i]);
+		ops = hw_clks[i]->init->ops;
+		if (ops == &clk_ops_voter)
+			ret = voter_clk_handoff(hw_clks[i]);
+		else if (ops == &clk_smd_rpm_ops || ops == &clk_smd_rpm_branch_ops)
+			ret = clk_smd_rpm_handoff(hw_clks[i]);
+		else
+			ret = -EINVAL;
 		if (ret)
 			goto err;
 	}
