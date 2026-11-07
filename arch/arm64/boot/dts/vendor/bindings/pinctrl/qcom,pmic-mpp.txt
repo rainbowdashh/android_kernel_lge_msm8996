@@ -17,6 +17,7 @@ of PMIC's from Qualcomm.
 		    "qcom,pm8921-mpp",
 		    "qcom,pm8941-mpp",
 		    "qcom,pm8994-mpp",
+		    "qcom,pmi8994-mpp",
 		    "qcom,pma8084-mpp",
 
 		    And must contain either "qcom,spmi-mpp" or "qcom,ssbi-mpp"
@@ -80,6 +81,8 @@ to specify in a pin configuration subnode:
 		    mpp1-mpp4 for pm8841
 		    mpp1-mpp4 for pm8916
 		    mpp1-mpp8 for pm8941
+		    mpp1-mpp8 for pm8994
+		    mpp1-mpp4 for pmi8994
 		    mpp1-mpp4 for pma8084
 
 - function:
@@ -115,6 +118,13 @@ to specify in a pin configuration subnode:
 	Value type: <none>
 	Definition: The specified pins are put in input mode, i.e. their input
 		    buffer is enabled
+
+- output-enable:
+	Usage: optional
+	Value type: <u32>
+	Definition: Enables the output path when nonzero. Use <0> with
+		    input-enable to select input-only operation independently of
+		    the bootloader's pin direction.
 
 - output-high:
 	Usage: optional
