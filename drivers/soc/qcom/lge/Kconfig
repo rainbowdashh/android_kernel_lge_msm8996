@@ -182,7 +182,7 @@ config LGE_BOOTLOADER_TIME_CHECKER
 
 config LGE_RTC_START_YEAR
     int "Set rtc start time offset"
-    default n
+    default 1970
     depends on MACH_LGE
     help
       Set rtc start time offset
@@ -286,7 +286,7 @@ config LGE_MME_DRV
 
 config LGE_POWEROFF_TIMEOUT
 	bool "Support shutdown and reboot timeout"
-	depends on MACH_LGE
+	depends on MACH_LGE && LGE_HANDLE_PANIC
 	default y
 	help
 	  Say 'y" here to include support for shutdown and reboot timeout.
@@ -303,3 +303,124 @@ config LGE_QFPROM_INTERFACE
 	  LGE QFPROM DRIVER.
 
 endmenu
+
+if ARCH_MSM8996
+
+config MACH_MSM8996_H1
+	bool "LG G5 (h1/alice)"
+	select MACH_LGE
+	help
+	  Enable LG G5 board support. Select one regional board below.
+
+config MACH_MSM8996_H1_GLOBAL_COM
+	bool "LG G5 international (h850)"
+	depends on MACH_MSM8996_H1
+
+config MACH_MSM8996_H1_US
+	bool
+	depends on MACH_MSM8996_H1
+
+config MACH_MSM8996_H1_TMO_US
+	bool "LG G5 T-Mobile (h830)"
+	depends on MACH_MSM8996_H1
+	select MACH_MSM8996_H1_US
+
+config MACH_MSM8996_H1_LRA_US
+	bool "LG G5 US unlocked (rs988)"
+	depends on MACH_MSM8996_H1
+	select MACH_MSM8996_H1_US
+
+config MACH_MSM8996_ELSA
+	bool "LG V20 (elsa)"
+	select MACH_LGE
+
+config MACH_MSM8996_ELSA_ATT_US
+	bool "LG ELSA_ATT_US board"
+	depends on MACH_MSM8996_ELSA
+
+config MACH_MSM8996_ELSA_TMO_US
+	bool "LG ELSA_TMO_US board"
+	depends on MACH_MSM8996_ELSA
+
+config MACH_MSM8996_ELSA_SPR_US
+	bool "LG ELSA_SPR_US board"
+	depends on MACH_MSM8996_ELSA
+
+config MACH_MSM8996_ELSA_NAO_US
+	bool "LG ELSA_NAO_US board"
+	depends on MACH_MSM8996_ELSA
+
+config MACH_MSM8996_ELSA_VZW
+	bool "LG ELSA_VZW board"
+	depends on MACH_MSM8996_ELSA
+
+config MACH_MSM8996_ELSA_GLOBAL_COM
+	bool "LG V20 international (h990)"
+	depends on MACH_MSM8996_ELSA
+
+config DIRTYSANTA_FIXUP
+	bool "V20 engineering bootloader modem identity fixup"
+	depends on MACH_MSM8996_ELSA && QCOM_SMEM=y
+
+config DIRTYSANTA_FIXUP_DEVICENAME
+	string "V20 modem model name"
+	depends on DIRTYSANTA_FIXUP
+	default "LG-H990"
+
+config DIRTYSANTA_FIXUP_SIMCOUNT
+	int "V20 modem SIM slots"
+	depends on DIRTYSANTA_FIXUP
+	range 1 2
+	default 2
+
+config MACH_MSM8996_LUCYE
+	bool "LG G6 (lucye)"
+	select MACH_LGE
+	help
+	  Enable the common board support for the LG G6 family.
+
+config MACH_MSM8996_LUCYE_TMO_US
+	bool "LG LUCYE_TMO_US board"
+	depends on MACH_MSM8996_LUCYE
+
+config MACH_MSM8996_LUCYE_GLOBAL_CA
+	bool "LG LUCYE_GLOBAL_CA board"
+	depends on MACH_MSM8996_LUCYE
+
+config MACH_MSM8996_LUCYE_NAO_US
+	bool "LG LUCYE_NAO_US board"
+	depends on MACH_MSM8996_LUCYE
+
+config MACH_MSM8996_LUCYE_GLOBAL_COM
+	bool "LG G6 international (h870d)"
+	depends on MACH_MSM8996_LUCYE
+	help
+	  Select the international G6 board device trees.
+
+endif
+
+config DIRTYSANTA_FIXUP_G6
+	bool "G6 engineering bootloader modem identity fixup"
+	depends on MACH_MSM8996_LUCYE && QCOM_SMEM=y
+	help
+	  Correct VENDOR0 modem data left by engineering bootloaders.
+
+config DIRTYSANTA_FIXUP_G6_DEVICENAME
+	string "G6 modem model name"
+	depends on DIRTYSANTA_FIXUP_G6
+	default ""
+
+config DIRTYSANTA_FIXUP_G6_NTCODE
+	string "G6 modem NT code"
+	depends on DIRTYSANTA_FIXUP_G6
+	default ""
+
+config DIRTYSANTA_FIXUP_G6_SIMCOUNT
+	int "G6 modem SIM count"
+	depends on DIRTYSANTA_FIXUP_G6
+	range 0 2
+	default 0
+
+config LGE_IRRC
+	bool "LG infrared remote controller"
+	depends on MACH_MSM8996_ELSA && GPIOLIB

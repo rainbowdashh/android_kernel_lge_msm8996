@@ -131,7 +131,6 @@ static int __init lge_get_retrycount_init (char *s)
 __setup("androidboot.vendor.lge.retrycount=", lge_get_retrycount_init);
 #endif
 
-#ifdef CONFIG_LGE_USB_FACTORY
 /* get boot mode information from cmdline.
  * If any boot mode is not specified,
  * boot mode is normal type.
@@ -316,6 +315,7 @@ static int __init lge_add_qfprom_devices(void)
 arch_initcall(lge_add_qfprom_devices);
 #endif
 
+
 static int lge_bd_rev = HW_REV_1_0;
 
 char *lge_rev_str[] = {
@@ -401,6 +401,13 @@ static int __init board_revno_setup(char *rev_info)
 	return 1;
 }
 __setup("androidboot.vendor.lge.hw.revision=", board_revno_setup);
+#ifdef CONFIG_ARCH_MSM8996
+static int __init board_legacy_revno_setup(char *rev_info)
+{
+	return board_revno_setup(rev_info);
+}
+__setup("lge.rev=", board_legacy_revno_setup);
+#endif
 
 static int lge_bd_subrev = HW_SUB_REV_0;
 
@@ -483,6 +490,7 @@ static int __init board_antrevno_setup(char *antrev_info)
 }
 __setup("androidboot.vendor.lge.ant_rev=", board_antrevno_setup);
 
+#ifdef CONFIG_LGE_USB_FACTORY
 /*
    for download complete using LAF image
    return value : 1 --> right after laf complete & reset
