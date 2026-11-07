@@ -545,24 +545,33 @@
 };
 
 &pm8994_mpps {
-	mpp@a100 { /* MPP 2 */
-		qcom,mode = <1>;		/* Digital output */
-		qcom,output-type = <0>;		/* CMOS logic */
-		qcom,vin-sel = <2>;		/* S4 1.8V */
-		qcom,src-sel = <0>;		/* Constant */
-		qcom,master-en = <1>;		/* Enable GPIO */
-		status = "okay";
-	};
+	default-state {
+		mpp2 { /* MPP 2 */
+			function = "digital";
+			input-enable = <0>;
+			output-enable = <1>;
+			power-source = <2>;
+			qcom,dtest = <0>;
+			qcom,paired = <0>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
 
-	mpp@a300 { /* MPP 4 */
-		/* HDMI_5v_vreg regulator enable */
-		qcom,mode = <1>;		/* Digital output */
-		qcom,output-type = <0>;		/* CMOS logic */
-		qcom,vin-sel = <2>;		/* S4 1.8V */
-		qcom,src-sel = <0>;		/* Constant */
-		qcom,master-en = <1>;		/* Enable GPIO */
-		qcom,invert = <1>;
-		status = "okay";
+		mpp4 { /* MPP 4 */
+			/* HDMI_5v_vreg regulator enable */
+			function = "digital";
+			input-enable = <0>;
+			output-enable = <1>;
+			power-source = <2>;
+			qcom,dtest = <0>;
+			qcom,paired = <0>;
+			/delete-property/ bias-high-impedance;
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-high;
+			status = "okay";
+		};
+
 	};
 };
 
@@ -647,21 +656,28 @@
 };
 
 &pmi8994_mpps {
-	mpp@a000 { /* MPP 1 */
-		qcom,mode = <1>;                /* Digital output */
-		qcom,output-type = <0>;         /* CMOS logic */
-		qcom,vin-sel = <2>;             /* S4 1.8V */
-		qcom,src-sel = <7>;             /* DTEST4 */
-		qcom,master-en = <1>;           /* Enable MPP */
-		status = "okay";
-	};
+	default-state {
+		mpp1 { /* MPP 1 */
+			function = "digital";
+			input-enable = <0>;
+			output-enable = <1>;
+			power-source = <2>;
+			qcom,dtest = <4>;
+			qcom,paired = <0>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
 
-	mpp@a300 { /* MPP 4 */
-		/* WLED FET */
-		qcom,mode = <1>;        /* DIGITAL OUT */
-		qcom,vin-sel = <0>;     /* VIN0 */
-		qcom,master-en = <1>;
-		status = "okay";
+		mpp4 { /* MPP 4 */
+			/* WLED FET */
+			function = "digital";
+			input-enable = <0>;
+			output-enable = <1>;
+			power-source = <0>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
 	};
 };
 
