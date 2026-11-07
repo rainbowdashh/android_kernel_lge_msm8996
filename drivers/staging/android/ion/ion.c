@@ -36,6 +36,7 @@
 #include <soc/qcom/secure_buffer.h>
 
 #include "ion.h"
+#include "ion-legacy.h"
 #include "ion_secure_util.h"
 
 static struct ion_device *internal_dev;
@@ -578,10 +579,12 @@ static int ion_sgl_sync_range(struct device *dev, struct scatterlist *sgl,
 			break;
 
 		if (i > 0) {
-			pr_warn_ratelimited("Partial cmo only supported with 1 segment\n"
-				"is dma_set_max_seg_size being set on dev:%s\n",
-				dev_name(dev));
-			return -EINVAL;
+			/* A segmented mapping cannot use the contiguous range path. */
+			if (for_cpu)
+				dma_sync_sg_for_cpu(dev, sgl, nents, dir);
+			else
+				dma_sync_sg_for_device(dev, sgl, nents, dir);
+			return 0;
 		}
 	}
 
@@ -1033,6 +1036,11 @@ static const struct dma_buf_ops dma_buf_ops = {
 	.get_flags = ion_dma_buf_get_flags,
 };
 
+bool is_ion_dma_buf(struct dma_buf *buf)
+{
+	return buf->ops == &dma_buf_ops;
+}
+
 struct dma_buf *ion_alloc_dmabuf(size_t len, unsigned int heap_id_mask,
 				 unsigned int flags)
 {
@@ -1192,6 +1200,8 @@ out:
 }
 
 static const struct file_operations ion_fops = {
+	.open = ion_legacy_open,
+	.release = ion_legacy_release,
 	.owner          = THIS_MODULE,
 	.unlocked_ioctl = ion_ioctl,
 	.compat_ioctl	= compat_ptr_ioctl,
