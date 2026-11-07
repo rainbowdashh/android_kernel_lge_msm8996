@@ -77,4 +77,9 @@
 			#qcom,smem-state-cells = <1>;
 		};
 	};
+	smp2p-sleepstate {
+		compatible = "qcom,smp2p-sleepstate";
+		qcom,smem-states = <&slpi_sleepstate_out 12>;
+	};
+
 };
