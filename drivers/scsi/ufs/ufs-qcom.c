@@ -1233,7 +1233,7 @@ static int ufs_qcom_bus_register(struct ufs_qcom_host *host)
 	if (!host->bus_vote.client_handle) {
 		dev_err(dev, "%s: msm_bus_scale_register_client failed\n",
 				__func__);
-		err = -EFAULT;
+		err = -EPROBE_DEFER;
 		goto out;
 	}
 
