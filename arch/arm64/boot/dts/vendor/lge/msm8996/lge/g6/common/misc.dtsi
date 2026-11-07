@@ -91,7 +91,7 @@
 	blsp1_uart6: serial@7574000 {
 		compatible = "qcom,msm-uartdm-v1.4", "qcom,msm-uartdm";
 		reg = <0x7574000 0x100>;
-		interrupts = <0 112 0>;
+		interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>;
 		status = "ok";
 		clocks = <&clock_gcc GCC_BLSP1_UART6_APPS_CLK>,
 				<&clock_gcc GCC_BLSP1_AHB_CLK>;
