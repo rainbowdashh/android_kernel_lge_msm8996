@@ -50,7 +50,7 @@ config QCOM_CLK_RPM
 
 config QCOM_CLK_SMD_RPM
 	tristate "RPM over SMD based Clock Controller"
-	depends on COMMON_CLK_QCOM && QCOM_SMD_RPM
+	depends on COMMON_CLK_QCOM && MSM_RPM_SMD
 	select QCOM_RPMCC
 	help
 	  The RPM (Resource Power Manager) is a dedicated hardware engine for
@@ -212,17 +212,30 @@ config MSM_GCC_8994
 
 config MSM_GCC_8996
 	tristate "MSM8996 Global Clock Controller"
-	select QCOM_GDSC
 	depends on COMMON_CLK_QCOM
 	help
 	  Support for the global clock controller on msm8996 devices.
 	  Say Y if you want to use peripheral devices such as UART, SPI,
 	  i2c, USB, UFS, SD/eMMC, PCIe, etc.
 
+config MSM_CPU_8996
+	bool "MSM8996 CPU and CBF clock controller"
+	depends on COMMON_CLK_QCOM && ARCH_QCOM && ARM64
+	select MSM_GCC_8996
+	select REGULATOR_CPR3_HMSS
+	help
+	  CPU cluster and cache clock providers for MSM8996 and MSM8996 Pro,
+	  including speed-bin voltage plans and adaptive clock distribution.
+
+config MSM_DEBUGCC_8996
+	bool "MSM8996 clock measurement controller"
+	depends on MSM_CPU_8996 && MSM_MMCC_8996=y
+	help
+	  Hardware frequency measurement for GCC, MMSS, GPU and CPU clocks.
+
 config MSM_MMCC_8996
 	tristate "MSM8996 Multimedia Clock Controller"
 	select MSM_GCC_8996
-	select QCOM_GDSC
 	depends on COMMON_CLK_QCOM
 	help
 	  Support for the multimedia clock controller on msm8996 devices.

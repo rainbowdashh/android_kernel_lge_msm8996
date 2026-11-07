@@ -19,6 +19,7 @@
 #include <linux/of.h>
 #include <linux/of_device.h>
 #include <linux/clk-provider.h>
+#include <linux/clk.h>
 #include <linux/regmap.h>
 #include <linux/reset-controller.h>
 
@@ -30,7 +31,10 @@
 #include "clk-rcg.h"
 #include "clk-branch.h"
 #include "reset.h"
-#include "gdsc.h"
+
+#include "vdd-level-8996.h"
+
+static DEFINE_VDD_REGULATORS(vdd_dig, VDD_DIG_NUM, 1, vdd_corner);
 
 enum {
 	P_XO,
@@ -181,13 +185,18 @@ static struct clk_fixed_factor xo = {
 	.div = 1,
 	.hw.init = &(struct clk_init_data){
 		.name = "xo",
-		.parent_names = (const char *[]){ "xo_board" },
+		.parent_names = (const char *[]){ "cxo_clk_src" },
 		.num_parents = 1,
 		.ops = &clk_fixed_factor_ops,
 	},
 };
 
+static u32 gpll0_soft_vote;
+
 static struct clk_alpha_pll gpll0_early = {
+	.flags = SUPPORTS_FSM_VOTE,
+	.soft_vote = &gpll0_soft_vote,
+	.soft_vote_mask = PLL_SOFT_VOTE_PRIMARY,
 	.offset = 0x00000,
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.clkr = {
@@ -196,6 +205,24 @@ static struct clk_alpha_pll gpll0_early = {
 		.hw.init = &(struct clk_init_data){
 			.name = "gpll0_early",
 			.parent_names = (const char *[]){ "xo" },
+			.num_parents = 1,
+			.ops = &clk_alpha_pll_ops,
+		},
+	},
+};
+
+static struct clk_alpha_pll gpll0_ao = {
+	.flags = SUPPORTS_FSM_VOTE,
+	.soft_vote = &gpll0_soft_vote,
+	.soft_vote_mask = PLL_SOFT_VOTE_CPU,
+	.offset = 0x00000,
+	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
+	.clkr = {
+		.enable_reg = 0x52000,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gpll0_ao",
+			.parent_names = (const char *[]){ "cxo_clk_src_ao" },
 			.num_parents = 1,
 			.ops = &clk_alpha_pll_ops,
 		},
@@ -243,6 +270,7 @@ static struct clk_alpha_pll_postdiv gpll4 = {
 	.offset = 0x77000,
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP1(NOMINAL, 384000000),
 		.name = "gpll4",
 		.parent_names = (const char *[]){ "gpll4_early" },
 		.num_parents = 1,
@@ -329,6 +357,8 @@ static struct clk_rcg2 usb30_master_clk_src = {
 	.parent_map = gcc_xo_gpll0_gpll0_early_div_map,
 	.freq_tbl = ftbl_usb30_master_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 60000000, LOW, 120000000,
+			NOMINAL, 150000000),
 		.name = "usb30_master_clk_src",
 		.parent_names = gcc_xo_gpll0_gpll0_early_div,
 		.num_parents = 3,
@@ -347,6 +377,7 @@ static struct clk_rcg2 usb30_mock_utmi_clk_src = {
 	.parent_map = gcc_xo_gpll0_gpll0_early_div_map,
 	.freq_tbl = ftbl_usb30_mock_utmi_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 40000000, LOW, 60000000),
 		.name = "usb30_mock_utmi_clk_src",
 		.parent_names = gcc_xo_gpll0_gpll0_early_div,
 		.num_parents = 3,
@@ -365,6 +396,7 @@ static struct clk_rcg2 usb3_phy_aux_clk_src = {
 	.parent_map = gcc_xo_sleep_clk_map,
 	.freq_tbl = ftbl_usb3_phy_aux_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP1(LOWER, 1200000),
 		.name = "usb3_phy_aux_clk_src",
 		.parent_names = gcc_xo_sleep_clk,
 		.num_parents = 2,
@@ -384,6 +416,8 @@ static struct clk_rcg2 usb20_master_clk_src = {
 	.parent_map = gcc_xo_gpll0_gpll0_early_div_map,
 	.freq_tbl = ftbl_usb20_master_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 60000000,
+			NOMINAL, 120000000),
 		.name = "usb20_master_clk_src",
 		.parent_names = gcc_xo_gpll0_gpll0_early_div,
 		.num_parents = 3,
@@ -397,6 +431,7 @@ static struct clk_rcg2 usb20_mock_utmi_clk_src = {
 	.parent_map = gcc_xo_gpll0_gpll0_early_div_map,
 	.freq_tbl = ftbl_usb30_mock_utmi_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 19200000, LOW, 60000000),
 		.name = "usb20_mock_utmi_clk_src",
 		.parent_names = gcc_xo_gpll0_gpll0_early_div,
 		.num_parents = 3,
@@ -423,6 +458,8 @@ static struct clk_rcg2 sdcc1_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_gpll4_gpll0_early_div_map,
 	.freq_tbl = ftbl_sdcc1_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 200000000,
+			NOMINAL, 400000000),
 		.name = "sdcc1_apps_clk_src",
 		.parent_names = gcc_xo_gpll0_gpll4_gpll0_early_div,
 		.num_parents = 4,
@@ -443,6 +480,8 @@ static struct clk_rcg2 sdcc1_ice_core_clk_src = {
 	.parent_map = gcc_xo_gpll0_gpll4_gpll0_early_div_map,
 	.freq_tbl = ftbl_sdcc1_ice_core_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 150000000,
+			NOMINAL, 300000000),
 		.name = "sdcc1_ice_core_clk_src",
 		.parent_names = gcc_xo_gpll0_gpll4_gpll0_early_div,
 		.num_parents = 4,
@@ -468,6 +507,8 @@ static struct clk_rcg2 sdcc2_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_gpll4_map,
 	.freq_tbl = ftbl_sdcc2_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 100000000,
+			NOMINAL, 200000000),
 		.name = "sdcc2_apps_clk_src",
 		.parent_names = gcc_xo_gpll0_gpll4,
 		.num_parents = 3,
@@ -482,6 +523,8 @@ static struct clk_rcg2 sdcc3_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_gpll4_map,
 	.freq_tbl = ftbl_sdcc2_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 100000000,
+			NOMINAL, 200000000),
 		.name = "sdcc3_apps_clk_src",
 		.parent_names = gcc_xo_gpll0_gpll4,
 		.num_parents = 3,
@@ -506,6 +549,8 @@ static struct clk_rcg2 sdcc4_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_sdcc4_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 50000000,
+			NOMINAL, 100000000),
 		.name = "sdcc4_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -531,6 +576,8 @@ static struct clk_rcg2 blsp1_qup1_spi_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_spi_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 25000000,
+			NOMINAL, 50000000),
 		.name = "blsp1_qup1_spi_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -550,6 +597,7 @@ static struct clk_rcg2 blsp1_qup1_i2c_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_i2c_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 19200000, LOW, 50000000),
 		.name = "blsp1_qup1_i2c_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -583,6 +631,8 @@ static struct clk_rcg2 blsp1_uart1_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_uart1_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 31580000,
+			NOMINAL, 63160000),
 		.name = "blsp1_uart1_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -597,6 +647,8 @@ static struct clk_rcg2 blsp1_qup2_spi_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_spi_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 25000000,
+			NOMINAL, 50000000),
 		.name = "blsp1_qup2_spi_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -610,6 +662,7 @@ static struct clk_rcg2 blsp1_qup2_i2c_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_i2c_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 19200000, LOW, 50000000),
 		.name = "blsp1_qup2_i2c_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -624,6 +677,8 @@ static struct clk_rcg2 blsp1_uart2_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_uart1_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 31580000,
+			NOMINAL, 63160000),
 		.name = "blsp1_uart2_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -638,6 +693,8 @@ static struct clk_rcg2 blsp1_qup3_spi_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_spi_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 25000000,
+			NOMINAL, 50000000),
 		.name = "blsp1_qup3_spi_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -651,6 +708,7 @@ static struct clk_rcg2 blsp1_qup3_i2c_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_i2c_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 19200000, LOW, 50000000),
 		.name = "blsp1_qup3_i2c_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -665,6 +723,8 @@ static struct clk_rcg2 blsp1_uart3_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_uart1_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 31580000,
+			NOMINAL, 63160000),
 		.name = "blsp1_uart3_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -679,6 +739,8 @@ static struct clk_rcg2 blsp1_qup4_spi_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_spi_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 25000000,
+			NOMINAL, 50000000),
 		.name = "blsp1_qup4_spi_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -692,6 +754,7 @@ static struct clk_rcg2 blsp1_qup4_i2c_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_i2c_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 19200000, LOW, 50000000),
 		.name = "blsp1_qup4_i2c_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -706,6 +769,8 @@ static struct clk_rcg2 blsp1_uart4_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_uart1_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 31580000,
+			NOMINAL, 63160000),
 		.name = "blsp1_uart4_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -720,6 +785,8 @@ static struct clk_rcg2 blsp1_qup5_spi_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_spi_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 25000000,
+			NOMINAL, 50000000),
 		.name = "blsp1_qup5_spi_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -733,6 +800,7 @@ static struct clk_rcg2 blsp1_qup5_i2c_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_i2c_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 19200000, LOW, 50000000),
 		.name = "blsp1_qup5_i2c_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -747,6 +815,8 @@ static struct clk_rcg2 blsp1_uart5_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_uart1_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 31580000,
+			NOMINAL, 63160000),
 		.name = "blsp1_uart5_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -761,6 +831,8 @@ static struct clk_rcg2 blsp1_qup6_spi_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_spi_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 25000000,
+			NOMINAL, 50000000),
 		.name = "blsp1_qup6_spi_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -774,6 +846,7 @@ static struct clk_rcg2 blsp1_qup6_i2c_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_i2c_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 19200000, LOW, 50000000),
 		.name = "blsp1_qup6_i2c_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -788,6 +861,8 @@ static struct clk_rcg2 blsp1_uart6_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_uart1_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 31580000,
+			NOMINAL, 63160000),
 		.name = "blsp1_uart6_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -802,6 +877,8 @@ static struct clk_rcg2 blsp2_qup1_spi_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_spi_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 25000000,
+			NOMINAL, 50000000),
 		.name = "blsp2_qup1_spi_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -815,6 +892,7 @@ static struct clk_rcg2 blsp2_qup1_i2c_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_i2c_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 19200000, LOW, 50000000),
 		.name = "blsp2_qup1_i2c_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -829,6 +907,8 @@ static struct clk_rcg2 blsp2_uart1_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_uart1_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 31580000,
+			NOMINAL, 63160000),
 		.name = "blsp2_uart1_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -843,6 +923,8 @@ static struct clk_rcg2 blsp2_qup2_spi_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_spi_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 25000000,
+			NOMINAL, 50000000),
 		.name = "blsp2_qup2_spi_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -856,6 +938,7 @@ static struct clk_rcg2 blsp2_qup2_i2c_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_i2c_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 19200000, LOW, 50000000),
 		.name = "blsp2_qup2_i2c_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -870,6 +953,8 @@ static struct clk_rcg2 blsp2_uart2_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_uart1_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 31580000,
+			NOMINAL, 63160000),
 		.name = "blsp2_uart2_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -884,6 +969,8 @@ static struct clk_rcg2 blsp2_qup3_spi_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_spi_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 25000000,
+			NOMINAL, 50000000),
 		.name = "blsp2_qup3_spi_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -897,6 +984,7 @@ static struct clk_rcg2 blsp2_qup3_i2c_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_i2c_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 19200000, LOW, 50000000),
 		.name = "blsp2_qup3_i2c_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -911,6 +999,8 @@ static struct clk_rcg2 blsp2_uart3_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_uart1_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 31580000,
+			NOMINAL, 63160000),
 		.name = "blsp2_uart3_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -925,6 +1015,8 @@ static struct clk_rcg2 blsp2_qup4_spi_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_spi_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 25000000,
+			NOMINAL, 50000000),
 		.name = "blsp2_qup4_spi_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -938,6 +1030,7 @@ static struct clk_rcg2 blsp2_qup4_i2c_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_i2c_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 19200000, LOW, 50000000),
 		.name = "blsp2_qup4_i2c_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -952,6 +1045,8 @@ static struct clk_rcg2 blsp2_uart4_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_uart1_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 31580000,
+			NOMINAL, 63160000),
 		.name = "blsp2_uart4_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -966,6 +1061,8 @@ static struct clk_rcg2 blsp2_qup5_spi_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_spi_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 25000000,
+			NOMINAL, 50000000),
 		.name = "blsp2_qup5_spi_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -979,6 +1076,7 @@ static struct clk_rcg2 blsp2_qup5_i2c_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_i2c_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 19200000, LOW, 50000000),
 		.name = "blsp2_qup5_i2c_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -993,6 +1091,8 @@ static struct clk_rcg2 blsp2_uart5_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_uart1_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 31580000,
+			NOMINAL, 63160000),
 		.name = "blsp2_uart5_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -1007,6 +1107,8 @@ static struct clk_rcg2 blsp2_qup6_spi_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_spi_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 25000000,
+			NOMINAL, 50000000),
 		.name = "blsp2_qup6_spi_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -1020,6 +1122,7 @@ static struct clk_rcg2 blsp2_qup6_i2c_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_qup1_i2c_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 19200000, LOW, 50000000),
 		.name = "blsp2_qup6_i2c_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -1034,6 +1137,8 @@ static struct clk_rcg2 blsp2_uart6_apps_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_blsp1_uart1_apps_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 31580000,
+			NOMINAL, 63160000),
 		.name = "blsp2_uart6_apps_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -1052,6 +1157,7 @@ static struct clk_rcg2 pdm2_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_pdm2_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP2(LOWER, 19200000, LOW, 60000000),
 		.name = "pdm2_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -1071,6 +1177,7 @@ static struct clk_rcg2 tsif_ref_clk_src = {
 	.parent_map = gcc_xo_gpll0_aud_ref_clk_map,
 	.freq_tbl = ftbl_tsif_ref_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP1(LOWER, 105500),
 		.name = "tsif_ref_clk_src",
 		.parent_names = gcc_xo_gpll0_aud_ref_clk,
 		.num_parents = 3,
@@ -1078,10 +1185,16 @@ static struct clk_rcg2 tsif_ref_clk_src = {
 	},
 };
 
+static const struct freq_tbl ftbl_gcc_sleep_clk_src[] = {
+	F(32764, P_SLEEP_CLK, 1, 0, 0),
+	{ }
+};
+
 static struct clk_rcg2 gcc_sleep_clk_src = {
 	.cmd_rcgr = 0x43014,
 	.hid_width = 5,
 	.parent_map = gcc_sleep_clk_map,
+	.freq_tbl = ftbl_gcc_sleep_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
 		.name = "gcc_sleep_clk_src",
 		.parent_names = gcc_sleep_clk,
@@ -1129,6 +1242,8 @@ static struct clk_rcg2 gp1_clk_src = {
 	.parent_map = gcc_xo_gpll0_sleep_clk_gpll0_early_div_map,
 	.freq_tbl = ftbl_gp1_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 50000000, LOW, 100000000,
+			NOMINAL, 200000000),
 		.name = "gp1_clk_src",
 		.parent_names = gcc_xo_gpll0_sleep_clk_gpll0_early_div,
 		.num_parents = 4,
@@ -1143,6 +1258,8 @@ static struct clk_rcg2 gp2_clk_src = {
 	.parent_map = gcc_xo_gpll0_sleep_clk_gpll0_early_div_map,
 	.freq_tbl = ftbl_gp1_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 50000000, LOW, 100000000,
+			NOMINAL, 200000000),
 		.name = "gp2_clk_src",
 		.parent_names = gcc_xo_gpll0_sleep_clk_gpll0_early_div,
 		.num_parents = 4,
@@ -1157,6 +1274,8 @@ static struct clk_rcg2 gp3_clk_src = {
 	.parent_map = gcc_xo_gpll0_sleep_clk_gpll0_early_div_map,
 	.freq_tbl = ftbl_gp1_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 50000000, LOW, 100000000,
+			NOMINAL, 200000000),
 		.name = "gp3_clk_src",
 		.parent_names = gcc_xo_gpll0_sleep_clk_gpll0_early_div,
 		.num_parents = 4,
@@ -1176,6 +1295,7 @@ static struct clk_rcg2 pcie_aux_clk_src = {
 	.parent_map = gcc_xo_sleep_clk_map,
 	.freq_tbl = ftbl_pcie_aux_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP1(LOWER, 1011000),
 		.name = "pcie_aux_clk_src",
 		.parent_names = gcc_xo_sleep_clk,
 		.num_parents = 2,
@@ -1197,6 +1317,8 @@ static struct clk_rcg2 ufs_axi_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_ufs_axi_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP4(LOWER, 19200000, LOW, 100000000,
+			NOMINAL, 200000000, HIGH, 240000000),
 		.name = "ufs_axi_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -1217,6 +1339,8 @@ static struct clk_rcg2 ufs_ice_core_clk_src = {
 	.parent_map = gcc_xo_gpll0_map,
 	.freq_tbl = ftbl_ufs_ice_core_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 19200000, LOW, 150000000,
+			NOMINAL, 300000000),
 		.name = "ufs_ice_core_clk_src",
 		.parent_names = gcc_xo_gpll0,
 		.num_parents = 2,
@@ -1238,6 +1362,8 @@ static struct clk_rcg2 qspi_ser_clk_src = {
 	.parent_map = gcc_xo_gpll0_gpll1_early_div_gpll1_gpll4_gpll0_early_div_map,
 	.freq_tbl = ftbl_qspi_ser_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
+		VDD_DIG_FMAX_MAP3(LOWER, 80200000, LOW, 160400000,
+			NOMINAL, 320000000),
 		.name = "qspi_ser_clk_src",
 		.parent_names = gcc_xo_gpll0_gpll1_early_div_gpll1_gpll4_gpll0_early_div,
 		.num_parents = 6,
@@ -1299,14 +1425,16 @@ static struct clk_branch gcc_mmss_noc_cfg_ahb_clk = {
 			.name = "gcc_mmss_noc_cfg_ahb_clk",
 			.parent_names = (const char *[]){ "config_noc_clk_src" },
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED,
+			.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
 };
 
 static struct clk_branch gcc_mmss_bimc_gfx_clk = {
+	.enable_delay = 5,
 	.halt_reg = 0x9010,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x9010,
 		.enable_mask = BIT(0),
@@ -1891,6 +2019,7 @@ static struct clk_branch gcc_blsp1_uart6_apps_clk = {
 	},
 };
 
+/* Keep the early UARTDM register interface accessible to printk. */
 static struct clk_branch gcc_blsp2_ahb_clk = {
 	.halt_reg = 0x25004,
 	.halt_check = BRANCH_HALT_VOTED,
@@ -1901,7 +2030,9 @@ static struct clk_branch gcc_blsp2_ahb_clk = {
 			.name = "gcc_blsp2_ahb_clk",
 			.parent_names = (const char *[]){ "periph_noc_clk_src" },
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT,
+			.flags = CLK_SET_RATE_PARENT |
+				(IS_ENABLED(CONFIG_SERIAL_MSM_CONSOLE) ?
+				 CLK_IS_CRITICAL : 0),
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -2007,7 +2138,9 @@ static struct clk_branch gcc_blsp2_uart2_apps_clk = {
 			.name = "gcc_blsp2_uart2_apps_clk",
 			.parent_names = (const char *[]){ "blsp2_uart2_apps_clk_src" },
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT,
+			.flags = CLK_SET_RATE_PARENT |
+				(IS_ENABLED(CONFIG_SERIAL_MSM_CONSOLE) ?
+				 CLK_IS_CRITICAL : 0),
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -2307,7 +2440,7 @@ static struct clk_branch gcc_bimc_gfx_clk = {
 		.enable_mask = BIT(0),
 		.hw.init = &(struct clk_init_data){
 			.name = "gcc_bimc_gfx_clk",
-			.flags = CLK_SET_RATE_PARENT,
+			.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -2701,6 +2834,7 @@ static struct clk_fixed_factor ufs_rx_cfg_clk_src = {
 };
 
 static struct clk_branch gcc_hlos1_vote_lpass_core_smmu_clk = {
+	.enable_delay = 5,
 	.halt_reg = 0x7d010,
 	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
@@ -2714,6 +2848,7 @@ static struct clk_branch gcc_hlos1_vote_lpass_core_smmu_clk = {
 };
 
 static struct clk_branch gcc_hlos1_vote_lpass_adsp_smmu_clk = {
+	.enable_delay = 5,
 	.halt_reg = 0x7d014,
 	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
@@ -2864,7 +2999,7 @@ static struct clk_branch gcc_aggre0_snoc_axi_clk = {
 			.name = "gcc_aggre0_snoc_axi_clk",
 			.parent_names = (const char *[]){ "system_noc_clk_src" },
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
+			.flags = CLK_SET_RATE_PARENT,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -2879,14 +3014,16 @@ static struct clk_branch gcc_aggre0_cnoc_ahb_clk = {
 			.name = "gcc_aggre0_cnoc_ahb_clk",
 			.parent_names = (const char *[]){ "config_noc_clk_src" },
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
+			.flags = CLK_SET_RATE_PARENT,
 			.ops = &clk_branch2_ops,
 		},
 	},
 };
 
 static struct clk_branch gcc_smmu_aggre0_axi_clk = {
+	.enable_delay = 5,
 	.halt_reg = 0x81014,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x81014,
 		.enable_mask = BIT(0),
@@ -2894,14 +3031,16 @@ static struct clk_branch gcc_smmu_aggre0_axi_clk = {
 			.name = "gcc_smmu_aggre0_axi_clk",
 			.parent_names = (const char *[]){ "system_noc_clk_src" },
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
+			.flags = CLK_SET_RATE_PARENT,
 			.ops = &clk_branch2_ops,
 		},
 	},
 };
 
 static struct clk_branch gcc_smmu_aggre0_ahb_clk = {
+	.enable_delay = 5,
 	.halt_reg = 0x81018,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x81018,
 		.enable_mask = BIT(0),
@@ -2909,7 +3048,7 @@ static struct clk_branch gcc_smmu_aggre0_ahb_clk = {
 			.name = "gcc_smmu_aggre0_ahb_clk",
 			.parent_names = (const char *[]){ "config_noc_clk_src" },
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
+			.flags = CLK_SET_RATE_PARENT,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -3059,6 +3198,137 @@ static struct clk_branch gcc_rx1_usb2_clkref_clk = {
 	},
 };
 
+static struct clk_branch gcc_mss_cfg_ahb_clk = {
+	.halt_reg = 0x8a000,
+	.halt_check = BRANCH_HALT_VOTED,
+	.clkr = {
+		.enable_reg = 0x8a000,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_mss_cfg_ahb_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_mss_q6_bimc_axi_clk = {
+	.halt_reg = 0x8a028,
+	.halt_check = BRANCH_HALT_VOTED,
+	.clkr = {
+		.enable_reg = 0x8a028,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_mss_q6_bimc_axi_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_mss_snoc_axi_clk = {
+	.halt_reg = 0x8a024,
+	.halt_check = BRANCH_HALT_VOTED,
+	.clkr = {
+		.enable_reg = 0x8a024,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_mss_snoc_axi_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_mss_mnoc_bimc_axi_clk = {
+	.halt_reg = 0x8a004,
+	.halt_check = BRANCH_HALT_VOTED,
+	.clkr = {
+		.enable_reg = 0x8a004,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_mss_mnoc_bimc_axi_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_dcc_ahb_clk = {
+	.halt_reg = 0x84004,
+	.halt_check = BRANCH_HALT_VOTED,
+	.clkr = {
+		.enable_reg = 0x84004,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_dcc_ahb_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_aggre0_noc_mpu_cfg_ahb_clk = {
+	.halt_reg = 0x85000,
+	.halt_check = BRANCH_HALT_VOTED,
+	.clkr = {
+		.enable_reg = 0x85000,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_aggre0_noc_mpu_cfg_ahb_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_mmss_gpll0_div_clk = {
+	.halt_check = BRANCH_HALT_DELAY,
+	.clkr = {
+		.enable_reg = 0x5200c,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_mmss_gpll0_div_clk",
+			.parent_names = (const char *[]){ "gpll0" },
+			.num_parents = 1,
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gpll0_out_msscc = {
+	.halt_check = BRANCH_HALT_DELAY,
+	.clkr = {
+		.enable_reg = 0x5200c,
+		.enable_mask = BIT(2),
+		.hw.init = &(struct clk_init_data){
+			.name = "gpll0_out_msscc",
+			.parent_names = (const char *[]){ "gpll0" },
+			.num_parents = 1,
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_aggre0_noc_qosgen_extref_clk = {
+	.halt_check = BRANCH_HALT_SKIP,
+	.enable_delay = 500,
+	.clkr = {
+		.enable_reg = 0x8101c,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_aggre0_noc_qosgen_extref_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_edp_clkref_clk = {
+	.halt_reg = 0x88004,
+	.clkr = {
+		.enable_reg = 0x88004,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_edp_clkref_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
 static struct clk_hw *gcc_msm8996_hws[] = {
 	&xo.hw,
 	&gpll0_early_div.hw,
@@ -3067,84 +3337,18 @@ static struct clk_hw *gcc_msm8996_hws[] = {
 	&ufs_ice_core_postdiv_clk_src.hw,
 };
 
-static struct gdsc aggre0_noc_gdsc = {
-	.gdscr = 0x81004,
-	.gds_hw_ctrl = 0x81028,
-	.pd = {
-		.name = "aggre0_noc",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = VOTABLE | ALWAYS_ON,
-};
-
-static struct gdsc hlos1_vote_aggre0_noc_gdsc = {
-	.gdscr = 0x7d024,
-	.pd = {
-		.name = "hlos1_vote_aggre0_noc",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = VOTABLE,
-};
-
-static struct gdsc hlos1_vote_lpass_adsp_gdsc = {
-	.gdscr = 0x7d034,
-	.pd = {
-		.name = "hlos1_vote_lpass_adsp",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = VOTABLE,
-};
-
-static struct gdsc hlos1_vote_lpass_core_gdsc = {
-	.gdscr = 0x7d038,
-	.pd = {
-		.name = "hlos1_vote_lpass_core",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = VOTABLE,
-};
-
-static struct gdsc usb30_gdsc = {
-	.gdscr = 0xf004,
-	.pd = {
-		.name = "usb30",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc pcie0_gdsc = {
-	.gdscr = 0x6b004,
-	.pd = {
-		.name = "pcie0",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc pcie1_gdsc = {
-	.gdscr = 0x6d004,
-	.pd = {
-		.name = "pcie1",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc pcie2_gdsc = {
-	.gdscr = 0x6e004,
-	.pd = {
-		.name = "pcie2",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc ufs_gdsc = {
-	.gdscr = 0x75004,
-	.pd = {
-		.name = "ufs",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
 static struct clk_regmap *gcc_msm8996_clocks[] = {
+	[GPLL0_AO] = &gpll0_ao.clkr,
+	[GCC_AGGRE0_NOC_QOSGEN_EXTREF_CLK] = &gcc_aggre0_noc_qosgen_extref_clk.clkr,
+	[GCC_EDP_CLKREF_CLK] = &gcc_edp_clkref_clk.clkr,
+	[GCC_MSS_CFG_AHB_CLK] = &gcc_mss_cfg_ahb_clk.clkr,
+	[GCC_MSS_Q6_BIMC_AXI_CLK] = &gcc_mss_q6_bimc_axi_clk.clkr,
+	[GCC_MSS_SNOC_AXI_CLK] = &gcc_mss_snoc_axi_clk.clkr,
+	[GCC_MSS_MNOC_BIMC_AXI_CLK] = &gcc_mss_mnoc_bimc_axi_clk.clkr,
+	[GCC_DCC_AHB_CLK] = &gcc_dcc_ahb_clk.clkr,
+	[GCC_AGGRE0_NOC_MPU_CFG_AHB_CLK] = &gcc_aggre0_noc_mpu_cfg_ahb_clk.clkr,
+	[GCC_MMSS_GPLL0_DIV_CLK] = &gcc_mmss_gpll0_div_clk.clkr,
+	[GPLL0_OUT_MSSCC] = &gpll0_out_msscc.clkr,
 	[GPLL0_EARLY] = &gpll0_early.clkr,
 	[GPLL0] = &gpll0.clkr,
 	[GPLL4_EARLY] = &gpll4_early.clkr,
@@ -3331,18 +3535,6 @@ static struct clk_regmap *gcc_msm8996_clocks[] = {
 	[GCC_RX1_USB2_CLKREF_CLK] = &gcc_rx1_usb2_clkref_clk.clkr,
 };
 
-static struct gdsc *gcc_msm8996_gdscs[] = {
-	[AGGRE0_NOC_GDSC] = &aggre0_noc_gdsc,
-	[HLOS1_VOTE_AGGRE0_NOC_GDSC] = &hlos1_vote_aggre0_noc_gdsc,
-	[HLOS1_VOTE_LPASS_ADSP_GDSC] = &hlos1_vote_lpass_adsp_gdsc,
-	[HLOS1_VOTE_LPASS_CORE_GDSC] = &hlos1_vote_lpass_core_gdsc,
-	[USB30_GDSC] = &usb30_gdsc,
-	[PCIE0_GDSC] = &pcie0_gdsc,
-	[PCIE1_GDSC] = &pcie1_gdsc,
-	[PCIE2_GDSC] = &pcie2_gdsc,
-	[UFS_GDSC] = &ufs_gdsc,
-};
-
 static const struct qcom_reset_map gcc_msm8996_resets[] = {
 	[GCC_SYSTEM_NOC_BCR] = { 0x4000 },
 	[GCC_CONFIG_NOC_BCR] = { 0x5000 },
@@ -3460,14 +3652,34 @@ static const struct regmap_config gcc_msm8996_regmap_config = {
 	.fast_io	= true,
 };
 
+/* These branches are controlled by RPM; APSS consumers only vote on CE1. */
+static struct clk_dummy gcc_ce1_axi_m_clk = {
+	.hw.init = &(struct clk_init_data){
+		.name = "gcc_ce1_axi_m_clk",
+		.ops = &clk_dummy_ops,
+	},
+};
+
+static struct clk_dummy gcc_ce1_ahb_m_clk = {
+	.hw.init = &(struct clk_init_data){
+		.name = "gcc_ce1_ahb_m_clk",
+		.ops = &clk_dummy_ops,
+	},
+};
+
+static struct clk_hw *gcc_msm8996_hw_clocks[] = {
+	[GCC_CE1_AXI_CLK] = &gcc_ce1_axi_m_clk.hw,
+	[GCC_CE1_AHB_CLK] = &gcc_ce1_ahb_m_clk.hw,
+};
+
 static const struct qcom_cc_desc gcc_msm8996_desc = {
 	.config = &gcc_msm8996_regmap_config,
 	.clks = gcc_msm8996_clocks,
 	.num_clks = ARRAY_SIZE(gcc_msm8996_clocks),
+	.hwclks = gcc_msm8996_hw_clocks,
+	.num_hwclks = ARRAY_SIZE(gcc_msm8996_hw_clocks),
 	.resets = gcc_msm8996_resets,
 	.num_resets = ARRAY_SIZE(gcc_msm8996_resets),
-	.gdscs = gcc_msm8996_gdscs,
-	.num_gdscs = ARRAY_SIZE(gcc_msm8996_gdscs),
 };
 
 static const struct of_device_id gcc_msm8996_match_table[] = {
@@ -3481,6 +3693,17 @@ static int gcc_msm8996_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	int i, ret;
 	struct regmap *regmap;
+	struct clk *cxo;
+
+	/* RPM must supply the XO before clocks can acquire their parents. */
+	cxo = devm_clk_get(dev, "xo");
+	if (IS_ERR(cxo))
+		return PTR_ERR(cxo);
+
+	vdd_corner[VDD_DIG_LOWER] = RPM_REGULATOR_CORNER_SVS_KRAIT;
+	vdd_dig.regulator[0] = devm_regulator_get(dev, "vdd_dig");
+	if (IS_ERR(vdd_dig.regulator[0]))
+		return PTR_ERR(vdd_dig.regulator[0]);
 
 	regmap = qcom_cc_map(pdev, &gcc_msm8996_desc);
 	if (IS_ERR(regmap))
@@ -3497,6 +3720,34 @@ static int gcc_msm8996_probe(struct platform_device *pdev)
 		if (ret)
 			return ret;
 	}
+
+	if (of_device_is_compatible(dev->of_node, "qcom,gcc-msm8996-v2") ||
+	    of_device_is_compatible(dev->of_node, "qcom,gcc-msm8996-v3")) {
+		unsigned long *rates = pcie_aux_clk_src.clkr.hw.init->rate_max;
+
+		rates[VDD_DIG_LOWER] = 9600000;
+		rates[VDD_DIG_LOW] = 19200000;
+		rates[VDD_DIG_NOMINAL] = 19200000;
+		rates[VDD_DIG_HIGH] = 19200000;
+
+		rates = usb30_master_clk_src.clkr.hw.init->rate_max;
+		rates[VDD_DIG_LOW] = 133333000;
+		rates[VDD_DIG_NOMINAL] = 200000000;
+		rates[VDD_DIG_HIGH] = 240000000;
+
+		sdcc1_apps_clk_src.clkr.hw.init->rate_max[VDD_DIG_LOW] = 50000000;
+		sdcc2_apps_clk_src.clkr.hw.init->rate_max[VDD_DIG_LOW] = 50000000;
+		sdcc3_apps_clk_src.clkr.hw.init->rate_max[VDD_DIG_LOW] = 50000000;
+	}
+
+	/* Keep the HMSS AHB register clock enabled, as in the vendor driver. */
+	regmap_update_bits(regmap, 0x52004, BIT(21), BIT(21));
+
+	/* Keep the graphics memory retention setting across GDS transitions. */
+	ret = regmap_update_bits(regmap, gcc_mmss_bimc_gfx_clk.clkr.enable_reg,
+				 BIT(14), BIT(14));
+	if (ret)
+		return ret;
 
 	return qcom_cc_really_probe(pdev, &gcc_msm8996_desc, regmap);
 }
