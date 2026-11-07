@@ -16,8 +16,8 @@
 	};
 
 	reserved-memory {
-		removed_regions: removed_regions@85800000 {
-			reg = <0 0x85800000 0 0x2800000>;
+		firmware_reserved: firmware@86200000 {
+			reg = <0 0x86200000 0 0x1e00000>;
 		};
 	};
 };

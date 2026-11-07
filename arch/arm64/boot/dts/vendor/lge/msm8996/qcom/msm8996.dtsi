@@ -222,7 +222,17 @@
 		removed_regions: removed_regions@85800000 {
 			compatible = "removed-dma-pool";
 			no-map;
-			reg = <0 0x85800000 0 0x3000000>;
+			reg = <0 0x85800000 0 0x800000>;
+		};
+
+		smem_mem: smem@86000000 {
+			no-map;
+			reg = <0 0x86000000 0 0x200000>;
+		};
+
+		firmware_reserved: firmware@86200000 {
+			no-map;
+			reg = <0 0x86200000 0 0x2600000>;
 		};
 
 		peripheral_mem: peripheral_region@8ea00000 {
@@ -1756,60 +1766,62 @@
 		status = "disabled";
 	};
 
-        qcom,ipc-spinlock@740000 {
-                compatible = "qcom,ipc-spinlock-sfpb";
-                reg = <0x740000 0x8000>;
-                qcom,num-locks = <8>;
-        };
+	tcsr_mutex_regs: syscon@740000 {
+		compatible = "syscon";
+		reg = <0x740000 0x20000>;
+	};
 
-	qcom,smem@86000000 {
+	tcsr_mutex: hwlock {
+		compatible = "qcom,tcsr-mutex";
+		syscon = <&tcsr_mutex_regs 0 0x1000>;
+		#hwlock-cells = <1>;
+	};
+
+	rpm_xprt_ram: memory@68000 {
+		compatible = "qcom,rpm-msg-ram";
+		reg = <0x68000 0x6000>;
+	};
+
+	smem: smem {
 		compatible = "qcom,smem";
-		reg = <0x86000000 0x200000>,
-			<0x9820010 0x4>,
-			<0x68000 0x8000>,
-			<0x7b4000 0x8>;
-		reg-names = "smem", "irq-reg-base", "aux-mem1",
-			"smem_targ_info_reg";
-		qcom,mpu-enabled;
+		memory-region = <&smem_mem>;
+		qcom,rpm-msg-ram = <&rpm_xprt_ram>;
+		hwlocks = <&tcsr_mutex 3>;
+	};
 
-		qcom,smd-modem {
-			compatible = "qcom,smd";
+	smd {
+		compatible = "qcom,smd";
+
+		smd_modem: modem {
 			qcom,smd-edge = <0>;
-			qcom,smd-irq-offset = <0x0>;
-			qcom,smd-irq-bitmask = <0x1000>;
+			qcom,remote-pid = <1>;
+			mboxes = <&apcs 12>;
 			interrupts = <0 449 1>;
 			label = "modem";
-			qcom,not-loadable;
 		};
 
-		qcom,smd-adsp {
-			compatible = "qcom,smd";
+		smd_adsp: adsp {
 			qcom,smd-edge = <1>;
-			qcom,smd-irq-offset = <0x0>;
-			qcom,smd-irq-bitmask = <0x100>;
+			qcom,remote-pid = <2>;
+			mboxes = <&apcs 8>;
 			interrupts = <0 156 1>;
 			label = "adsp";
 		};
 
-		qcom,smd-dsps {
-			compatible = "qcom,smd";
+		smd_slpi: slpi {
 			qcom,smd-edge = <3>;
-			qcom,smd-irq-offset = <0x0>;
-			qcom,smd-irq-bitmask = <0x2000000>;
+			qcom,remote-pid = <3>;
+			mboxes = <&apcs 25>;
 			interrupts = <0 176 1>;
-			label = "dsps";
+			label = "slpi";
 		};
 
-		qcom,smd-rpm {
-			compatible = "qcom,smd";
-			qcom,smd-edge = <15>;
-			qcom,smd-irq-offset = <0x0>;
-			qcom,smd-irq-bitmask = <0x1>;
-			interrupts = <0 168 1>;
-			label = "rpm";
-			qcom,irq-no-suspend;
-			qcom,not-loadable;
-		};
+	};
+
+	apcs: mailbox@9820000 {
+		compatible = "qcom,msm8996-apcs-hmss-global";
+		reg = <0x9820000 0x1000>;
+		#mbox-cells = <1>;
 	};
 
 	wdog: qcom,wdt@9830000 {
@@ -1874,10 +1886,10 @@
 	};
 
 	rpm_bus: qcom,rpm-smd {
-		 compatible = "qcom,rpm-glink";
-		 qcom,glink-edge = "rpm";
-		 rpm-channel-name = "rpm_requests";
-	 };
+		compatible = "qcom,rpm-smd";
+		rpm-channel-name = "rpm_requests";
+		interrupts = <0 168 1>;
+	};
 
 	qcom,smdpkt {
 		compatible = "qcom,smdpkt";
@@ -4128,89 +4140,77 @@
 		interrupts = <1 7 4>;
 	};
 
-	qcom,glink-smem-native-xprt-modem@86000000 {
-		compatible = "qcom,glink-smem-native-xprt";
-		reg = <0x86000000 0x200000>,
-			<0x9820010 0x4>;
-		reg-names = "smem", "irq-reg-base";
-		qcom,irq-mask = <0x8000>;
-		interrupts = <0 452 1>;
-		label = "mpss";
+	qcom,glink {
+		compatible = "qcom,glink";
+
+		glink_mpss: modem {
+			qcom,remote-pid = <1>;
+			transport = "smem";
+			mboxes = <&apcs 15>;
+			interrupts = <0 452 1>;
+			label = "modem";
+			qcom,glink-label = "mpss";
+
+			qrtr {
+				qcom,glink-channels = "IPCRTR";
+				qcom,intents = <0x800 5>, <0x2000 3>, <0x4400 2>;
+			};
+
+			ssr {
+				qcom,glink-channels = "glink_ssr";
+				qcom,notify-edges = <&glink_lpass>, <&glink_dsps>;
+			};
+		};
+
+		glink_lpass: adsp {
+			qcom,remote-pid = <2>;
+			transport = "smem";
+			mboxes = <&apcs 9>;
+			interrupts = <0 157 1>;
+			label = "adsp";
+			qcom,glink-label = "lpass";
+
+			qrtr {
+				qcom,glink-channels = "IPCRTR";
+				qcom,intents = <0x800 5>, <0x2000 3>, <0x4400 2>;
+			};
+
+			ssr {
+				qcom,glink-channels = "glink_ssr";
+				qcom,notify-edges = <&glink_mpss>, <&glink_dsps>;
+			};
+		};
+
+		glink_dsps: slpi {
+			qcom,remote-pid = <3>;
+			transport = "smem";
+			mboxes = <&apcs 27>;
+			interrupts = <0 179 1>;
+			label = "slpi";
+			qcom,glink-label = "dsps";
+
+			qrtr {
+				qcom,glink-channels = "IPCRTR";
+				qcom,intents = <0x800 5>, <0x2000 3>, <0x4400 2>;
+			};
+
+			ssr {
+				qcom,glink-channels = "glink_ssr";
+				qcom,notify-edges = <&glink_mpss>, <&glink_lpass>;
+			};
+		};
 	};
 
-	qcom,glink-smem-native-xprt-adsp@86000000 {
-		compatible = "qcom,glink-smem-native-xprt";
-		reg = <0x86000000 0x200000>,
-			<0x9820010 0x4>;
-		reg-names = "smem", "irq-reg-base";
-		qcom,irq-mask = <0x200>;
-		interrupts = <0 157 1>;
-		label = "lpass";
-		cpu-affinity = <1 2>;
-		qcom,qos-config = <&glink_qos_adsp>;
-		qcom,ramp-time = <0xaf>;
-	};
-
-	glink_qos_adsp: qcom,glink-qos-config-adsp {
-		compatible = "qcom,glink-qos-config";
-		qcom,flow-info = <0x3c 0x0>,
-				<0x3c 0x0>,
-				<0x3c 0x0>,
-				<0x3c 0x0>;
-		qcom,mtu-size = <0x800>;
-		qcom,tput-stats-cycle = <0xa>;
-	};
-
-	qcom,glink-smem-native-xprt-dsps@86000000 {
-		compatible = "qcom,glink-smem-native-xprt";
-		reg = <0x86000000 0x200000>,
-			<0x9820010 0x4>;
-		reg-names = "smem", "irq-reg-base";
-		qcom,irq-mask = <0x8000000>;
-		interrupts = <0 179 1>;
-		label = "dsps";
-	};
-
-	qcom,glink-smem-native-xprt-rpm@68000 {
-		compatible = "qcom,glink-rpm-native-xprt";
-		reg = <0x68000 0x6000>,
-			<0x9820010 0x4>;
-		reg-names = "msgram", "irq-reg-base";
-		qcom,irq-mask = <0x1>;
+	glink_rpm: glink-rpm {
+		compatible = "qcom,glink-rpm";
+		qcom,rpm-msg-ram = <&rpm_xprt_ram>;
+		mboxes = <&apcs 0>;
 		interrupts = <0 168 1>;
 		label = "rpm";
-	};
 
-	glink_mpss: qcom,glink-ssr-modem {
-		compatible = "qcom,glink_ssr";
-		label = "modem";
-		qcom,edge = "mpss";
-		qcom,notify-edges = <&glink_lpass>, <&glink_dsps>, <&glink_rpm>;
-		qcom,xprt = "smem";
-	};
-
-	glink_lpass: qcom,glink-ssr-adsp {
-		compatible = "qcom,glink_ssr";
-		label = "adsp";
-		qcom,edge = "lpass";
-		qcom,notify-edges = <&glink_mpss>, <&glink_dsps>, <&glink_rpm>;
-		qcom,xprt = "smem";
-	};
-
-	glink_dsps: qcom,glink-ssr-dsps {
-		compatible = "qcom,glink_ssr";
-		label = "slpi";
-		qcom,edge = "dsps";
-		qcom,notify-edges = <&glink_mpss>, <&glink_lpass>, <&glink_rpm>;
-		qcom,xprt = "smem";
-	};
-
-	glink_rpm: qcom,glink-ssr-rpm {
-		compatible = "qcom,glink_ssr";
-		label = "rpm";
-		qcom,edge = "rpm";
-		qcom,notify-edges = <&glink_lpass>, <&glink_mpss>, <&glink_dsps>;
-		qcom,xprt = "smem";
+		rpm-requests {
+			qcom,glink-channels = "rpm_requests";
+		};
 	};
 
          qcom,glink_pkt {
