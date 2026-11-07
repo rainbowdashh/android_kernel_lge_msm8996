@@ -287,6 +287,7 @@ static struct clk_alpha_pll mmpll0_early = {
 		.enable_reg = 0x100,
 		.enable_mask = BIT(0),
 		.hw.init = &(struct clk_init_data){
+			VDD_DIG_FMAX_MAP2(LOWER, 400000000, NOMINAL, 800000000),
 			.name = "mmpll0_early",
 			.parent_names = (const char *[]){ "xo" },
 			.num_parents = 1,
@@ -300,7 +301,6 @@ static struct clk_alpha_pll_postdiv mmpll0 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 4,
 	.clkr.hw.init = &(struct clk_init_data){
-		VDD_DIG_FMAX_MAP2(LOWER, 400000000, NOMINAL, 800000000),
 		.name = "mmpll0",
 		.parent_names = (const char *[]){ "mmpll0_early" },
 		.num_parents = 1,
@@ -318,6 +318,7 @@ static struct clk_alpha_pll mmpll1_early = {
 		.enable_reg = 0x100,
 		.enable_mask = BIT(1),
 		.hw.init = &(struct clk_init_data){
+			VDD_DIG_FMAX_MAP2(LOWER, 370000000, NOMINAL, 740000000),
 			.name = "mmpll1_early",
 			.parent_names = (const char *[]){ "xo" },
 			.num_parents = 1,
@@ -331,7 +332,6 @@ static struct clk_alpha_pll_postdiv mmpll1 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 4,
 	.clkr.hw.init = &(struct clk_init_data){
-		VDD_DIG_FMAX_MAP2(LOWER, 370000000, NOMINAL, 740000000),
 		.name = "mmpll1",
 		.parent_names = (const char *[]){ "mmpll1_early" },
 		.num_parents = 1,
@@ -346,6 +346,7 @@ static struct clk_alpha_pll mmpll2_early = {
 	.vco_table = mmpll_gfx_vco,
 	.num_vco = ARRAY_SIZE(mmpll_gfx_vco),
 	.clkr.hw.init = &(struct clk_init_data){
+			VDD_DIG_FMAX_MAP1(LOWER, 410000000),
 		.name = "mmpll2_early",
 		.parent_names = (const char *[]){ "xo" },
 		.num_parents = 1,
@@ -358,7 +359,6 @@ static struct clk_alpha_pll_postdiv mmpll2 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 4,
 	.clkr.hw.init = &(struct clk_init_data){
-		VDD_DIG_FMAX_MAP1(LOWER, 410000000),
 		.name = "mmpll2",
 		.parent_names = (const char *[]){ "mmpll2_early" },
 		.num_parents = 1,
@@ -373,6 +373,7 @@ static struct clk_alpha_pll mmpll3_early = {
 	.vco_table = mmpll_p_vco,
 	.num_vco = ARRAY_SIZE(mmpll_p_vco),
 	.clkr.hw.init = &(struct clk_init_data){
+			VDD_DIG_FMAX_MAP2(LOWER, 450000000, NOMINAL, 900000000),
 		.name = "mmpll3_early",
 		.parent_names = (const char *[]){ "xo" },
 		.num_parents = 1,
@@ -385,7 +386,6 @@ static struct clk_alpha_pll_postdiv mmpll3 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 4,
 	.clkr.hw.init = &(struct clk_init_data){
-		VDD_DIG_FMAX_MAP2(LOWER, 450000000, NOMINAL, 900000000),
 		.name = "mmpll3",
 		.parent_names = (const char *[]){ "mmpll3_early" },
 		.num_parents = 1,
@@ -400,6 +400,7 @@ static struct clk_alpha_pll mmpll4_early = {
 	.vco_table = mmpll_t_vco,
 	.num_vco = ARRAY_SIZE(mmpll_t_vco),
 	.clkr.hw.init = &(struct clk_init_data){
+			VDD_MMPLL4_FMAX_MAP2(LOWER, 480000000, NOMINAL, 960000000),
 		.name = "mmpll4_early",
 		.parent_names = (const char *[]){ "xo" },
 		.num_parents = 1,
@@ -412,7 +413,6 @@ static struct clk_alpha_pll_postdiv mmpll4 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 2,
 	.clkr.hw.init = &(struct clk_init_data){
-		VDD_MMPLL4_FMAX_MAP2(LOWER, 480000000, NOMINAL, 960000000),
 		.name = "mmpll4",
 		.parent_names = (const char *[]){ "mmpll4_early" },
 		.num_parents = 1,
@@ -427,6 +427,7 @@ static struct clk_alpha_pll mmpll5_early = {
 	.vco_table = mmpll_p_vco,
 	.num_vco = ARRAY_SIZE(mmpll_p_vco),
 	.clkr.hw.init = &(struct clk_init_data){
+			VDD_DIG_FMAX_MAP2(LOWER, 360000000, LOW, 720000000),
 		.name = "mmpll5_early",
 		.parent_names = (const char *[]){ "xo" },
 		.num_parents = 1,
@@ -439,7 +440,6 @@ static struct clk_alpha_pll_postdiv mmpll5 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 4,
 	.clkr.hw.init = &(struct clk_init_data){
-		VDD_DIG_FMAX_MAP2(LOWER, 360000000, LOW, 720000000),
 		.name = "mmpll5",
 		.parent_names = (const char *[]){ "mmpll5_early" },
 		.num_parents = 1,
@@ -454,6 +454,7 @@ static struct clk_alpha_pll mmpll8_early = {
 	.vco_table = mmpll_gfx_vco,
 	.num_vco = ARRAY_SIZE(mmpll_gfx_vco),
 	.clkr.hw.init = &(struct clk_init_data){
+			VDD_DIG_FMAX_MAP1(LOWER, 360000000),
 		.name = "mmpll8_early",
 		.parent_names = (const char *[]){ "xo" },
 		.num_parents = 1,
@@ -466,7 +467,6 @@ static struct clk_alpha_pll_postdiv mmpll8 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 4,
 	.clkr.hw.init = &(struct clk_init_data){
-		VDD_DIG_FMAX_MAP1(LOWER, 360000000),
 		.name = "mmpll8",
 		.parent_names = (const char *[]){ "mmpll8_early" },
 		.num_parents = 1,
@@ -481,6 +481,7 @@ static struct clk_alpha_pll mmpll9_early = {
 	.vco_table = mmpll_t_vco,
 	.num_vco = ARRAY_SIZE(mmpll_t_vco),
 	.clkr.hw.init = &(struct clk_init_data){
+			VDD_MMPLL4_FMAX_MAP2(LOWER, 480000000, NOMINAL, 960000000),
 		.name = "mmpll9_early",
 		.parent_names = (const char *[]){ "xo" },
 		.num_parents = 1,
@@ -493,7 +494,6 @@ static struct clk_alpha_pll_postdiv mmpll9 = {
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.width = 2,
 	.clkr.hw.init = &(struct clk_init_data){
-		VDD_MMPLL4_FMAX_MAP2(LOWER, 480000000, NOMINAL, 960000000),
 		.name = "mmpll9",
 		.parent_names = (const char *[]){ "mmpll9_early" },
 		.num_parents = 1,
@@ -3286,30 +3286,30 @@ static int mmcc_msm8996_probe(struct platform_device *pdev)
 
 	if (of_device_is_compatible(dev->of_node, "qcom,mmcc-msm8996-v3") ||
 	    of_device_is_compatible(dev->of_node, "qcom,mmcc-msm8996-pro")) {
-		mmpll1.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 405000000;
-		mmpll1.clkr.hw.init->rate_max[VDD_DIG_LOW] = 405000000;
-		mmpll1.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 810000000;
-		mmpll1.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 810000000;
-		mmpll2.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 1000000000;
-		mmpll2.clkr.hw.init->rate_max[VDD_DIG_LOW] = 1000000000;
-		mmpll2.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 1000000000;
-		mmpll2.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 1000000000;
-		mmpll3.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 520000000;
-		mmpll3.clkr.hw.init->rate_max[VDD_DIG_LOW] = 520000000;
-		mmpll3.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 1040000000;
-		mmpll3.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 1040000000;
-		mmpll5.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 412500000;
-		mmpll5.clkr.hw.init->rate_max[VDD_DIG_LOW] = 825000000;
-		mmpll5.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 825000000;
-		mmpll5.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 825000000;
-		mmpll8.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 1000000000;
-		mmpll8.clkr.hw.init->rate_max[VDD_DIG_LOW] = 1000000000;
-		mmpll8.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 1000000000;
-		mmpll8.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 1000000000;
-		mmpll9.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 624000000;
-		mmpll9.clkr.hw.init->rate_max[VDD_DIG_LOW] = 624000000;
-		mmpll9.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 1248000000;
-		mmpll9.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 1248000000;
+		mmpll1_early.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 405000000;
+		mmpll1_early.clkr.hw.init->rate_max[VDD_DIG_LOW] = 405000000;
+		mmpll1_early.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 810000000;
+		mmpll1_early.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 810000000;
+		mmpll2_early.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 1000000000;
+		mmpll2_early.clkr.hw.init->rate_max[VDD_DIG_LOW] = 1000000000;
+		mmpll2_early.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 1000000000;
+		mmpll2_early.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 1000000000;
+		mmpll3_early.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 520000000;
+		mmpll3_early.clkr.hw.init->rate_max[VDD_DIG_LOW] = 520000000;
+		mmpll3_early.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 1040000000;
+		mmpll3_early.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 1040000000;
+		mmpll5_early.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 412500000;
+		mmpll5_early.clkr.hw.init->rate_max[VDD_DIG_LOW] = 825000000;
+		mmpll5_early.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 825000000;
+		mmpll5_early.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 825000000;
+		mmpll8_early.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 1000000000;
+		mmpll8_early.clkr.hw.init->rate_max[VDD_DIG_LOW] = 1000000000;
+		mmpll8_early.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 1000000000;
+		mmpll8_early.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 1000000000;
+		mmpll9_early.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 624000000;
+		mmpll9_early.clkr.hw.init->rate_max[VDD_DIG_LOW] = 624000000;
+		mmpll9_early.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 1248000000;
+		mmpll9_early.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 1248000000;
 		csiphy0_3p_clk_src.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 384000000;
 		csiphy1_3p_clk_src.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 384000000;
 		csiphy2_3p_clk_src.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 384000000;
