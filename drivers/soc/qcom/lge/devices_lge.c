@@ -131,7 +131,6 @@ static int __init lge_get_retrycount_init (char *s)
 __setup("androidboot.vendor.lge.retrycount=", lge_get_retrycount_init);
 #endif
 
-#ifdef CONFIG_LGE_USB_FACTORY
 /* get boot mode information from cmdline.
  * If any boot mode is not specified,
  * boot mode is normal type.
@@ -316,7 +315,6 @@ static int __init lge_add_qfprom_devices(void)
 arch_initcall(lge_add_qfprom_devices);
 #endif
 
-#endif /* CONFIG_LGE_USB_FACTORY */
 
 static int lge_bd_rev = HW_REV_1_0;
 

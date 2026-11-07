@@ -1,7 +1,6 @@
 #ifndef __ASM_ARCH_MSM_BOARD_LGE_H
 #define __ASM_ARCH_MSM_BOARD_LGE_H
 
-#ifdef CONFIG_LGE_USB_FACTORY
 typedef enum {
 	LGE_BOOT_MODE_NORMAL = 0,
 	LGE_BOOT_MODE_CHARGER,
@@ -42,6 +41,7 @@ lge_boot_mode_t lge_get_boot_mode(void);
 bool lge_get_qemmode_boot(void);
 bool lge_get_factory_boot(void);
 lge_factory_cable_t lge_get_factory_cable(void);
+#ifdef CONFIG_LGE_USB_FACTORY
 bool lge_get_android_dlcomplete(void);
 lge_laf_mode_t lge_get_laf_mode(void);
 #endif
