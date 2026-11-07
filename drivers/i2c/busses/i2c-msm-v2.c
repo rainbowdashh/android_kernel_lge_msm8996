@@ -44,7 +44,6 @@ static int i2c_msm_xfer_wait_for_completion(struct i2c_msm_ctrl *ctrl,
 						struct completion *complete);
 static int  i2c_msm_pm_resume(struct device *dev);
 static void i2c_msm_pm_suspend(struct device *dev);
-static void i2c_msm_clk_path_init(struct i2c_msm_ctrl *ctrl);
 static struct pinctrl_state *
 	i2c_msm_rsrcs_gpio_get_state(struct i2c_msm_ctrl *ctrl,
 					const char *name);
@@ -1552,14 +1551,13 @@ poll_active_end:
 	return ret;
 }
 
-static void i2c_msm_clk_path_vote(struct i2c_msm_ctrl *ctrl)
+static int i2c_msm_clk_path_vote(struct i2c_msm_ctrl *ctrl)
 {
-	i2c_msm_clk_path_init(ctrl);
-
 	if (ctrl->rsrcs.clk_path_vote.client_hdl)
-		msm_bus_scale_client_update_request(
+		return msm_bus_scale_client_update_request(
 					ctrl->rsrcs.clk_path_vote.client_hdl,
 					I2C_MSM_CLK_PATH_RESUME_VEC);
+	return 0;
 }
 
 static void i2c_msm_clk_path_unvote(struct i2c_msm_ctrl *ctrl)
@@ -1570,8 +1568,10 @@ static void i2c_msm_clk_path_unvote(struct i2c_msm_ctrl *ctrl)
 					I2C_MSM_CLK_PATH_SUSPEND_VEC);
 }
 
-static void i2c_msm_clk_path_teardown(struct i2c_msm_ctrl *ctrl)
+static void i2c_msm_clk_path_teardown(void *data)
 {
+	struct i2c_msm_ctrl *ctrl = data;
+
 	if (ctrl->rsrcs.clk_path_vote.client_hdl) {
 		msm_bus_scale_unregister_client(
 					ctrl->rsrcs.clk_path_vote.client_hdl);
@@ -1591,19 +1591,19 @@ static int i2c_msm_clk_path_init_structs(struct i2c_msm_ctrl *ctrl)
 
 	i2c_msm_dbg(ctrl, MSM_PROF, "initializes path clock voting structs\n");
 
-	paths = kzalloc(sizeof(*paths) * 2, GFP_KERNEL);
+	paths = devm_kcalloc(ctrl->dev, 2, sizeof(*paths), GFP_KERNEL);
 	if (!paths)
 		return -ENOMEM;
 
-	usecases = kzalloc(sizeof(*usecases) * 2, GFP_KERNEL);
+	usecases = devm_kcalloc(ctrl->dev, 2, sizeof(*usecases), GFP_KERNEL);
 	if (!usecases)
-		goto path_init_err;
+		return -ENOMEM;
 
-	ctrl->rsrcs.clk_path_vote.pdata = kzalloc(
+	ctrl->rsrcs.clk_path_vote.pdata = devm_kzalloc(ctrl->dev,
 				       sizeof(*ctrl->rsrcs.clk_path_vote.pdata),
 				       GFP_KERNEL);
 	if (!ctrl->rsrcs.clk_path_vote.pdata)
-		goto path_init_err;
+		return -ENOMEM;
 
 	paths[I2C_MSM_CLK_PATH_SUSPEND_VEC] = (struct msm_bus_vectors) {
 		.src = ctrl->rsrcs.clk_path_vote.mstr_id,
@@ -1636,75 +1636,27 @@ static int i2c_msm_clk_path_init_structs(struct i2c_msm_ctrl *ctrl)
 	};
 
 	return 0;
-
-path_init_err:
-	kfree(paths);
-	kfree(usecases);
-	kfree(ctrl->rsrcs.clk_path_vote.pdata);
-	ctrl->rsrcs.clk_path_vote.pdata = NULL;
-	return -ENOMEM;
 }
 
-/*
- * i2c_msm_clk_path_postponed_register: reg with bus-scaling after it is probed
- *
- * @return zero on success
- *
- * Workaround: i2c driver may be probed before the bus scaling driver. Calling
- * msm_bus_scale_register_client() will fail if the bus scaling driver is not
- * ready yet. Thus, this function should be called not from probe but from a
- * later context. Also, this function may be called more then once before
- * register succeed. At this case only one error message will be logged. At boot
- * time all clocks are on, so earlier i2c transactions should succeed.
- */
-static int i2c_msm_clk_path_postponed_register(struct i2c_msm_ctrl *ctrl)
+/* Register before any QUP access; bootloader bus votes are not guaranteed. */
+static int i2c_msm_clk_path_init(struct i2c_msm_ctrl *ctrl)
 {
+	int ret;
+
+	if (!ctrl->rsrcs.clk_path_vote.mstr_id)
+		return 0;
+
+	ret = i2c_msm_clk_path_init_structs(ctrl);
+	if (ret)
+		return ret;
+
 	ctrl->rsrcs.clk_path_vote.client_hdl =
 		msm_bus_scale_register_client(ctrl->rsrcs.clk_path_vote.pdata);
+	if (!ctrl->rsrcs.clk_path_vote.client_hdl)
+		return -EPROBE_DEFER;
 
-	if (ctrl->rsrcs.clk_path_vote.client_hdl) {
-		if (ctrl->rsrcs.clk_path_vote.reg_err) {
-			/* log a success message if an error msg was logged */
-			ctrl->rsrcs.clk_path_vote.reg_err = false;
-			dev_err(ctrl->dev,
-				"msm_bus_scale_register_client(mstr-id:%d):0x%x (ok)\n",
-				ctrl->rsrcs.clk_path_vote.mstr_id,
-				ctrl->rsrcs.clk_path_vote.client_hdl);
-		}
-	} else {
-		/* guard to log only one error on multiple failure */
-		if (!ctrl->rsrcs.clk_path_vote.reg_err) {
-			ctrl->rsrcs.clk_path_vote.reg_err = true;
-
-			dev_info(ctrl->dev,
-				"msm_bus_scale_register_client(mstr-id:%d):0 (not a problem)\n",
-				ctrl->rsrcs.clk_path_vote.mstr_id);
-		}
-	}
-
-	return ctrl->rsrcs.clk_path_vote.client_hdl ? 0 : -EAGAIN;
-}
-
-static void i2c_msm_clk_path_init(struct i2c_msm_ctrl *ctrl)
-{
-	/*
-	 * bail out if path voting is diabled (master_id == 0) or if it is
-	 * already registered (client_hdl != 0)
-	 */
-	if (!ctrl->rsrcs.clk_path_vote.mstr_id ||
-		ctrl->rsrcs.clk_path_vote.client_hdl)
-		return;
-
-	/* if fail once then try no more */
-	if (!ctrl->rsrcs.clk_path_vote.pdata &&
-					i2c_msm_clk_path_init_structs(ctrl)) {
-		ctrl->rsrcs.clk_path_vote.mstr_id = 0;
-		return;
-	}
-
-	/* on failure try again later */
-	if (i2c_msm_clk_path_postponed_register(ctrl))
-		return;
+	return devm_add_action_or_reset(ctrl->dev,
+				      i2c_msm_clk_path_teardown, ctrl);
 }
 
 /*
@@ -2227,13 +2179,11 @@ static int i2c_msm_pm_clk_enable(struct i2c_msm_ctrl *ctrl)
 	if (ret) {
 		dev_err(ctrl->dev,
 			"error on clk_enable(iface_clk):%d\n", ret);
-		i2c_msm_pm_clk_unprepare(ctrl);
 		return ret;
 	}
 	ret = clk_enable(ctrl->rsrcs.core_clk);
 	if (ret) {
 		clk_disable(ctrl->rsrcs.iface_clk);
-		i2c_msm_pm_clk_unprepare(ctrl);
 		dev_err(ctrl->dev,
 			"error clk_enable(core_clk):%d\n", ret);
 	}
@@ -2247,21 +2197,25 @@ static int i2c_msm_pm_xfer_start(struct i2c_msm_ctrl *ctrl)
 	mutex_lock(&ctrl->xfer.mtx);
 
 	i2c_msm_pm_pinctrl_state(ctrl, true);
-	pm_runtime_get_sync(ctrl->dev);
+	ret = pm_runtime_get_sync(ctrl->dev);
+	if (ret < 0) {
+		pm_runtime_put_noidle(ctrl->dev);
+		goto err_unlock;
+	}
 	/*
 	 * if runtime PM callback was not invoked (when both runtime-pm
 	 * and systme-pm are in transition concurrently)
 	 */
 	if (ctrl->pwr_state != I2C_MSM_PM_RT_ACTIVE) {
 		dev_info(ctrl->dev, "Runtime PM-callback was not invoked\n");
-		i2c_msm_pm_resume(ctrl->dev);
+		ret = i2c_msm_pm_resume(ctrl->dev);
+		if (ret)
+			goto err_runtime;
 	}
 
 	ret = i2c_msm_pm_clk_enable(ctrl);
-	if (ret) {
-		mutex_unlock(&ctrl->xfer.mtx);
-		return ret;
-	}
+	if (ret)
+		goto err_runtime;
 	i2c_msm_qup_init(ctrl);
 
 	/* Set xfer to active state (efectively enabling our ISR)*/
@@ -2269,6 +2223,16 @@ static int i2c_msm_pm_xfer_start(struct i2c_msm_ctrl *ctrl)
 
 	enable_irq(ctrl->rsrcs.irq);
 	return 0;
+
+err_runtime:
+	if (!pm_runtime_enabled(ctrl->dev))
+		i2c_msm_pm_suspend(ctrl->dev);
+	pm_runtime_mark_last_busy(ctrl->dev);
+	pm_runtime_put_autosuspend(ctrl->dev);
+err_unlock:
+	i2c_msm_pm_pinctrl_state(ctrl, false);
+	mutex_unlock(&ctrl->xfer.mtx);
+	return ret;
 }
 
 static void i2c_msm_pm_xfer_end(struct i2c_msm_ctrl *ctrl)
@@ -2710,7 +2674,6 @@ static void i2c_msm_rsrcs_clk_teardown(struct i2c_msm_ctrl *ctrl)
 {
 	clk_put(ctrl->rsrcs.core_clk);
 	clk_put(ctrl->rsrcs.iface_clk);
-	i2c_msm_clk_path_teardown(ctrl);
 }
 
 
@@ -2743,14 +2706,21 @@ static void i2c_msm_pm_suspend(struct device *dev)
 static int i2c_msm_pm_resume(struct device *dev)
 {
 	struct i2c_msm_ctrl *ctrl = dev_get_drvdata(dev);
+	int ret;
 
 	if (ctrl->pwr_state == I2C_MSM_PM_RT_ACTIVE)
 		return 0;
 
-	i2c_msm_dbg(ctrl, MSM_DBG, "resuming...\n");
+	ret = i2c_msm_clk_path_vote(ctrl);
+	if (ret)
+		return ret;
 
-	i2c_msm_clk_path_vote(ctrl);
-	i2c_msm_pm_clk_prepare(ctrl);
+	ret = i2c_msm_pm_clk_prepare(ctrl);
+	if (ret) {
+		i2c_msm_clk_path_unvote(ctrl);
+		return ret;
+	}
+
 	ctrl->pwr_state = I2C_MSM_PM_RT_ACTIVE;
 	return 0;
 }
@@ -2922,21 +2892,27 @@ static int i2c_msm_probe(struct platform_device *pdev)
 	if (ret)
 		goto mem_err;
 
+	ret = i2c_msm_clk_path_init(ctrl);
+	if (ret)
+		goto clk_err;
+
 	ret = i2c_msm_rsrcs_clk_init(ctrl);
 	if (ret)
 		goto clk_err;
 
 	/* vote for clock to enable reading the version number off the HW */
-	i2c_msm_clk_path_vote(ctrl);
+	ret = i2c_msm_clk_path_vote(ctrl);
+	if (ret)
+		goto err_no_pinctrl;
 
 	ret = i2c_msm_pm_clk_prepare(ctrl);
 	if (ret)
-		goto clk_err;
+		goto err_unvote;
 
 	ret = i2c_msm_pm_clk_enable(ctrl);
 	if (ret) {
 		i2c_msm_pm_clk_unprepare(ctrl);
-		goto clk_err;
+		goto err_unvote;
 	}
 
 	/*
@@ -2950,6 +2926,8 @@ static int i2c_msm_probe(struct platform_device *pdev)
 	i2c_msm_pm_clk_disable(ctrl);
 	i2c_msm_pm_clk_unprepare(ctrl);
 	i2c_msm_clk_path_unvote(ctrl);
+	if (ret)
+		goto err_no_pinctrl;
 
 	ret = i2c_msm_rsrcs_gpio_pinctrl_init(ctrl);
 	if (ret)
@@ -2975,6 +2953,8 @@ reg_err:
 	i2c_msm_rsrcs_irq_teardown(ctrl);
 irq_err:
 	i2x_msm_blk_free_cache(ctrl);
+err_unvote:
+	i2c_msm_clk_path_unvote(ctrl);
 err_no_pinctrl:
 	i2c_msm_rsrcs_clk_teardown(ctrl);
 clk_err:
