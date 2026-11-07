@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: GPL-2.0-or-later */
+// SPDX-License-Identifier: GPL-2.0-or-later
 /*
  * G6/Lucye DirtySanta-style modem fixup.
  */
@@ -7,6 +7,7 @@
 #include <linux/bug.h>
 #include <linux/compiler.h>
 #include <linux/init.h>
+#include <linux/io.h>
 #include <linux/kernel.h>
 #include <linux/printk.h>
 #include <linux/string.h>
@@ -79,8 +80,8 @@ static int dirtysanta_g6_copy_cmdline_value(const char *key,
 
 static int dirtysanta_g6_load_config(void)
 {
-	const char model_key[] = "model.name=";
-	const char sim_key[] = "lge.sim_num=";
+	static const char model_key[] = "model.name=";
+	static const char sim_key[] = "lge.sim_num=";
 	char *match;
 
 	if (!g6_dev_name[0])
@@ -144,6 +145,9 @@ static int dirtysanta_g6_fixup_msm_modem(struct platform_device *pdev)
 	if (g6_nt_code[0])
 		dirtysanta_g6_write_smem_string(vendor0->nt_code, g6_nt_code,
 						sizeof(vendor0->nt_code));
+
+	/* Publish the identity before the remote modem can consume it. */
+	wmb();
 
 	return 0;
 }
