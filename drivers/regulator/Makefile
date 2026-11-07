@@ -147,3 +147,4 @@ obj-$(CONFIG_REGULATOR_RPMH) += rpmh-regulator.o
 obj-$(CONFIG_REGULATOR_STUB) += stub-regulator.o
 
 ccflags-$(CONFIG_REGULATOR_DEBUG) += -DDEBUG
+obj-$(CONFIG_REGULATOR_CPR3_MMSS) += cpr3-mmss-regulator.o

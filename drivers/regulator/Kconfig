@@ -1088,6 +1088,14 @@ config REGULATOR_CPR3
 	  or decrease requests all the way to the PMIC without software
 	  involvement.
 
+config REGULATOR_CPR3_MMSS
+	bool "MSM8996 multimedia CPR regulator"
+	depends on OF && ARCH_MSM8996
+	select REGULATOR_CPR3
+	help
+	  Support the CPR3 graphics voltage regulator on MSM8996 and
+	  MSM8996 Pro, including its fuse-based voltage calibration.
+
 config REGULATOR_CPR4_MMSS_LDO
 	bool "RBCPR3 regulator for MMSS LDO"
 	depends on OF
