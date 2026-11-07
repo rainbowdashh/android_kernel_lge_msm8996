@@ -1,0 +1,593 @@
+/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+
+/dts-v1/;
+
+#include "../../../qcom/msm8996-v3.dtsi"
+#include "../../../qcom/msm-pmi8996.dtsi"
+#include "../../../qcom/msm8996-mtp.dtsi"
+#include "msm8996-lucye_global_com.dtsi"
+
+/ {
+	model = "Qualcomm Technologies, Inc. MSM 8996 v3.x + PMI8996 MTP";
+	compatible = "qcom,msm8996-mtp", "qcom,msm8996", "qcom,mtp";
+	qcom,board-id = <0x308 0>;
+};
+
+&i2c_6 {
+	tusb422@20 {
+		status = "disabled";
+	};
+};
+
+&pmi8994_charger {
+	/delete-property/qcom,external-typec;
+	/delete-property/qcom,typec-psy-name;
+};
+
+/* Display Function */
+&soc {
+	dsi_panel_pwr_supply: dsi_panel_pwr_supply {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		qcom,panel-supply-entry@0 {
+			reg = <0>;
+			qcom,supply-name = "lab";
+			qcom,supply-min-voltage = <4600000>;
+			qcom,supply-max-voltage = <6000000>;
+			qcom,supply-enable-load = <100000>;
+			qcom,supply-disable-load = <100>;
+		};
+
+		qcom,panel-supply-entry@1 {
+			reg = <1>;
+			qcom,supply-name = "ibb";
+			qcom,supply-min-voltage = <4600000>;
+			qcom,supply-max-voltage = <6000000>;
+			qcom,supply-enable-load = <100000>;
+			qcom,supply-disable-load = <100>;
+			qcom,supply-post-on-sleep = <20>;
+		};
+	};
+};
+
+&mdss_dsi0 {
+	qcom,dsi-pref-prim-pan = <&dsi_sw49408_dsc_1440_2880_cmd>;
+	lge,extra-gpio-names = "vddio", "vpnl";
+
+	lge,gpio-vddio = <&tlmm 69 0>;
+	lge,gpio-vpnl = <&tlmm 94 0>;
+};
+
+&mdss_dsi1 {
+	/delete-property/cell-index;
+};
+
+/* pinctrl for Display function
+ * GPIO69 : LCD_VDD_IO_EN
+ * GPIO94 : LCD_VCL_EN
+ */
+&soc {
+	tlmm: pinctrl@1010000 {
+		pmx_mdss: pmx_mdss {
+			mdss_dsi_active1: mdss_dsi_active1 {
+				mux {
+					pins = "gpio69";
+					function = "gpio";
+				};
+				pmx_mdss {
+					pins = "gpio69";
+					drive-strength = <8>; /* 8 mA */
+					bias-disable = <0>; /* no pull */
+					output-high;
+				};
+			};
+
+			mdss_dsi_active2: mdss_dsi_active2 {
+				mux {
+					pins = "gpio94";
+					function = "gpio";
+				};
+				pmx_mdss {
+					pins = "gpio94";
+					drive-strength = <8>; /* 8 mA */
+					bias-disable = <0>; /* no pull */
+					output-high;
+				};
+			};
+
+			mdss_dsi_suspend1: mdss_dsi_suspend1 {
+				mux {
+					pins = "gpio69";
+					function = "gpio";
+				};
+				config {
+					pins = "gpio69";
+					drive-strength = <2>; /* 2 mA */
+					bias-pull-down; /* pull down */
+				};
+			};
+
+			mdss_dsi_suspend2: mdss_dsi_suspend2 {
+				mux {
+					pins = "gpio94";
+					function = "gpio";
+				};
+				config {
+					pins = "gpio94";
+					drive-strength = <2>; /* 2 mA */
+					bias-pull-down; /* pull down */
+				};
+			};
+		};
+	};
+};
+
+&pmi8994_charger {
+    lge,lge_otp_enable;
+};
+
+&pmi8994_mpps {
+	default-state {
+		mpp1 {	/* MPP 1 VBACKUP_ADC */
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			function = "analog";
+			input-enable = <1>;
+			output-enable = <0>;
+			qcom,dtest = <0>;
+			qcom,paired = <0>;
+			qcom,amux-route = <0>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+		mpp2 { /* MPP 2 - FLASH_STROBE_TRIG */
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			function = "digital";
+			input-enable = <1>;
+			output-enable = <0>;
+			power-source = <2>;
+			qcom,dtest = <0>;
+			qcom,paired = <0>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+		mpp4 { /* MPP 4 - NC */
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			function = "analog";
+			input-enable = <1>;
+			output-enable = <0>;
+			power-source = <2>;
+			qcom,dtest = <0>;
+			qcom,paired = <0>;
+			bias-high-impedance;
+			status = "okay";
+		};
+
+	};
+};
+
+&pmi8994_gpios {
+	default-state {
+		gpio1 { /* GPIO 1 - NC */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			bias-high-impedance;
+			status = "okay";
+		};
+
+		gpio2 { /* GPIO 2 - NC */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			qcom,pull-up-strength = <0>;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-high;
+			qcom,drive-strength = <1>;
+			bias-high-impedance;
+			status = "okay";
+		};
+
+		gpio3 {	/* GPIO 3 SPKR_AMP_EN2 */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+		gpio4 { /* GPIO 4 - EIS_LDO_EN */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+		gpio5 { /* GPIO 5 - NC */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-disable;
+			/delete-property/ drive-push-pull;
+			/delete-property/ drive-open-drain;
+			/delete-property/ drive-open-source;
+			drive-push-pull;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <2>;
+			bias-high-impedance;
+			status = "okay";
+		};
+
+		gpio6 { /* GPIO 6 - NC */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			bias-high-impedance;
+			status = "okay";
+		};
+
+		gpio7 { /* GPIO 7 - NC */
+			input-enable = <1>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			/delete-property/ drive-push-pull;
+			/delete-property/ drive-open-drain;
+			/delete-property/ drive-open-source;
+			drive-open-source;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <2>;
+			bias-high-impedance;
+			status = "okay";
+		};
+
+		gpio8 { /* GPIO 8 - NC */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			qcom,pull-up-strength = <0>;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-high;
+			qcom,drive-strength = <1>;
+			bias-high-impedance;
+			status = "okay";
+		};
+
+		gpio9 { /* GPIO 9 - NC */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			bias-high-impedance;
+			status = "okay";
+		};
+
+		gpio10 { /* GPIO 10 - NC */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			bias-high-impedance;
+			status = "okay";
+		};
+
+	};
+};
+
+&pm8994_mpps {
+	default-state {
+		mpp2 { /* MPP 2 - NC */
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			function = "digital";
+			input-enable = <1>;
+			output-enable = <0>;
+			power-source = <2>;
+			qcom,dtest = <0>;
+			qcom,paired = <0>;
+			bias-high-impedance;
+			status = "okay";
+		};
+
+		mpp4 { /* MPP 4 - NC */
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			function = "digital";
+			input-enable = <1>;
+			output-enable = <0>;
+			power-source = <2>;
+			qcom,dtest = <0>;
+			qcom,paired = <0>;
+			bias-high-impedance;
+			status = "okay";
+		};
+
+		mpp5 { /* MPP 5 - NC */
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			function = "digital";
+			input-enable = <1>;
+			output-enable = <0>;
+			power-source = <2>;
+			qcom,dtest = <0>;
+			qcom,paired = <0>;
+			bias-high-impedance;
+			status = "okay";
+		};
+
+		mpp6 { /* MPP 6 - STAT_SMB1350 */
+			function = "digital";
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			power-source = <2>;
+			qcom,dtest = <0>;
+			qcom,paired = <0>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+		mpp7 { /* MPP 7 - NC */
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			function = "digital";
+			input-enable = <1>;
+			output-enable = <0>;
+			power-source = <2>;
+			qcom,dtest = <0>;
+			qcom,paired = <0>;
+			bias-high-impedance;
+			status = "okay";
+
+		};
+
+		mpp8 { /* MPP 8 - NC */
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			function = "digital";
+			input-enable = <1>;
+			output-enable = <0>;
+			power-source = <2>;
+			qcom,dtest = <0>;
+			qcom,paired = <0>;
+			bias-high-impedance;
+			status = "okay";
+		};
+
+	};
+};
+
+&pm8994_gpios {
+	default-state {
+		gpio5 { /* GPIO 5 - SWAP_CTRL_EN1 */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <0>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <2>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+		gpio6 { /* GPIO 6 - MENU_KEY_TOUCH_PM -> 16M_AVDD_EN */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+		gpio7 { /* GPIO 7 - BACK_KEY_TOUCH_PM -> 8M_AVDD_EN */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+		gpio9 { /* GPIO 9 */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			qcom,drive-strength = <1>;
+			/delete-property/ bias-high-impedance;
+			status = "disabled";
+		};
+
+		gpio10 { /* GPIO 10 - NC */
+			bias-high-impedance;
+			status = "okay";
+		};
+
+		gpio11 { /* GPIO 11 - NC */
+			bias-high-impedance;
+			status = "okay";
+		};
+
+		gpio12 { /* GPIO 12 */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "disabled";
+		};
+
+		gpio13 { /* GPIO 13 */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "disabled";
+		};
+
+		gpio14 { /* GPIO 14 */
+			input-enable = <0>;
+			output-enable;
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			power-source = <2>;
+			function = "normal";
+			/delete-property/ output-high;
+			/delete-property/ output-low;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "disabled";
+		};
+
+	};
+};
+
+&soc {
+	qcom,msm-thermal {
+		qcom,freq-mitigation-value = <1190400>;
+	};
+	qcom,bcl {
+		qcom,ibat-monitor {
+			qcom,mitigation-freq-khz = <1190400>;
+		};
+	};
+};
