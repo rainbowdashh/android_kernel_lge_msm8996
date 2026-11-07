@@ -182,7 +182,7 @@ config LGE_BOOTLOADER_TIME_CHECKER
 
 config LGE_RTC_START_YEAR
     int "Set rtc start time offset"
-    default n
+    default 1970
     depends on MACH_LGE
     help
       Set rtc start time offset
