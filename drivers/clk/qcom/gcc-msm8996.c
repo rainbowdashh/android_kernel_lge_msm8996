@@ -19,6 +19,7 @@
 #include <linux/of.h>
 #include <linux/of_device.h>
 #include <linux/clk-provider.h>
+#include <linux/clk.h>
 #include <linux/regmap.h>
 #include <linux/reset-controller.h>
 
@@ -30,7 +31,6 @@
 #include "clk-rcg.h"
 #include "clk-branch.h"
 #include "reset.h"
-#include "gdsc.h"
 
 #include "vdd-level-8996.h"
 
@@ -185,7 +185,7 @@ static struct clk_fixed_factor xo = {
 	.div = 1,
 	.hw.init = &(struct clk_init_data){
 		.name = "xo",
-		.parent_names = (const char *[]){ "xo_board" },
+		.parent_names = (const char *[]){ "cxo_clk_src" },
 		.num_parents = 1,
 		.ops = &clk_fixed_factor_ops,
 	},
@@ -1396,7 +1396,7 @@ static struct clk_branch gcc_mmss_noc_cfg_ahb_clk = {
 			.name = "gcc_mmss_noc_cfg_ahb_clk",
 			.parent_names = (const char *[]){ "config_noc_clk_src" },
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT | CLK_IGNORE_UNUSED,
+			.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -3156,6 +3156,112 @@ static struct clk_branch gcc_rx1_usb2_clkref_clk = {
 	},
 };
 
+static struct clk_branch gcc_mss_cfg_ahb_clk = {
+	.halt_reg = 0x8a000,
+	.halt_check = BRANCH_HALT_VOTED,
+	.clkr = {
+		.enable_reg = 0x8a000,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_mss_cfg_ahb_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_mss_q6_bimc_axi_clk = {
+	.halt_reg = 0x8a028,
+	.halt_check = BRANCH_HALT_VOTED,
+	.clkr = {
+		.enable_reg = 0x8a028,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_mss_q6_bimc_axi_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_mss_snoc_axi_clk = {
+	.halt_reg = 0x8a024,
+	.halt_check = BRANCH_HALT_VOTED,
+	.clkr = {
+		.enable_reg = 0x8a024,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_mss_snoc_axi_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_mss_mnoc_bimc_axi_clk = {
+	.halt_reg = 0x8a004,
+	.halt_check = BRANCH_HALT_VOTED,
+	.clkr = {
+		.enable_reg = 0x8a004,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_mss_mnoc_bimc_axi_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_dcc_ahb_clk = {
+	.halt_reg = 0x84004,
+	.halt_check = BRANCH_HALT_VOTED,
+	.clkr = {
+		.enable_reg = 0x84004,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_dcc_ahb_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_aggre0_noc_mpu_cfg_ahb_clk = {
+	.halt_reg = 0x85000,
+	.halt_check = BRANCH_HALT_VOTED,
+	.clkr = {
+		.enable_reg = 0x85000,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_aggre0_noc_mpu_cfg_ahb_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_mmss_gpll0_div_clk = {
+	.halt_check = BRANCH_HALT_DELAY,
+	.clkr = {
+		.enable_reg = 0x5200c,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_mmss_gpll0_div_clk",
+			.parent_names = (const char *[]){ "gpll0" },
+			.num_parents = 1,
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gpll0_out_msscc = {
+	.halt_check = BRANCH_HALT_DELAY,
+	.clkr = {
+		.enable_reg = 0x5200c,
+		.enable_mask = BIT(2),
+		.hw.init = &(struct clk_init_data){
+			.name = "gpll0_out_msscc",
+			.parent_names = (const char *[]){ "gpll0" },
+			.num_parents = 1,
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
 static struct clk_hw *gcc_msm8996_hws[] = {
 	&xo.hw,
 	&gpll0_early_div.hw,
@@ -3164,84 +3270,15 @@ static struct clk_hw *gcc_msm8996_hws[] = {
 	&ufs_ice_core_postdiv_clk_src.hw,
 };
 
-static struct gdsc aggre0_noc_gdsc = {
-	.gdscr = 0x81004,
-	.gds_hw_ctrl = 0x81028,
-	.pd = {
-		.name = "aggre0_noc",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = VOTABLE | ALWAYS_ON,
-};
-
-static struct gdsc hlos1_vote_aggre0_noc_gdsc = {
-	.gdscr = 0x7d024,
-	.pd = {
-		.name = "hlos1_vote_aggre0_noc",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = VOTABLE,
-};
-
-static struct gdsc hlos1_vote_lpass_adsp_gdsc = {
-	.gdscr = 0x7d034,
-	.pd = {
-		.name = "hlos1_vote_lpass_adsp",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = VOTABLE,
-};
-
-static struct gdsc hlos1_vote_lpass_core_gdsc = {
-	.gdscr = 0x7d038,
-	.pd = {
-		.name = "hlos1_vote_lpass_core",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = VOTABLE,
-};
-
-static struct gdsc usb30_gdsc = {
-	.gdscr = 0xf004,
-	.pd = {
-		.name = "usb30",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc pcie0_gdsc = {
-	.gdscr = 0x6b004,
-	.pd = {
-		.name = "pcie0",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc pcie1_gdsc = {
-	.gdscr = 0x6d004,
-	.pd = {
-		.name = "pcie1",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc pcie2_gdsc = {
-	.gdscr = 0x6e004,
-	.pd = {
-		.name = "pcie2",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc ufs_gdsc = {
-	.gdscr = 0x75004,
-	.pd = {
-		.name = "ufs",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
 static struct clk_regmap *gcc_msm8996_clocks[] = {
+	[GCC_MSS_CFG_AHB_CLK] = &gcc_mss_cfg_ahb_clk.clkr,
+	[GCC_MSS_Q6_BIMC_AXI_CLK] = &gcc_mss_q6_bimc_axi_clk.clkr,
+	[GCC_MSS_SNOC_AXI_CLK] = &gcc_mss_snoc_axi_clk.clkr,
+	[GCC_MSS_MNOC_BIMC_AXI_CLK] = &gcc_mss_mnoc_bimc_axi_clk.clkr,
+	[GCC_DCC_AHB_CLK] = &gcc_dcc_ahb_clk.clkr,
+	[GCC_AGGRE0_NOC_MPU_CFG_AHB_CLK] = &gcc_aggre0_noc_mpu_cfg_ahb_clk.clkr,
+	[GCC_MMSS_GPLL0_DIV_CLK] = &gcc_mmss_gpll0_div_clk.clkr,
+	[GPLL0_OUT_MSSCC] = &gpll0_out_msscc.clkr,
 	[GPLL0_EARLY] = &gpll0_early.clkr,
 	[GPLL0] = &gpll0.clkr,
 	[GPLL4_EARLY] = &gpll4_early.clkr,
@@ -3428,18 +3465,6 @@ static struct clk_regmap *gcc_msm8996_clocks[] = {
 	[GCC_RX1_USB2_CLKREF_CLK] = &gcc_rx1_usb2_clkref_clk.clkr,
 };
 
-static struct gdsc *gcc_msm8996_gdscs[] = {
-	[AGGRE0_NOC_GDSC] = &aggre0_noc_gdsc,
-	[HLOS1_VOTE_AGGRE0_NOC_GDSC] = &hlos1_vote_aggre0_noc_gdsc,
-	[HLOS1_VOTE_LPASS_ADSP_GDSC] = &hlos1_vote_lpass_adsp_gdsc,
-	[HLOS1_VOTE_LPASS_CORE_GDSC] = &hlos1_vote_lpass_core_gdsc,
-	[USB30_GDSC] = &usb30_gdsc,
-	[PCIE0_GDSC] = &pcie0_gdsc,
-	[PCIE1_GDSC] = &pcie1_gdsc,
-	[PCIE2_GDSC] = &pcie2_gdsc,
-	[UFS_GDSC] = &ufs_gdsc,
-};
-
 static const struct qcom_reset_map gcc_msm8996_resets[] = {
 	[GCC_SYSTEM_NOC_BCR] = { 0x4000 },
 	[GCC_CONFIG_NOC_BCR] = { 0x5000 },
@@ -3563,8 +3588,6 @@ static const struct qcom_cc_desc gcc_msm8996_desc = {
 	.num_clks = ARRAY_SIZE(gcc_msm8996_clocks),
 	.resets = gcc_msm8996_resets,
 	.num_resets = ARRAY_SIZE(gcc_msm8996_resets),
-	.gdscs = gcc_msm8996_gdscs,
-	.num_gdscs = ARRAY_SIZE(gcc_msm8996_gdscs),
 };
 
 static const struct of_device_id gcc_msm8996_match_table[] = {
@@ -3578,7 +3601,14 @@ static int gcc_msm8996_probe(struct platform_device *pdev)
 	struct device *dev = &pdev->dev;
 	int i, ret;
 	struct regmap *regmap;
+	struct clk *cxo;
 
+	/* RPM must supply the XO before clocks can acquire their parents. */
+	cxo = devm_clk_get(dev, "xo");
+	if (IS_ERR(cxo))
+		return PTR_ERR(cxo);
+
+	vdd_corner[VDD_DIG_LOWER] = RPM_REGULATOR_CORNER_SVS_KRAIT;
 	vdd_dig.regulator[0] = devm_regulator_get(dev, "vdd_dig");
 	if (IS_ERR(vdd_dig.regulator[0]))
 		return PTR_ERR(vdd_dig.regulator[0]);
@@ -3598,6 +3628,27 @@ static int gcc_msm8996_probe(struct platform_device *pdev)
 		if (ret)
 			return ret;
 	}
+
+	if (of_device_is_compatible(dev->of_node, "qcom,gcc-msm8996-v3")) {
+		unsigned long *rates = pcie_aux_clk_src.clkr.hw.init->rate_max;
+
+		rates[VDD_DIG_LOWER] = 9600000;
+		rates[VDD_DIG_LOW] = 19200000;
+		rates[VDD_DIG_NOMINAL] = 19200000;
+		rates[VDD_DIG_HIGH] = 19200000;
+
+		rates = usb30_master_clk_src.clkr.hw.init->rate_max;
+		rates[VDD_DIG_LOW] = 133333000;
+		rates[VDD_DIG_NOMINAL] = 200000000;
+		rates[VDD_DIG_HIGH] = 240000000;
+
+		sdcc1_apps_clk_src.clkr.hw.init->rate_max[VDD_DIG_LOW] = 50000000;
+		sdcc2_apps_clk_src.clkr.hw.init->rate_max[VDD_DIG_LOW] = 50000000;
+		sdcc3_apps_clk_src.clkr.hw.init->rate_max[VDD_DIG_LOW] = 50000000;
+	}
+
+	/* Keep the HMSS AHB register clock enabled, as in the vendor driver. */
+	regmap_update_bits(regmap, 0x52004, BIT(21), BIT(21));
 
 	return qcom_cc_really_probe(pdev, &gcc_msm8996_desc, regmap);
 }

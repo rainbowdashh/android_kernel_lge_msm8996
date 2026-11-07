@@ -32,7 +32,6 @@
 #include "clk-rcg.h"
 #include "clk-branch.h"
 #include "reset.h"
-#include "gdsc.h"
 
 #include "vdd-level-8996.h"
 
@@ -255,7 +254,7 @@ static struct clk_fixed_factor gpll0_div = {
 	.div = 2,
 	.hw.init = &(struct clk_init_data){
 		.name = "gpll0_div",
-		.parent_names = (const char *[]){ "gpll0" },
+		.parent_names = (const char *[]){ "gcc_mmss_gpll0_div_clk" },
 		.num_parents = 1,
 		.ops = &clk_fixed_factor_ops,
 	},
@@ -2997,179 +2996,6 @@ static struct clk_hw *mmcc_msm8996_hws[] = {
 	&gpll0_div.hw,
 };
 
-static struct gdsc mmagic_bimc_gdsc = {
-	.gdscr = 0x529c,
-	.pd = {
-		.name = "mmagic_bimc",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = ALWAYS_ON,
-};
-
-static struct gdsc mmagic_video_gdsc = {
-	.gdscr = 0x119c,
-	.gds_hw_ctrl = 0x120c,
-	.pd = {
-		.name = "mmagic_video",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = VOTABLE | ALWAYS_ON,
-};
-
-static struct gdsc mmagic_mdss_gdsc = {
-	.gdscr = 0x247c,
-	.gds_hw_ctrl = 0x2480,
-	.pd = {
-		.name = "mmagic_mdss",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = VOTABLE | ALWAYS_ON,
-};
-
-static struct gdsc mmagic_camss_gdsc = {
-	.gdscr = 0x3c4c,
-	.gds_hw_ctrl = 0x3c50,
-	.pd = {
-		.name = "mmagic_camss",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = VOTABLE | ALWAYS_ON,
-};
-
-static struct gdsc venus_gdsc = {
-	.gdscr = 0x1024,
-	.cxcs = (unsigned int []){ 0x1028, 0x1034, 0x1038 },
-	.cxc_count = 3,
-	.pd = {
-		.name = "venus",
-	},
-	.parent = &mmagic_video_gdsc.pd,
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc venus_core0_gdsc = {
-	.gdscr = 0x1040,
-	.cxcs = (unsigned int []){ 0x1048 },
-	.cxc_count = 1,
-	.pd = {
-		.name = "venus_core0",
-	},
-	.parent = &venus_gdsc.pd,
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = HW_CTRL,
-};
-
-static struct gdsc venus_core1_gdsc = {
-	.gdscr = 0x1044,
-	.cxcs = (unsigned int []){ 0x104c },
-	.cxc_count = 1,
-	.pd = {
-		.name = "venus_core1",
-	},
-	.parent = &venus_gdsc.pd,
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = HW_CTRL,
-};
-
-static struct gdsc camss_gdsc = {
-	.gdscr = 0x34a0,
-	.cxcs = (unsigned int []){ 0x36bc, 0x36c4 },
-	.cxc_count = 2,
-	.pd = {
-		.name = "camss",
-	},
-	.parent = &mmagic_camss_gdsc.pd,
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc vfe0_gdsc = {
-	.gdscr = 0x3664,
-	.cxcs = (unsigned int []){ 0x36a8 },
-	.cxc_count = 1,
-	.pd = {
-		.name = "vfe0",
-	},
-	.parent = &camss_gdsc.pd,
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc vfe1_gdsc = {
-	.gdscr = 0x3674,
-	.cxcs = (unsigned int []){ 0x36ac },
-	.cxc_count = 1,
-	.pd = {
-		.name = "vfe1",
-	},
-	.parent = &camss_gdsc.pd,
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc jpeg_gdsc = {
-	.gdscr = 0x35a4,
-	.cxcs = (unsigned int []){ 0x35a8, 0x35b0, 0x35c0, 0x35b8 },
-	.cxc_count = 4,
-	.pd = {
-		.name = "jpeg",
-	},
-	.parent = &camss_gdsc.pd,
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc cpp_gdsc = {
-	.gdscr = 0x36d4,
-	.cxcs = (unsigned int []){ 0x36b0 },
-	.cxc_count = 1,
-	.pd = {
-		.name = "cpp",
-	},
-	.parent = &camss_gdsc.pd,
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc fd_gdsc = {
-	.gdscr = 0x3b64,
-	.cxcs = (unsigned int []){ 0x3b68, 0x3b6c },
-	.cxc_count = 2,
-	.pd = {
-		.name = "fd",
-	},
-	.parent = &camss_gdsc.pd,
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc mdss_gdsc = {
-	.gdscr = 0x2304,
-	.cxcs = (unsigned int []){ 0x2310, 0x231c },
-	.cxc_count = 2,
-	.pd = {
-		.name = "mdss",
-	},
-	.parent = &mmagic_mdss_gdsc.pd,
-	.pwrsts = PWRSTS_OFF_ON,
-};
-
-static struct gdsc gpu_gdsc = {
-	.gdscr = 0x4034,
-	.gds_hw_ctrl = 0x4038,
-	.pd = {
-		.name = "gpu",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = VOTABLE,
-};
-
-static struct gdsc gpu_gx_gdsc = {
-	.gdscr = 0x4024,
-	.clamp_io_ctrl = 0x4300,
-	.cxcs = (unsigned int []){ 0x4028 },
-	.cxc_count = 1,
-	.pd = {
-		.name = "gpu_gx",
-	},
-	.pwrsts = PWRSTS_OFF_ON,
-	.flags = CLAMP_IO,
-};
-
 static struct clk_regmap *mmcc_msm8996_clocks[] = {
 	[MMPLL0_EARLY] = &mmpll0_early.clkr,
 	[MMPLL0_PLL] = &mmpll0.clkr,
@@ -3344,25 +3170,6 @@ static struct clk_regmap *mmcc_msm8996_clocks[] = {
 	[FD_AHB_CLK] = &fd_ahb_clk.clkr,
 };
 
-static struct gdsc *mmcc_msm8996_gdscs[] = {
-	[MMAGIC_BIMC_GDSC] = &mmagic_bimc_gdsc,
-	[MMAGIC_VIDEO_GDSC] = &mmagic_video_gdsc,
-	[MMAGIC_MDSS_GDSC] = &mmagic_mdss_gdsc,
-	[MMAGIC_CAMSS_GDSC] = &mmagic_camss_gdsc,
-	[VENUS_GDSC] = &venus_gdsc,
-	[VENUS_CORE0_GDSC] = &venus_core0_gdsc,
-	[VENUS_CORE1_GDSC] = &venus_core1_gdsc,
-	[CAMSS_GDSC] = &camss_gdsc,
-	[VFE0_GDSC] = &vfe0_gdsc,
-	[VFE1_GDSC] = &vfe1_gdsc,
-	[JPEG_GDSC] = &jpeg_gdsc,
-	[CPP_GDSC] = &cpp_gdsc,
-	[FD_GDSC] = &fd_gdsc,
-	[MDSS_GDSC] = &mdss_gdsc,
-	[GPU_GDSC] = &gpu_gdsc,
-	[GPU_GX_GDSC] = &gpu_gx_gdsc,
-};
-
 static const struct qcom_reset_map mmcc_msm8996_resets[] = {
 	[MMAGICAHB_BCR] = { 0x5020 },
 	[MMAGIC_CFG_BCR] = { 0x5050 },
@@ -3440,8 +3247,6 @@ static const struct qcom_cc_desc mmcc_msm8996_desc = {
 	.num_clks = ARRAY_SIZE(mmcc_msm8996_clocks),
 	.resets = mmcc_msm8996_resets,
 	.num_resets = ARRAY_SIZE(mmcc_msm8996_resets),
-	.gdscs = mmcc_msm8996_gdscs,
-	.num_gdscs = ARRAY_SIZE(mmcc_msm8996_gdscs),
 };
 
 static const struct of_device_id mmcc_msm8996_match_table[] = {
