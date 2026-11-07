@@ -1520,7 +1520,6 @@ static int qcom_smd_parse_edge(struct device *dev,
 	int irq;
 	int ret;
 
-	INIT_LIST_HEAD(&edge->channels);
 	spin_lock_init(&edge->channels_lock);
 
 	INIT_WORK(&edge->scan_work, qcom_channel_scan_worker);
@@ -1624,6 +1623,8 @@ static void qcom_smd_edge_release(struct device *dev)
 		kfree(channel);
 	}
 
+	ipc_log_context_destroy(edge->ipc);
+	of_node_put(edge->of_node);
 	kfree(edge);
 }
 
@@ -1659,6 +1660,7 @@ struct qcom_smd_edge *qcom_smd_register_edge(struct device *parent,
 	if (!edge)
 		return ERR_PTR(-ENOMEM);
 
+	INIT_LIST_HEAD(&edge->channels);
 	init_waitqueue_head(&edge->new_channel_event);
 
 	edge->dev.parent = parent;
@@ -1737,27 +1739,9 @@ int qcom_smd_unregister_edge(struct qcom_smd_edge *edge)
 }
 EXPORT_SYMBOL(qcom_smd_unregister_edge);
 
-static int qcom_smd_probe(struct platform_device *pdev)
-{
-	struct device_node *node;
-	void *p;
-
-	/* Wait for smem */
-	p = qcom_smem_get(QCOM_SMEM_HOST_ANY, smem_items[0].alloc_tbl_id, NULL);
-	if (PTR_ERR(p) == -EPROBE_DEFER)
-		return PTR_ERR(p);
-
-	for_each_available_child_of_node(pdev->dev.of_node, node)
-		qcom_smd_register_edge(&pdev->dev, node);
-
-	return 0;
-}
-
 static int qcom_smd_remove_edge(struct device *dev, void *data)
 {
 	struct qcom_smd_edge *edge = to_smd_edge(dev);
-
-	ipc_log_context_destroy(edge->ipc);
 
 	return qcom_smd_unregister_edge(edge);
 }
@@ -1775,6 +1759,31 @@ static int qcom_smd_remove(struct platform_device *pdev)
 		dev_warn(&pdev->dev, "can't remove smd device: %d\n", ret);
 
 	return ret;
+}
+
+static int qcom_smd_probe(struct platform_device *pdev)
+{
+	struct device_node *node;
+	struct qcom_smd_edge *edge;
+	void *p;
+	int ret;
+
+	/* Wait for smem */
+	p = qcom_smem_get(QCOM_SMEM_HOST_ANY, smem_items[0].alloc_tbl_id, NULL);
+	if (PTR_ERR(p) == -EPROBE_DEFER)
+		return PTR_ERR(p);
+
+	for_each_available_child_of_node(pdev->dev.of_node, node) {
+		edge = qcom_smd_register_edge(&pdev->dev, node);
+		if (IS_ERR(edge)) {
+			ret = PTR_ERR(edge);
+			of_node_put(node);
+			qcom_smd_remove(pdev);
+			return ret;
+		}
+	}
+
+	return 0;
 }
 
 static const struct of_device_id qcom_smd_of_match[] = {
