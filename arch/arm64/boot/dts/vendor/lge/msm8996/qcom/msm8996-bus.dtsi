@@ -175,14 +175,14 @@
 				"mmagic-camss-cfg-noc-ahb-no-rate",
 				"mmagic-video-axi-no-rate",
 				"mmagic-video-cfg-noc-ahb-no-rate";
-				clocks = <&clock_mmss clk_mmss_mmagic_ahb_clk>,
-			     <&clock_mmss clk_mmss_mmagic_cfg_ahb_clk>,
-			     <&clock_mmss clk_mmagic_mdss_axi_clk>,
-			     <&clock_mmss clk_mmagic_mdss_noc_cfg_ahb_clk>,
-			     <&clock_mmss clk_mmagic_camss_axi_clk>,
-			     <&clock_mmss clk_mmagic_camss_noc_cfg_ahb_clk>,
-			     <&clock_mmss clk_mmagic_video_axi_clk>,
-			     <&clock_mmss clk_mmagic_video_noc_cfg_ahb_clk>;
+				clocks = <&clock_mmss MMSS_MMAGIC_AHB_CLK>,
+			     <&clock_mmss MMSS_MMAGIC_CFG_AHB_CLK>,
+			     <&clock_mmss MMAGIC_MDSS_AXI_CLK>,
+			     <&clock_mmss MMAGIC_MDSS_NOC_CFG_AHB_CLK>,
+			     <&clock_mmss MMAGIC_CAMSS_AXI_CLK>,
+			     <&clock_mmss MMAGIC_CAMSS_NOC_CFG_AHB_CLK>,
+			     <&clock_mmss MMAGIC_VIDEO_AXI_CLK>,
+			     <&clock_mmss MMAGIC_VIDEO_NOC_CFG_AHB_CLK>;
 			};
 		};
 
@@ -195,8 +195,8 @@
 			qcom,setrate-only-clk;
 			qcom,bus-type = <1>;
 			clock-names = "bus_clk", "bus_a_clk";
-			clocks = <&clock_mmss clk_ahb_clk_src>,
-			     <&clock_mmss clk_ahb_clk_src>;
+			clocks = <&clock_mmss AHB_CLK_SRC>,
+			     <&clock_mmss AHB_CLK_SRC>;
 			bus-gdsc-supply = <&gdsc_mmagic_bimc>;
 			bus-a-gdsc-supply = <&gdsc_mmagic_bimc>;
 		};
@@ -1346,7 +1346,7 @@
 			qcom,slv-rpm-id = <ICBID_SLAVE_VMEM_CFG>;
 			qcom,enable-only-clk;
 			clock-names = "node_clk";
-			clocks = <&clock_mmss clk_mmss_mmagic_maxi_clk>;
+			clocks = <&clock_mmss MMSS_MMAGIC_MAXI_CLK>;
 			node-gdsc-supply = <&gdsc_mmagic_video>;
 		};
 
@@ -1523,7 +1523,7 @@
 			qcom,bus-dev = <&fab_mnoc>;
 			qcom,slv-rpm-id = <ICBID_SLAVE_VMEM>;
 			clock-names = "node_clk";
-			clocks = <&clock_mmss clk_mmss_mmagic_maxi_clk>;
+			clocks = <&clock_mmss MMSS_MMAGIC_MAXI_CLK>;
 			node-gdsc-supply = <&gdsc_mmagic_video>;
 		};
 

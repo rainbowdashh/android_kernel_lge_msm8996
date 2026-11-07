@@ -10,6 +10,10 @@
  * GNU General Public License for more details.
  */
 
+#include <dt-bindings/clock/qcom,mmcc-msm8996.h>
+#include <dt-bindings/clock/mdss-14nm-pll-clk.h>
+
+
 #include "skeleton64.dtsi"
 #include <dt-bindings/clock/msm-clocks-8996.h>
 #include <dt-bindings/clock/qcom,gcc-msm8996.h>
@@ -874,7 +878,7 @@
 	};
 
 	clock_mmss: qcom,mmsscc@8c0000 {
-		compatible = "qcom,mmsscc-8996";
+		compatible = "qcom,mmcc-msm8996";
 		reg = <0x8c0000 0xb00c>,
 			<0x74130 0x8>;
 		reg-names = "cc_base", "efuse";
@@ -891,10 +895,10 @@
 		clocks = <&rpmcc RPM_SMD_XO_CLK_SRC>,
 			 <&clock_gcc GPLL0>,
 			 <&clock_gcc GCC_MMSS_GPLL0_DIV_CLK>,
-			 <&mdss_dsi0_pll clk_dsi0pll_pixel_clk_mux>,
-			 <&mdss_dsi1_pll clk_dsi1pll_pixel_clk_mux>,
-			 <&mdss_dsi0_pll clk_dsi0pll_byte_clk_mux>,
-			 <&mdss_dsi1_pll clk_dsi1pll_byte_clk_mux>,
+			 <&mdss_dsi0_pll PIX0_MUX_CLK>,
+			 <&mdss_dsi1_pll PIX1_MUX_CLK>,
+			 <&mdss_dsi0_pll BYTE0_MUX_CLK>,
+			 <&mdss_dsi1_pll BYTE1_MUX_CLK>,
 			<&mdss_hdmi_pll clk_hdmi_vco_clk>;
 		#clock-cells = <1>;
 		#reset-cells = <1>;
@@ -927,16 +931,6 @@
 		#clock-cells = <1>;
 	};
 
-	clock_debug: qcom,cc-debug@362000 {
-		compatible = "qcom,cc-debug-8996";
-		reg = <0x362000 0x4>;
-		reg-names = "cc_base";
-		clock-names = "debug_mmss_clk", "debug_gpu_clk", "debug_cpu_clk";
-		clocks = <&clock_mmss clk_mmss_gcc_dbg_clk>,
-			 <&clock_gpu clk_gpu_gcc_dbg_clk>,
-			 <&clock_cpu clk_cpu_debug_mux>;
-		#clock-cells = <1>;
-	};
 
 	qcom,rmtfs_sharedmem@0 {
 		compatible = "qcom,sharedmem-uio";
@@ -2356,10 +2350,10 @@
 		vdd-supply = <&gdsc_venus>;
 		qcom,proxy-reg-names = "vdd";
 
-		clocks = <&clock_mmss clk_video_core_clk>,
-			<&clock_mmss clk_video_ahb_clk>,
-			<&clock_mmss clk_video_axi_clk>,
-			<&clock_mmss clk_video_maxi_clk>;
+		clocks = <&clock_mmss VIDEO_CORE_CLK>,
+			<&clock_mmss VIDEO_AHB_CLK>,
+			<&clock_mmss VIDEO_AXI_CLK>,
+			<&clock_mmss VIDEO_MAXI_CLK>;
 		clock-names = "core_clk", "iface_clk",
 				"bus_clk", "maxi_clk";
 		qcom,proxy-clock-names = "core_clk", "iface_clk",
@@ -4395,60 +4389,60 @@
 
 &gdsc_venus {
 	clock-names = "bus_clk", "maxi_clk", "core_clk";
-	clocks = <&clock_mmss clk_video_axi_clk>,
-		 <&clock_mmss clk_video_maxi_clk>,
-		 <&clock_mmss clk_video_core_clk>;
+	clocks = <&clock_mmss VIDEO_AXI_CLK>,
+		 <&clock_mmss VIDEO_MAXI_CLK>,
+		 <&clock_mmss VIDEO_CORE_CLK>;
 	parent-supply = <&gdsc_mmagic_video>;
 	status = "ok";
 };
 
 &gdsc_venus_core0 {
 	clock-names = "core0_clk";
-	clocks = <&clock_mmss clk_video_subcore0_clk>;
+	clocks = <&clock_mmss VIDEO_SUBCORE0_CLK>;
 	status = "ok";
 };
 
 &gdsc_venus_core1 {
 	clock-names = "core1_clk";
-	clocks = <&clock_mmss clk_video_subcore1_clk>;
+	clocks = <&clock_mmss VIDEO_SUBCORE1_CLK>;
 	status = "ok";
 };
 
 &gdsc_camss_top {
 	clock-names = "bus_clk", "vfe_axi";
-	clocks = <&clock_mmss clk_camss_cpp_axi_clk>,
-		 <&clock_mmss clk_camss_vfe_axi_clk>;
+	clocks = <&clock_mmss CAMSS_CPP_AXI_CLK>,
+		 <&clock_mmss CAMSS_VFE_AXI_CLK>;
 	parent-supply = <&gdsc_mmagic_camss>;
 	status = "ok";
 };
 
 &gdsc_vfe0 {
 	clock-names = "core0_clk";
-	clocks = <&clock_mmss clk_camss_vfe0_clk>;
+	clocks = <&clock_mmss CAMSS_VFE0_CLK>;
 	parent-supply = <&gdsc_camss_top>;
 	status = "ok";
 };
 
 &gdsc_vfe1 {
 	clock-names = "core1_clk";
-	clocks = <&clock_mmss clk_camss_vfe1_clk>;
+	clocks = <&clock_mmss CAMSS_VFE1_CLK>;
 	parent-supply = <&gdsc_camss_top>;
 	status = "ok";
 };
 
 &gdsc_jpeg {
 	clock-names = "bus_clk", "dma_clk", "core0_clk", "core2_clk";
-	clocks = <&clock_mmss clk_camss_jpeg_axi_clk>,
-		 <&clock_mmss clk_camss_jpeg_dma_clk>,
-		 <&clock_mmss clk_camss_jpeg0_clk>,
-		 <&clock_mmss clk_camss_jpeg2_clk>;
+	clocks = <&clock_mmss CAMSS_JPEG_AXI_CLK>,
+		 <&clock_mmss CAMSS_JPEG_DMA_CLK>,
+		 <&clock_mmss CAMSS_JPEG0_CLK>,
+		 <&clock_mmss CAMSS_JPEG2_CLK>;
 	parent-supply = <&gdsc_camss_top>;
 	status = "ok";
 };
 
 &gdsc_cpp {
 	clock-names = "core_clk";
-	clocks = <&clock_mmss clk_camss_cpp_clk>;
+	clocks = <&clock_mmss CAMSS_CPP_CLK>;
 	parent-supply = <&gdsc_camss_top>;
 	qcom,support-hw-trigger;
 	status = "ok";
@@ -4456,15 +4450,15 @@
 
 &gdsc_fd {
 	clock-names = "core_clk", "core_uar_clk";
-	clocks = <&clock_mmss clk_fd_core_clk>,
-		 <&clock_mmss clk_fd_core_uar_clk>;
+	clocks = <&clock_mmss FD_CORE_CLK>,
+		 <&clock_mmss FD_CORE_UAR_CLK>;
 	parent-supply = <&gdsc_camss_top>;
 	status = "ok";
 };
 
 &gdsc_mdss {
 	clock-names = "bus_clk";
-	clocks = <&clock_mmss clk_mdss_axi_clk>;
+	clocks = <&clock_mmss MDSS_AXI_CLK>;
 	parent-supply = <&gdsc_mmagic_mdss>;
 	proxy-supply = <&gdsc_mdss>;
 	qcom,proxy-consumer-enable;

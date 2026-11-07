@@ -10,6 +10,10 @@
  * GNU General Public License for more details.
  */
 
+#include <dt-bindings/clock/qcom,mmcc-msm8996.h>
+#include <dt-bindings/clock/mdss-14nm-pll-clk.h>
+
+
 /*
  * As a general rule, only version-specific property overrides should be placed
  * inside this file. Common device definitions should be placed inside the
@@ -29,12 +33,8 @@
 	compatible = "qcom,gcc-msm8996-v3", "qcom,gcc-msm8996";
 };
 
-&clock_debug {
-	compatible = "qcom,cc-debug-8996-v3";
-};
-
 &clock_mmss {
-	compatible = "qcom,mmsscc-8996-v3";
+	compatible = "qcom,mmcc-msm8996-v3", "qcom,mmcc-msm8996";
 };
 
 &clock_gpu {

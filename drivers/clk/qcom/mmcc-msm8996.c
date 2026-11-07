@@ -31,6 +31,7 @@
 #include "clk-alpha-pll.h"
 #include "clk-rcg.h"
 #include "clk-branch.h"
+#include "clk-voter.h"
 #include "reset.h"
 
 #include "vdd-level-8996.h"
@@ -85,8 +86,8 @@ static const struct parent_map mmss_xo_dsi0pll_dsi1pll_map[] = {
 
 static const char * const mmss_xo_dsi0pll_dsi1pll[] = {
 	"xo",
-	"dsi0pll",
-	"dsi1pll"
+	"dsi0_phy_pll_out_dsiclk",
+	"dsi1_phy_pll_out_dsiclk"
 };
 
 static const struct parent_map mmss_xo_gpll0_gpll0_div_map[] = {
@@ -2992,7 +2993,12 @@ static struct clk_branch fd_ahb_clk = {
 	},
 };
 
+static DEFINE_CLK_VOTER(mdss_mdp_vote_clk, mdss_mdp_clk, 0);
+static DEFINE_CLK_VOTER(mdss_rotator_vote_clk, mdss_rotator_clk, 0);
+
 static struct clk_hw *mmcc_msm8996_hws[] = {
+	[MDSS_MDP_VOTE_CLK] = &mdss_mdp_vote_clk.hw,
+	[MDSS_ROTATOR_VOTE_CLK] = &mdss_rotator_vote_clk.hw,
 	&gpll0_div.hw,
 };
 
@@ -3278,12 +3284,63 @@ static int mmcc_msm8996_probe(struct platform_device *pdev)
 	if (IS_ERR(regmap))
 		return PTR_ERR(regmap);
 
+	if (of_device_is_compatible(dev->of_node, "qcom,mmcc-msm8996-v3") ||
+	    of_device_is_compatible(dev->of_node, "qcom,mmcc-msm8996-pro")) {
+		mmpll1.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 405000000;
+		mmpll1.clkr.hw.init->rate_max[VDD_DIG_LOW] = 405000000;
+		mmpll1.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 810000000;
+		mmpll1.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 810000000;
+		mmpll2.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 1000000000;
+		mmpll2.clkr.hw.init->rate_max[VDD_DIG_LOW] = 1000000000;
+		mmpll2.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 1000000000;
+		mmpll2.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 1000000000;
+		mmpll3.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 520000000;
+		mmpll3.clkr.hw.init->rate_max[VDD_DIG_LOW] = 520000000;
+		mmpll3.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 1040000000;
+		mmpll3.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 1040000000;
+		mmpll5.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 412500000;
+		mmpll5.clkr.hw.init->rate_max[VDD_DIG_LOW] = 825000000;
+		mmpll5.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 825000000;
+		mmpll5.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 825000000;
+		mmpll8.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 1000000000;
+		mmpll8.clkr.hw.init->rate_max[VDD_DIG_LOW] = 1000000000;
+		mmpll8.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 1000000000;
+		mmpll8.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 1000000000;
+		mmpll9.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 624000000;
+		mmpll9.clkr.hw.init->rate_max[VDD_DIG_LOW] = 624000000;
+		mmpll9.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 1248000000;
+		mmpll9.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 1248000000;
+		csiphy0_3p_clk_src.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 384000000;
+		csiphy1_3p_clk_src.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 384000000;
+		csiphy2_3p_clk_src.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 384000000;
+		csi0phytimer_clk_src.clkr.hw.init->rate_max[VDD_DIG_LOW] = 200000000;
+		csi1phytimer_clk_src.clkr.hw.init->rate_max[VDD_DIG_LOW] = 200000000;
+		csi2phytimer_clk_src.clkr.hw.init->rate_max[VDD_DIG_LOW] = 200000000;
+		vfe0_clk_src.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 100000000;
+		vfe0_clk_src.clkr.hw.init->rate_max[VDD_DIG_LOW] = 300000000;
+		vfe1_clk_src.clkr.hw.init->rate_max[VDD_DIG_LOW] = 300000000;
+		mdp_clk_src.clkr.hw.init->rate_max[VDD_DIG_LOW] = 275000000;
+		mdp_clk_src.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 330000000;
+		mdp_clk_src.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 412500000;
+		maxi_clk_src.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 405000000;
+		rbcpr_clk_src.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 50000000;
+		rbcpr_clk_src.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 50000000;
+		video_core_clk_src.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 346666667;
+		video_core_clk_src.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 520000000;
+		video_subcore0_clk_src.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 346666667;
+		video_subcore0_clk_src.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 520000000;
+		video_subcore1_clk_src.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 346666667;
+		video_subcore1_clk_src.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 520000000;
+	}
+
 	/* Disable the AHB DCD */
 	regmap_update_bits(regmap, 0x50d8, BIT(31), 0);
 	/* Disable the NoC FSM for mmss_mmagic_cfg_ahb_clk */
 	regmap_update_bits(regmap, 0x5054, BIT(15), 0);
 
 	for (i = 0; i < ARRAY_SIZE(mmcc_msm8996_hws); i++) {
+		if (!mmcc_msm8996_hws[i])
+			continue;
 		ret = devm_clk_hw_register(dev, mmcc_msm8996_hws[i]);
 		if (ret)
 			return ret;

@@ -561,14 +561,4 @@
 #define PCIE_PHY_COM_BCR		15
 #define PCIE_PHY_NOCSR_COM_PHY_BCR	16
 
-/* MMSS Block resets */
-#define VIDEO_BCR			0
-#define MDSS_BCR			1
-#define CAMSS_MICRO_BCR			2
-#define CAMSS_JPEG_BCR			3
-#define CAMSS_VFE0_BCR			4
-#define CAMSS_VFE1_BCR			5
-#define FD_BCR				6
-#define GPU_GX_BCR			7
-
 #endif

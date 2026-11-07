@@ -10,6 +10,10 @@
  * GNU General Public License for more details.
  */
 
+#include <dt-bindings/clock/qcom,mmcc-msm8996.h>
+#include <dt-bindings/clock/mdss-14nm-pll-clk.h>
+
+
 &soc {
 
 	pil_gpu: qcom,kgsl-hyp {
@@ -102,7 +106,7 @@
 			<&clock_gpu clk_gpu_gx_rbbmtimer_clk>,
 			<&clock_gcc GCC_BIMC_GFX_CLK>,
 			<&clock_gcc GCC_MMSS_BIMC_GFX_CLK>,
-			<&clock_mmss clk_mmss_mmagic_ahb_clk>,
+			<&clock_mmss MMSS_MMAGIC_AHB_CLK>,
 			<&clock_gpu clk_gpu_mx_clk>;
 
 		clock-names = "core_clk", "iface_clk", "rbbmtimer_clk",
@@ -236,8 +240,8 @@
 		qcom,protect = <0x40000 0x20000>;
 		qcom,micro-mmu-control = <0x6000>;
 
-		clocks = <&clock_mmss clk_mmss_mmagic_ahb_clk>,
-			<&clock_mmss clk_mmss_mmagic_cfg_ahb_clk>,
+		clocks = <&clock_mmss MMSS_MMAGIC_AHB_CLK>,
+			<&clock_mmss MMSS_MMAGIC_CFG_AHB_CLK>,
 			<&clock_gpu clk_gpu_ahb_clk>,
 			<&clock_gcc GCC_MMSS_BIMC_GFX_CLK>,
 			<&clock_gcc GCC_BIMC_GFX_CLK>;

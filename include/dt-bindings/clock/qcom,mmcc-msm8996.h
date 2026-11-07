@@ -221,6 +221,9 @@
 #define MMSS_SPDM_RM_AXI_CLK				204
 #define MMSS_SPDM_RM_MAXI_CLK				205
 
+#define MDSS_MDP_VOTE_CLK				206
+#define MDSS_ROTATOR_VOTE_CLK				207
+
 #define MMAGICAHB_BCR					0
 #define MMAGIC_CFG_BCR					1
 #define MISC_BCR					2
