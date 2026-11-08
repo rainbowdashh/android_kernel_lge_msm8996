@@ -38,20 +38,63 @@
 		 * subsystem is inactiv3
 		 */
 		qcom,active-only;
-		qcom,bw-tbl =
-			<     0 /*  off     */ >,
-			<   762 /*  100 MHz */ >,
-			<  1144 /*  150 MHz */ >,
-			<  1525 /*  200 MHz */ >,
-			<  2288 /*  300 MHz */ >,
-			<  3143 /*  412 MHz */ >,
-			<  4173 /*  547 MHz */ >,
-			<  5195 /*  681 MHz */ >,
-			<  5859 /*  768 MHz */ >,
-			<  7759 /*  1017 MHz */ >,
-			<  9887 /*  1296 MHz */ >,
-			<  11863 /*  1555 MHz */ >,
-			<  13763 /*  1804 MHz */ >;
+		operating-points-v2 = <&gpubw_opp_table>;
+
+		gpubw_opp_table: opp-table {
+			compatible = "operating-points-v2";
+
+			opp-0 {
+				opp-hz = /bits/ 64 <0>;
+			};
+
+			opp-762 {
+				opp-hz = /bits/ 64 <762>;
+			};
+
+			opp-1144 {
+				opp-hz = /bits/ 64 <1144>;
+			};
+
+			opp-1525 {
+				opp-hz = /bits/ 64 <1525>;
+			};
+
+			opp-2288 {
+				opp-hz = /bits/ 64 <2288>;
+			};
+
+			opp-3143 {
+				opp-hz = /bits/ 64 <3143>;
+			};
+
+			opp-4173 {
+				opp-hz = /bits/ 64 <4173>;
+			};
+
+			opp-5195 {
+				opp-hz = /bits/ 64 <5195>;
+			};
+
+			opp-5859 {
+				opp-hz = /bits/ 64 <5859>;
+			};
+
+			opp-7759 {
+				opp-hz = /bits/ 64 <7759>;
+			};
+
+			opp-9887 {
+				opp-hz = /bits/ 64 <9887>;
+			};
+
+			opp-11863 {
+				opp-hz = /bits/ 64 <11863>;
+			};
+
+			opp-13763 {
+				opp-hz = /bits/ 64 <13763>;
+			};
+		};
 	};
 
 	msm_gpu: qcom,kgsl-3d0@b00000 {
