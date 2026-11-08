@@ -687,6 +687,11 @@ static int clk_update_vdd(struct clk_vdd_class *vdd_class)
 	new_base = level * n_reg;
 
 	for (i = 0; i < vdd_class->num_regulators; i++) {
+		if (!r[i]) {
+			pr_warn_ratelimited("Skipping missing regulator %d for %s\n",
+					i, vdd_class->class_name);
+			continue;
+		}
 		pr_debug("Set Voltage level Min %d, Max %d\n", uv[new_base + i],
 				uv[max_lvl + i]);
 		rc = regulator_set_voltage(r[i], uv[new_base + i], INT_MAX);
@@ -710,10 +715,13 @@ static int clk_update_vdd(struct clk_vdd_class *vdd_class)
 	return rc;
 
 enable_disable_fail:
-	regulator_set_voltage(r[i], uv[cur_base + i], INT_MAX);
+	if (r[i])
+		regulator_set_voltage(r[i], uv[cur_base + i], INT_MAX);
 
 set_voltage_fail:
 	for (i--; i >= 0; i--) {
+		if (!r[i])
+			continue;
 		regulator_set_voltage(r[i], uv[cur_base + i], INT_MAX);
 		if (cur_lvl == 0 || cur_lvl == vdd_class->num_levels)
 			regulator_disable(r[i]);
@@ -825,11 +833,12 @@ static bool clk_is_rate_level_valid(struct clk_core *core, unsigned long rate)
 	return level >= 0;
 }
 
-static int clk_vdd_class_init(struct clk_vdd_class *vdd)
+static int clk_vdd_class_init(struct clk_vdd_class *vdd, bool *added)
 {
 	struct clk_handoff_vdd *v;
 	int ret = 0;
 
+	*added = false;
 	if (vdd->skip_handoff)
 		return 0;
 
@@ -845,6 +854,13 @@ static int clk_vdd_class_init(struct clk_vdd_class *vdd)
 
 		ret = clk_vote_vdd_level(vdd, vdd->num_levels - 1);
 		if (ret) {
+			if (ret == -ETIMEDOUT) {
+				pr_warn("VDD handoff for %s timed out; continuing without handoff vote\n",
+					vdd->class_name);
+				vdd->skip_handoff = true;
+				ret = 0;
+				goto done;
+			}
 			pr_err("failed to vote for %s, ret=%d\n",
 				vdd->class_name, ret);
 			goto done;
@@ -858,13 +874,33 @@ static int clk_vdd_class_init(struct clk_vdd_class *vdd)
 	}
 
 	v->vdd_class = vdd;
-
 	list_add_tail(&v->list, &clk_handoff_vdd_list);
+	*added = true;
 
 done:
 	mutex_unlock(&vdd_class_list_lock);
 
 	return ret;
+}
+
+static void clk_vdd_class_deinit(struct clk_vdd_class *vdd)
+{
+	struct clk_handoff_vdd *v, *tmp;
+
+	if (vdd->skip_handoff)
+		return;
+
+	mutex_lock(&vdd_class_list_lock);
+	list_for_each_entry_safe(v, tmp, &clk_handoff_vdd_list, list) {
+		if (v->vdd_class != vdd)
+			continue;
+		list_del(&v->list);
+		if (!vdd_class_handoff_completed)
+			clk_unvote_vdd_level(vdd, vdd->num_levels - 1);
+		kfree(v);
+		break;
+	}
+	mutex_unlock(&vdd_class_list_lock);
 }
 
 /***        clk api        ***/
@@ -2333,6 +2369,8 @@ static int clk_change_rate(struct clk_core *core)
 		rc = core->ops->set_rate(core->hw, core->new_rate,
 						best_parent_rate);
 		if (rc) {
+			pr_err("%s: setting rate %lu with parent rate %lu failed: %d\n",
+				core->name, core->new_rate, best_parent_rate, rc);
 			trace_clk_set_rate_complete(core, core->new_rate);
 			goto err_set_rate;
 		}
@@ -4395,6 +4433,7 @@ struct clk *clk_register(struct device *dev, struct clk_hw *hw)
 {
 	int i, ret;
 	struct clk_core *core;
+	bool vdd_handoff_added = false;
 
 	core = kzalloc(sizeof(*core), GFP_KERNEL);
 	if (!core) {
@@ -4430,7 +4469,7 @@ struct clk *clk_register(struct device *dev, struct clk_hw *hw)
 	hw->core = core;
 
 	if (core->vdd_class) {
-		ret = clk_vdd_class_init(core->vdd_class);
+		ret = clk_vdd_class_init(core->vdd_class, &vdd_handoff_added);
 		if (ret) {
 			pr_err("Failed to initialize vdd class\n");
 			goto fail_parent_names;
@@ -4488,6 +4527,8 @@ fail_parent_names_copy:
 		kfree_const(core->parent_names[i]);
 	kfree(core->parent_names);
 fail_parent_names:
+	if (vdd_handoff_added)
+		clk_vdd_class_deinit(core->vdd_class);
 fail_ops:
 	kfree_const(core->name);
 fail_name:
@@ -4671,31 +4712,24 @@ static int derive_device_list(struct device **device_list,
 	return 0;
 }
 
-static int clk_get_voltage(struct clk_core *core, unsigned long rate, int n)
+static int clk_get_voltage(struct clk_core *core, unsigned long rate)
 {
-	struct clk_vdd_class *vdd;
+	struct clk_vdd_class *vdd = core->vdd_class;
 	int level, corner;
 
-	/* Use the first regulator in the vdd class for the OPP table. */
-	vdd = core->vdd_class;
-	if (vdd->num_regulators > 1) {
-		corner = vdd->vdd_uv[vdd->num_regulators * n];
-	} else {
-		level = clk_find_vdd_level(core, rate);
-		if (level < 0) {
-			pr_err("Could not find vdd level\n");
-			return -EINVAL;
-		}
-		corner = vdd->vdd_uv[level];
-	}
-
-	if (!corner) {
-		pr_err("%s: Unable to find vdd level for rate %lu\n",
-					core->name, rate);
+	if (!vdd || !vdd->num_regulators)
 		return -EINVAL;
-	}
 
-	return corner;
+	level = clk_find_vdd_level(core, rate);
+	if (level < 0)
+		return level;
+
+	/* OPP voltages describe the first supply, in microvolts. */
+	corner = vdd->vdd_uv[level * vdd->num_regulators];
+	if (!corner)
+		return -EINVAL;
+
+	return regulator_list_corner_voltage(vdd->regulator[0], corner);
 }
 
 static int clk_add_and_print_opp(struct clk_hw *hw,
@@ -4729,7 +4763,7 @@ static void clk_populate_clock_opp_table(struct device_node *np,
 	struct clk_core *core = hw->core;
 	char clk_handle_name[MAX_LEN_OPP_HANDLE];
 	int n, len, count, uv, ret;
-	unsigned long rate = 0, rrate = 0;
+	unsigned long rate = 0;
 
 	if (!core || !core->num_rate_max)
 		return;
@@ -4768,24 +4802,27 @@ static void clk_populate_clock_opp_table(struct device_node *np,
 		return;
 	}
 
-	for (n = 0; ; n++) {
-		rrate = clk_hw_round_rate(hw, rate + 1);
-		if (!rrate) {
-			pr_err("clk_round_rate failed for %s\n",
-							core->name);
-			goto err_derive_device_list;
+	for (n = 1; ; n++) {
+		if (core->ops->list_rate) {
+			long rounded_rate = clk_hw_round_rate(hw, rate + 1);
+
+			if (rounded_rate <= 0) {
+				pr_err("clk_round_rate failed for %s\n", core->name);
+				goto err_derive_device_list;
+			}
+			if (rate == rounded_rate)
+				break;
+			rate = rounded_rate;
+		} else {
+			/* Mux/divider clocks expose their OPPs through fmax. */
+			if (n >= core->num_rate_max)
+				break;
+			rate = core->rate_max[n];
+			if (!rate)
+				continue;
 		}
 
-		/*
-		 * If clk_hw_round_rate gives the same value on consecutive
-		 * iterations, exit the loop since we're at the maximum clock
-		 * frequency.
-		 */
-		if (rate == rrate)
-			break;
-		rate = rrate;
-
-		uv = clk_get_voltage(core, rate, n);
+		uv = clk_get_voltage(core, rate);
 		if (uv < 0)
 			goto err_derive_device_list;
 

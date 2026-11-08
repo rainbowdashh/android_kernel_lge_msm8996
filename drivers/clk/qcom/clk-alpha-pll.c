@@ -712,6 +712,7 @@ static int __clk_alpha_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 	u32 l, alpha_width = pll_alpha_width(pll);
 	u64 a;
 	unsigned long rrate;
+	int enabled, ret;
 
 	rrate = alpha_pll_round_rate(rate, prate, &l, &a, alpha_width);
 	if (rrate != rate) {
@@ -731,7 +732,11 @@ static int __clk_alpha_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 	 * optimization reasons, assume no downstream clock is actively
 	 * using it.
 	 */
-	if (is_enabled(&pll->clkr.hw) &&
+	enabled = is_enabled(hw);
+	if (enabled < 0)
+		return enabled;
+
+	if (enabled &&
 	    !(pll->flags & SUPPORTS_DYNAMIC_UPDATE))
 		hw->init->ops->disable(hw);
 
@@ -768,13 +773,14 @@ static int __clk_alpha_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 	regmap_update_bits(pll->clkr.regmap, PLL_USER_CTL(pll),
 			   PLL_ALPHA_EN, PLL_ALPHA_EN);
 
-	if (is_enabled(&pll->clkr.hw) &&
-		(pll->flags & SUPPORTS_DYNAMIC_UPDATE))
-		clk_alpha_pll_dynamic_update(pll);
-
-	if (is_enabled(&pll->clkr.hw) &&
-	    !(pll->flags & SUPPORTS_DYNAMIC_UPDATE))
-		hw->init->ops->enable(hw);
+	if (enabled) {
+		if (pll->flags & SUPPORTS_DYNAMIC_UPDATE)
+			ret = clk_alpha_pll_dynamic_update(pll);
+		else
+			ret = hw->init->ops->enable(hw);
+		if (ret)
+			return ret;
+	}
 
 	return clk_alpha_pll_update_latch(pll, is_enabled);
 }
