@@ -203,21 +203,22 @@ static void scm_pas_disable_bw(void)
 	mutex_unlock(&scm_pas_bw_mutex);
 }
 
-static void scm_pas_init(int id)
+static int scm_pas_init(int id)
 {
-	static int is_inited;
+	int ret = 0;
 
-	if (is_inited)
-		return;
+	mutex_lock(&scm_pas_bw_mutex);
+	if (!scm_perf_client) {
+		scm_pas_bw_tbl[0].vectors[0].src = id;
+		scm_pas_bw_tbl[1].vectors[0].src = id;
+		scm_perf_client =
+			msm_bus_scale_register_client(&scm_pas_bus_pdata);
+		if (!scm_perf_client)
+			ret = -EPROBE_DEFER;
+	}
+	mutex_unlock(&scm_pas_bw_mutex);
 
-	scm_pas_bw_tbl[0].vectors[0].src = id;
-	scm_pas_bw_tbl[1].vectors[0].src = id;
-
-	scm_perf_client = msm_bus_scale_register_client(&scm_pas_bus_pdata);
-	if (!scm_perf_client)
-		pr_warn("scm-pas: Unable to register bus client\n");
-
-	is_inited = 1;
+	return ret;
 }
 
 static int of_read_clocks(struct device *dev, struct clk ***clks_ref,
@@ -371,7 +372,7 @@ static int of_read_bus_pdata(struct platform_device *pdev,
 
 	d->bus_client = msm_bus_scale_register_client(pdata);
 	if (!d->bus_client)
-		pr_warn("%s: Unable to register bus client\n", __func__);
+		return -EPROBE_DEFER;
 
 	return 0;
 }
@@ -1147,7 +1148,9 @@ static int pil_tz_driver_probe(struct platform_device *pdev)
 				&crypto_id);
 		}
 		of_node_put(crypto_node);
-		scm_pas_init((int)crypto_id);
+		rc = scm_pas_init((int)crypto_id);
+		if (rc)
+			goto err_deregister_bus;
 	}
 
 	rc = pil_desc_init(&d->desc);

@@ -3863,6 +3863,43 @@ static ssize_t usb_data_enabled_store(struct device *dev,
 }
 static DEVICE_ATTR_RW(usb_data_enabled);
 
+static void dwc3_msm_release_bus(void *data)
+{
+	struct dwc3_msm *mdwc = data;
+
+	msm_bus_scale_unregister_client(mdwc->bus_perf_client);
+	mdwc->bus_perf_client = 0;
+}
+
+static int dwc3_msm_init_bus(struct platform_device *pdev,
+			      struct dwc3_msm *mdwc)
+{
+	struct device_node *node = pdev->dev.of_node;
+
+	/* use default as nominal bus voting */
+	mdwc->default_bus_vote = BUS_VOTE_NOMINAL;
+	of_property_read_u32(node, "qcom,default-bus-vote",
+			&mdwc->default_bus_vote);
+
+	mdwc->bus_scale_table = msm_bus_cl_get_pdata(pdev);
+	if (mdwc->bus_scale_table) {
+		mdwc->bus_perf_client =
+			msm_bus_scale_register_client(mdwc->bus_scale_table);
+		if (!mdwc->bus_perf_client)
+			return -EPROBE_DEFER;
+
+		/* default_bus_vote is out of range, use nominal bus voting */
+		if (mdwc->default_bus_vote >=
+				mdwc->bus_scale_table->num_usecases)
+			mdwc->default_bus_vote = BUS_VOTE_NOMINAL;
+	}
+
+	if (!mdwc->bus_perf_client)
+		return 0;
+
+	return devm_add_action_or_reset(&pdev->dev, dwc3_msm_release_bus, mdwc);
+}
+
 static int dwc3_msm_probe(struct platform_device *pdev)
 {
 	struct device_node *node = pdev->dev.of_node, *dwc3_node;
@@ -3879,6 +3916,10 @@ static int dwc3_msm_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, mdwc);
 	mdwc->dev = &pdev->dev;
+
+	ret = dwc3_msm_init_bus(pdev, mdwc);
+	if (ret)
+		return ret;
 
 	INIT_LIST_HEAD(&mdwc->req_complete_list);
 	INIT_WORK(&mdwc->resume_work, dwc3_resume_work);
@@ -4104,25 +4145,11 @@ static int dwc3_msm_probe(struct platform_device *pdev)
 		goto put_dwc3;
 	}
 
-	/* use default as nominal bus voting */
-	mdwc->default_bus_vote = BUS_VOTE_NOMINAL;
-	ret = of_property_read_u32(node, "qcom,default-bus-vote",
-			&mdwc->default_bus_vote);
-
-	mdwc->bus_scale_table = msm_bus_cl_get_pdata(pdev);
-	if (mdwc->bus_scale_table) {
-		mdwc->bus_perf_client =
-			msm_bus_scale_register_client(mdwc->bus_scale_table);
-
-		/* default_bus_vote is out of range, use nominal bus voting */
-		if (mdwc->default_bus_vote >=
-				mdwc->bus_scale_table->num_usecases)
-			mdwc->default_bus_vote = BUS_VOTE_NOMINAL;
-	}
 
 	dwc = platform_get_drvdata(mdwc->dwc3);
 	if (!dwc) {
 		dev_err(&pdev->dev, "Failed to get dwc3 device\n");
+		ret = -EPROBE_DEFER;
 		goto put_dwc3;
 	}
 
@@ -4256,8 +4283,6 @@ static int dwc3_msm_probe(struct platform_device *pdev)
 
 put_dwc3:
 	platform_device_put(mdwc->dwc3);
-	if (mdwc->bus_perf_client)
-		msm_bus_scale_unregister_client(mdwc->bus_perf_client);
 
 	of_platform_depopulate(&pdev->dev);
 err:
@@ -4322,8 +4347,6 @@ static int dwc3_msm_remove(struct platform_device *pdev)
 	pm_runtime_set_suspended(mdwc->dev);
 	device_wakeup_disable(mdwc->dev);
 
-	if (mdwc->bus_perf_client)
-		msm_bus_scale_unregister_client(mdwc->bus_perf_client);
 
 	if (!IS_ERR_OR_NULL(mdwc->vbus_reg))
 		regulator_disable(mdwc->vbus_reg);
