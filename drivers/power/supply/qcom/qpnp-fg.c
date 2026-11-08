@@ -17,7 +17,7 @@
 #include <linux/kernel.h>
 #include <linux/regmap.h>
 #include <linux/of.h>
-#include <linux/rtc.h>
+#include <linux/timekeeping.h>
 #include <linux/err.h>
 #include <linux/debugfs.h>
 #include <linux/slab.h>
@@ -2283,39 +2283,6 @@ static u8 therm_delay_to_setpoint(u32 delay_us)
 	return val << 5;
 }
 
-static int get_current_time(unsigned long *now_tm_sec)
-{
-	struct rtc_time tm;
-	struct rtc_device *rtc;
-	int rc;
-
-	rtc = rtc_class_open(CONFIG_RTC_HCTOSYS_DEVICE);
-	if (rtc == NULL) {
-		pr_err("%s: unable to open rtc device (%s)\n",
-			__FILE__, CONFIG_RTC_HCTOSYS_DEVICE);
-		return -EINVAL;
-	}
-
-	rc = rtc_read_time(rtc, &tm);
-	if (rc) {
-		pr_err("Error reading rtc device (%s) : %d\n",
-			CONFIG_RTC_HCTOSYS_DEVICE, rc);
-		goto close_time;
-	}
-
-	rc = rtc_valid_tm(&tm);
-	if (rc) {
-		pr_err("Invalid RTC time (%s): %d\n",
-			CONFIG_RTC_HCTOSYS_DEVICE, rc);
-		goto close_time;
-	}
-	rtc_tm_to_time(&tm, now_tm_sec);
-
-close_time:
-	rtc_class_close(rtc);
-	return rc;
-}
-
 #define BATTERY_SOC_REG		0x56C
 #define BATTERY_SOC_OFFSET	1
 #define FULL_PERCENT_3B		0xFFFFFF
@@ -3007,7 +2974,7 @@ fail:
 	}
 
 	if (!rc)
-		get_current_time(&chip->last_sram_update_time);
+		chip->last_sram_update_time = ktime_get_boottime_seconds();
 
 resched:
 	if (battid_valid) {
@@ -3216,7 +3183,7 @@ wait:
 	if (fg_debug_mask & FG_MEM_DEBUG_READS)
 		pr_info("BATT_TEMP %d %d\n", temp, fg_data[0].value);
 
-	get_current_time(&chip->last_temp_update_time);
+	chip->last_temp_update_time = ktime_get_boottime_seconds();
 
 	if (chip->soc_slope_limiter_en) {
 		fg_stay_awake(&chip->slope_limit_wakeup_source);
@@ -4585,7 +4552,7 @@ static void status_change_work(struct work_struct *work)
 			schedule_work(&chip->dischg_gain_work);
 		}
 
-		get_current_time(&current_time);
+		current_time = ktime_get_boottime_seconds();
 		/*
 		 * When charging status changes, update SRAM parameters if it
 		 * was not updated before 5 seconds from now.
@@ -9705,7 +9672,7 @@ static void check_and_update_sram_data(struct fg_chip *chip)
 {
 	unsigned long current_time = 0, next_update_time, time_left;
 
-	get_current_time(&current_time);
+	current_time = ktime_get_boottime_seconds();
 
 #ifdef CONFIG_QPNP_FG_EXTENSION
 	next_update_time = chip->last_temp_update_time
