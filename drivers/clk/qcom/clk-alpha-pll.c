@@ -732,6 +732,8 @@ static int __clk_alpha_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 	 * optimization reasons, assume no downstream clock is actively
 	 * using it.
 	 */
+	pr_debug("startup: %s programming PLL rate %lu\n",
+		clk_hw_get_name(hw), rate);
 	enabled = is_enabled(hw);
 	if (enabled < 0)
 		return enabled;
@@ -782,7 +784,10 @@ static int __clk_alpha_pll_set_rate(struct clk_hw *hw, unsigned long rate,
 			return ret;
 	}
 
-	return clk_alpha_pll_update_latch(pll, is_enabled);
+	ret = clk_alpha_pll_update_latch(pll, is_enabled);
+	pr_debug("startup: %s PLL rate returned %d\n",
+		clk_hw_get_name(hw), ret);
+	return ret;
 }
 
 static int clk_alpha_pll_set_rate(struct clk_hw *hw, unsigned long rate,
