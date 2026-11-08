@@ -181,8 +181,8 @@ static int scm_pas_enable_bw(void)
 		ret = msm_bus_scale_client_update_request(scm_perf_client, 1);
 		if (ret)
 			goto err_bus;
-		scm_pas_bw_count++;
 	}
+	scm_pas_bw_count++;
 
 	mutex_unlock(&scm_pas_bw_mutex);
 	return ret;
@@ -681,7 +681,7 @@ static int pil_auth_and_reset(struct pil_desc *pil)
 {
 	struct pil_tz_data *d = desc_to_data(pil);
 	int rc;
-	u32 proc, scm_ret = 0;
+	u32 proc;
 	struct scm_desc desc = {0};
 
 	if (d->subsys_desc.no_auth)
@@ -696,7 +696,7 @@ static int pil_auth_and_reset(struct pil_desc *pil)
 
 	rc = enable_regulators(d, pil->dev, d->regs, d->reg_count, false);
 	if (rc)
-		return rc;
+		goto err_bw;
 
 	rc = prepare_enable_clocks(pil->dev, d->clks, d->clk_count);
 	if (rc)
@@ -704,18 +704,19 @@ static int pil_auth_and_reset(struct pil_desc *pil)
 
 	rc = scm_call2(SCM_SIP_FNID(SCM_SVC_PIL,
 		       PAS_AUTH_AND_RESET_CMD), &desc);
-	scm_ret = desc.ret[0];
-
-	scm_pas_disable_bw();
+	if (!rc)
+		rc = desc.ret[0];
 	if (rc)
 		goto err_reset;
 
-	return scm_ret;
+	scm_pas_disable_bw();
+	return 0;
 err_reset:
 	disable_unprepare_clocks(d->clks, d->clk_count);
 err_clks:
 	disable_regulators(d, d->regs, d->reg_count, false);
-
+err_bw:
+	scm_pas_disable_bw();
 	return rc;
 }
 
