@@ -932,6 +932,15 @@ spmi_regulator_common_set_mode(struct regulator_dev *rdev, unsigned int mode)
 	else if (mode == REGULATOR_MODE_FAST)
 		val = SPMI_COMMON_MODE_AUTO_MASK;
 
+	/*
+	 * Legacy FTSMPS clients use NORMAL/IDLE to acquire and release a
+	 * forced PWM vote. Keep the configured AUTO fallback, as in the
+	 * QPNP driver, so releasing the vote does not force PFM under load.
+	 */
+	if (vreg->logical_type == SPMI_REGULATOR_LOGICAL_TYPE_FTSMPS &&
+	    (mode == REGULATOR_MODE_NORMAL || mode == REGULATOR_MODE_IDLE))
+		mask = SPMI_COMMON_MODE_HPM_MASK;
+
 	return spmi_vreg_update_bits(vreg, SPMI_COMMON_REG_MODE, val, mask);
 }
 
