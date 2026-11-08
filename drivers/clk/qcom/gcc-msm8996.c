@@ -1995,6 +1995,7 @@ static struct clk_branch gcc_blsp1_uart6_apps_clk = {
 	},
 };
 
+/* Keep the early UARTDM register interface accessible to printk. */
 static struct clk_branch gcc_blsp2_ahb_clk = {
 	.halt_reg = 0x25004,
 	.halt_check = BRANCH_HALT_VOTED,
@@ -2005,7 +2006,9 @@ static struct clk_branch gcc_blsp2_ahb_clk = {
 			.name = "gcc_blsp2_ahb_clk",
 			.parent_names = (const char *[]){ "periph_noc_clk_src" },
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT,
+			.flags = CLK_SET_RATE_PARENT |
+				(IS_ENABLED(CONFIG_SERIAL_MSM_CONSOLE) ?
+				 CLK_IS_CRITICAL : 0),
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -2111,7 +2114,9 @@ static struct clk_branch gcc_blsp2_uart2_apps_clk = {
 			.name = "gcc_blsp2_uart2_apps_clk",
 			.parent_names = (const char *[]){ "blsp2_uart2_apps_clk_src" },
 			.num_parents = 1,
-			.flags = CLK_SET_RATE_PARENT,
+			.flags = CLK_SET_RATE_PARENT |
+				(IS_ENABLED(CONFIG_SERIAL_MSM_CONSOLE) ?
+				 CLK_IS_CRITICAL : 0),
 			.ops = &clk_branch2_ops,
 		},
 	},
