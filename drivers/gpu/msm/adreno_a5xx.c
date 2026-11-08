@@ -2040,9 +2040,7 @@ static int a5xx_rb_start(struct adreno_device *adreno_dev)
 	if (ret)
 		return ret;
 
-	a5xx_post_start(adreno_dev);
-
-	return 0;
+	return a5xx_post_start(adreno_dev);
 }
 
 static int _load_firmware(struct kgsl_device *device, const char *fwfile,

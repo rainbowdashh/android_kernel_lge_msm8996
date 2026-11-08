@@ -3160,8 +3160,15 @@ void adreno_spin_idle_debug(struct adreno_device *adreno_dev,
 	unsigned int rptr, wptr;
 	unsigned int status, status3, intstatus;
 	unsigned int hwfault, cx_status;
+	struct adreno_ringbuffer *rb;
+	int i;
 
 	dev_err(device->dev, str);
+	FOR_EACH_RINGBUFFER(adreno_dev, rb, i)
+		dev_err(device->dev, "rb=%d shadow_rptr=%X wptr=%X\n",
+			rb->id, adreno_get_rptr(rb), rb->wptr);
+	dev_err(device->dev, "pending IRQ handlers=%d\n",
+		atomic_read(&adreno_dev->pending_irq_refcnt));
 
 	adreno_readreg(adreno_dev, ADRENO_REG_CP_RB_RPTR, &rptr);
 	adreno_readreg(adreno_dev, ADRENO_REG_CP_RB_WPTR, &wptr);
