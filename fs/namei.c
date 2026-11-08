@@ -4856,9 +4856,14 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
 	return do_renameat2(olddfd, oldname, newdfd, newname, 0);
 }
 
-SYSCALL_DEFINE2(rename, const char __user *, oldname, const char __user *, newname)
+int ksys_rename(const char __user *oldname, const char __user *newname)
 {
 	return do_renameat2(AT_FDCWD, oldname, AT_FDCWD, newname, 0);
+}
+
+SYSCALL_DEFINE2(rename, const char __user *, oldname, const char __user *, newname)
+{
+	return ksys_rename(oldname, newname);
 }
 
 int vfs_whiteout(struct inode *dir, struct dentry *dentry)
