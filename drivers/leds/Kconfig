@@ -778,6 +778,15 @@ config LEDS_NIC78BX
 	  To compile this driver as a module, choose M here: the module
 	  will be called leds-nic78bx.
 
+config LEDS_PMI8996_EMOTIONAL
+	bool "LG G5 PMI8996 RGB LED patterns"
+	depends on LEDS_CLASS && MACH_MSM8996_H1 && REGMAP_SPMI
+	select PWM
+	select PWM_QPNP
+	help
+	  Drive the G5 PMIC RGB LEDs and expose the lg_rgb_led/use_patterns
+	  interface required by the LG lights HAL.
+
 config LEDS_QTI_TRI_LED
 	tristate "LED support for Qualcomm Technologies, Inc. TRI_LED"
 	depends on LEDS_CLASS && MFD_SPMI_PMIC && PWM && OF
@@ -786,6 +795,13 @@ config LEDS_QTI_TRI_LED
 	  Technologies, Inc. PMIC chips. TRI_LED supports 3 LED drivers
 	  at max and each is controlled by a PWM channel used for dimming
 	  or blinking.
+
+config LEDS_QPNP_FLASH
+	bool "Support for QPNP flash LEDs on PMI8994"
+	depends on LEDS_CLASS && MFD_SPMI_PMIC
+	select LEDS_TRIGGERS
+	help
+	  Support the flash and torch channels on PMICs up to PMI8994.
 
 config LEDS_QPNP_FLASH_V2
         tristate "Support for QPNP V2 Flash LEDs"
@@ -805,6 +821,16 @@ config LEDS_AW8624_HAPTICS
 	  This option enables device driver support for the vibrator-haptics
 	  The vibrator-haptics peripheral is capable of driving LRA vibrators.
 
+config LEDS_QPNP_HAPTICS
+	tristate "Haptics support for QPNP PMIC"
+	depends on LEDS_CLASS && MFD_SPMI_PMIC
+	help
+	  This option enables device driver support for the haptics peripheral
+	  found on Qualcomm Technologies, Inc. QPNP PMICs.  The haptic
+	  peripheral is capable of driving both LRA and ERM vibrators.  This
+	  module provides haptic feedback for user actions such as a long press
+	  on the touch screen.
+
 config LEDS_QPNP_VIBRATOR_LDO
 	tristate "Vibrator-LDO support for QPNP PMIC"
 	depends on LEDS_CLASS && MFD_SPMI_PMIC
@@ -822,6 +848,13 @@ config LEDS_QPNP_VIBRATOR
 	  is connected on the VIB_DRV_N line and can be controlled
 	  manually or by the DTEST lines.It uses the android timed-output
 	  framework.
+
+config LEDS_QPNP_WLED
+	tristate "Support for QPNP WLED"
+	depends on LEDS_CLASS && MFD_SPMI_PMIC
+	select LEDS_TRIGGERS
+	help
+	  Support the WLED backlight controller in Qualcomm QPNP PMICs.
 
 comment "LED Triggers"
 source "drivers/leds/trigger/Kconfig"

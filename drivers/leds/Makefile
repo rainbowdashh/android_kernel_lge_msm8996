@@ -7,6 +7,7 @@ obj-$(CONFIG_LEDS_CLASS_FLASH)		+= led-class-flash.o
 obj-$(CONFIG_LEDS_TRIGGERS)		+= led-triggers.o
 
 # LED Platform Drivers
+obj-$(CONFIG_LEDS_PMI8996_EMOTIONAL) += led-pattern.o leds-qpnp-pattern.o
 obj-$(CONFIG_LEDS_88PM860X)		+= leds-88pm860x.o
 obj-$(CONFIG_LEDS_AAT1290)		+= leds-aat1290.o
 obj-$(CONFIG_LEDS_APU)			+= leds-apu.o
@@ -95,3 +96,8 @@ obj-$(CONFIG_LEDS_USER)			+= uleds.o
 
 # LED Triggers
 obj-$(CONFIG_LEDS_TRIGGERS)		+= trigger/
+
+obj-$(CONFIG_LEDS_QPNP_WLED)		+= leds-qpnp-wled.o
+
+obj-$(CONFIG_LEDS_QPNP_HAPTICS) += leds-qpnp-haptics.o
+obj-$(CONFIG_LEDS_QPNP_FLASH) += leds-qpnp-flash.o leds-qpnp-flash-common.o
