@@ -182,3 +182,5 @@ obj-$(CONFIG_PMBUS)		+= pmbus/
 
 ccflags-$(CONFIG_HWMON_DEBUG_CHIP) := -DDEBUG
 
+
+obj-$(CONFIG_SENSORS_QPNP_ADC_VOLTAGE) += qpnp-adc-voltage.o
