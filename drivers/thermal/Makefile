@@ -5,7 +5,9 @@
 
 obj-$(CONFIG_THERMAL)		+= thermal_sys.o
 thermal_sys-y			+= thermal_core.o thermal_sysfs.o \
-					thermal_helpers.o
+					thermal_helpers.o msm-thermal-sensor.o
+obj-$(CONFIG_THERMAL_TSENS8974) += msm8996-tsens.o
+obj-$(CONFIG_THERMAL_MONITOR) += msm_thermal.o msm_thermal-dev.o
 
 # interface to/from other layers providing sensors
 thermal_sys-$(CONFIG_THERMAL_HWMON)		+= thermal_hwmon.o
@@ -60,8 +62,10 @@ obj-y				+= tegra/
 obj-$(CONFIG_HISI_THERMAL)     += hisi_thermal.o
 obj-$(CONFIG_MTK_THERMAL)	+= mtk_thermal.o
 obj-$(CONFIG_GENERIC_ADC_THERMAL)	+= thermal-generic-adc.o
-obj-$(CONFIG_THERMAL_QPNP_ADC_TM)	+= qpnp-adc-tm.o qpnp-adc-common.o
+obj-$(CONFIG_THERMAL_QPNP_ADC_TM)	+= qpnp-adc-tm.o
 obj-$(CONFIG_ZX2967_THERMAL)	+= zx2967_thermal.o
 obj-$(CONFIG_UNIPHIER_THERMAL)	+= uniphier_thermal.o
 obj-$(CONFIG_THERMAL_TSENS)	+= msm-tsens.o tsens2xxx.o tsens-dbg.o tsens-mtc.o tsens1xxx.o tsens-calib.o
 
+
+obj-$(CONFIG_QPNP_ADC_COMMON) += qpnp-adc-common.o
