@@ -275,7 +275,7 @@ void tcpm_snk_vbus_disable(unsigned int port)
 void tcpm_set_voltage_alarm_hi(unsigned int port, uint16_t threshold_25mv)
 {
 #ifdef CONFIG_LGE_USB_TYPE_C
-	PRINT("%s: %umV\n", __func__, threshold_25mv * 25);
+	DEBUG("%s: %umV\n", __func__, threshold_25mv * 25);
 #else
 	INFO("%s: %umV\n", __func__, threshold_25mv * 25);
 #endif
@@ -286,7 +286,7 @@ void tcpm_set_voltage_alarm_hi(unsigned int port, uint16_t threshold_25mv)
 void tcpm_set_voltage_alarm_lo(unsigned int port, uint16_t threshold_25mv)
 {
 #ifdef CONFIG_LGE_USB_TYPE_C
-	PRINT("%s: %umV\n", __func__, threshold_25mv * 25);
+	DEBUG("%s: %umV\n", __func__, threshold_25mv * 25);
 #else
 	INFO("%s: %umV\n", __func__, threshold_25mv * 25);
 #endif
@@ -991,7 +991,7 @@ static void timeout_cc_swing(unsigned int port)
 	if (dev->cc_swing_cnt == 0)
 	{
 		tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
-		PRINT("%s CC status = 0x%x\n", __func__, dev->cc_status);
+		DEBUG("%s CC status = 0x%x\n", __func__, dev->cc_status);
 
 		cc1 = TCPC_CC1_STATE(dev->cc_status);
 		cc2 = TCPC_CC2_STATE(dev->cc_status);
@@ -2455,7 +2455,7 @@ static void alert_cc_status_handler(tcpc_device_t *dev)
 #endif
 
 #ifdef CONFIG_LGE_USB_TYPE_C
-	PRINT("%s CC status = 0x%02x\n", __func__, dev->cc_status);
+	DEBUG("%s CC status = 0x%02x\n", __func__, dev->cc_status);
 #else
 	CRIT("%s CC status = 0x%02x\n", __func__, dev->cc_status);
 #endif

@@ -34,7 +34,7 @@ int set_property_on_battery(struct hw_pd_dev *dev,
 	if (!dev->batt_psy) {
 		dev->batt_psy = power_supply_get_by_name("battery");
 		if (!dev->batt_psy) {
-			pr_err("no batt psy found\n");
+			dev_dbg(dev->dev, "battery supply is not registered yet\n");
 			return -ENODEV;
 		}
 	}
@@ -47,7 +47,8 @@ int set_property_on_battery(struct hw_pd_dev *dev,
 		if (rc)
 			pr_err("failed to set current max rc=%d\n", rc);
 		else
-			pr_info("current set on batt_psy = %d\n", dev->curr_max);
+			dev_dbg(dev->dev, "battery current capability: %d mA\n",
+				dev->curr_max);
 		break;
 	case POWER_SUPPLY_PROP_TYPEC_MODE:
 		/*

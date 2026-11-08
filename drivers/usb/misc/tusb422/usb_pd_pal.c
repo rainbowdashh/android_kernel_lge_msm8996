@@ -42,7 +42,7 @@ void usb_pd_pal_source_vbus(unsigned int port, bool usb_pd, uint16_t mv, uint16_
 
 void usb_pd_pal_disable_vbus(unsigned int port)
 {
-	PRINT("%s\n", __func__);
+	DEBUG("%s\n", __func__);
 
 	pd_dpm_handle_pe_event(PD_DPM_PE_EVT_DIS_VBUS_CTRL, NULL);
 	return;
@@ -126,7 +126,7 @@ void usb_pd_pal_notify_connect_state(unsigned int port, tcpc_state_t state, bool
 	{
 		case TCPC_STATE_UNATTACHED_SRC:
 		case TCPC_STATE_UNATTACHED_SNK:
-			PRINT("%s: TYPEC_UNATTACHED, polarity = 0x%x\n", __func__, polarity);
+			DEBUG("%s: TYPEC_UNATTACHED, polarity = 0x%x\n", __func__, polarity);
 			tc_state.new_state = PD_DPM_TYPEC_UNATTACHED;
 			pd_dpm_handle_pe_event(PD_DPM_PE_EVT_TYPEC_STATE, (void*)&tc_state);
 			break;
