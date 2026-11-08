@@ -3480,12 +3480,12 @@ static int dwc3_msm_vbus_notifier(struct notifier_block *nb,
 	return NOTIFY_DONE;
 }
 
-static int dwc3_msm_extcon_register(struct dwc3_msm *mdwc)
+static int dwc3_msm_extcon_get(struct dwc3_msm *mdwc)
 {
 	struct device_node *node = mdwc->dev->of_node;
 	struct extcon_dev *edev;
-	int idx, extcon_cnt, ret = 0;
-	bool check_vbus_state, check_id_state, phandle_found = false;
+	int idx, extcon_cnt;
+	bool phandle_found = false;
 
 	extcon_cnt = of_count_phandle_with_args(node, "extcon", NULL);
 	if (extcon_cnt < 0) {
@@ -3506,13 +3506,30 @@ static int dwc3_msm_extcon_register(struct dwc3_msm *mdwc)
 		if (IS_ERR_OR_NULL(edev))
 			continue;
 
-		check_vbus_state = check_id_state = true;
 		phandle_found = true;
 
 		mdwc->extcon[idx].mdwc = mdwc;
 		mdwc->extcon[idx].edev = edev;
 		mdwc->extcon[idx].idx = idx;
+	}
 
+	return phandle_found ? 0 : -ENODEV;
+}
+
+static int dwc3_msm_extcon_register(struct dwc3_msm *mdwc)
+{
+	struct extcon_dev *edev;
+	int idx, extcon_cnt, ret;
+	bool check_vbus_state, check_id_state;
+
+	extcon_cnt = of_count_phandle_with_args(mdwc->dev->of_node,
+					       "extcon", NULL);
+	for (idx = 0; idx < extcon_cnt; idx++) {
+		edev = mdwc->extcon[idx].edev;
+		if (!edev)
+			continue;
+
+		check_vbus_state = check_id_state = true;
 		mdwc->extcon[idx].vbus_nb.notifier_call =
 						dwc3_msm_vbus_notifier;
 		ret = extcon_register_notifier(edev, EXTCON_USB,
@@ -3539,11 +3556,6 @@ static int dwc3_msm_extcon_register(struct dwc3_msm *mdwc)
 				extcon_get_state(edev, EXTCON_USB_HOST))
 			dwc3_msm_id_notifier(&mdwc->extcon[idx].id_nb,
 						true, edev);
-	}
-
-	if (!phandle_found) {
-		dev_err(mdwc->dev, "no extcon device found\n");
-		return -ENODEV;
 	}
 
 	return 0;
@@ -3916,6 +3928,13 @@ static int dwc3_msm_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, mdwc);
 	mdwc->dev = &pdev->dev;
+
+	/* Resolve providers before creating children or registering notifiers. */
+	if (of_property_read_bool(node, "extcon")) {
+		ret = dwc3_msm_extcon_get(mdwc);
+		if (ret)
+			return ret;
+	}
 
 	ret = dwc3_msm_init_bus(pdev, mdwc);
 	if (ret)
