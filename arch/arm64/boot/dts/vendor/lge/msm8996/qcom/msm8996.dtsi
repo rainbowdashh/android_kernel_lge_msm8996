@@ -32,6 +32,7 @@
 	};
 
 	aliases {
+		ufshc1 = &ufs1;
 		sdhc1 = &sdhc_1; /* SDC1 eMMC slot */
 		sdhc2 = &sdhc_2; /* SDC2 SD card slot */
 		smd7 = &smdtty_data1;
@@ -1249,7 +1250,7 @@
 			<0 0>,
 			<0 0>,
 			<150000000 300000000>,
-			<0 0>,
+			<75000000 150000000>,
 			<0 0>,
 			<0 0>,
 			<0 0>,
