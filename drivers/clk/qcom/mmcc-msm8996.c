@@ -3494,10 +3494,47 @@ static struct platform_driver gpucc_msm8996_driver = {
 	},
 };
 
+static int mmcc_msm8996_init_pll(struct clk_alpha_pll *pll,
+				  unsigned long rate)
+{
+	struct regmap *regmap = pll->clkr.regmap;
+	u32 mode;
+	int ret;
+
+	ret = regmap_read(regmap, pll->offset, &mode);
+	if (ret || (mode & BIT(31)))
+		return ret;
+
+	/* Restore fixed PLL rates that the bootloader did not initialize. */
+	if (rate) {
+		ret = clk_set_rate(pll->clkr.hw.clk, rate);
+		if (ret)
+			return ret;
+	}
+
+	return regmap_update_bits(regmap, pll->offset + 0x10,
+				  GENMASK(3, 0), BIT(0));
+}
+
 static int mmcc_msm8996_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
-	int ret;
+	bool v3 = of_device_is_compatible(dev->of_node, "qcom,mmcc-msm8996-v3") ||
+		  of_device_is_compatible(dev->of_node, "qcom,mmcc-msm8996-pro");
+	struct {
+		struct clk_alpha_pll *pll;
+		unsigned long rate;
+	} plls[] = {
+		{ &mmpll0_early, 800000000 },
+		{ &mmpll1_early, v3 ? 810000000 : 740000000 },
+		{ &mmpll2_early, 0 },
+		{ &mmpll3_early, v3 ? 1040000000 : 900000000 },
+		{ &mmpll4_early, 960000000 },
+		{ &mmpll5_early, v3 ? 825000000 : 720000000 },
+		{ &mmpll8_early, 0 },
+		{ &mmpll9_early, 0 },
+	};
+	int i, ret;
 	struct regmap *regmap;
 
 	vdd_corner[VDD_DIG_LOWER] = RPM_REGULATOR_CORNER_SVS_KRAIT;
@@ -3517,8 +3554,7 @@ static int mmcc_msm8996_probe(struct platform_device *pdev)
 	if (IS_ERR(regmap))
 		return PTR_ERR(regmap);
 
-	if (of_device_is_compatible(dev->of_node, "qcom,mmcc-msm8996-v3") ||
-	    of_device_is_compatible(dev->of_node, "qcom,mmcc-msm8996-pro")) {
+	if (v3) {
 		mmpll1_early.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 405000000;
 		mmpll1_early.clkr.hw.init->rate_max[VDD_DIG_LOW] = 405000000;
 		mmpll1_early.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 810000000;
@@ -3588,6 +3624,13 @@ static int mmcc_msm8996_probe(struct platform_device *pdev)
 	ret = qcom_cc_really_probe(pdev, &mmcc_msm8996_desc, regmap);
 	if (ret)
 		return ret;
+
+	for (i = 0; i < ARRAY_SIZE(plls); i++) {
+		ret = mmcc_msm8996_init_pll(plls[i].pll, plls[i].rate);
+		if (ret)
+			return ret;
+	}
+
 	return devm_of_platform_populate(dev);
 }
 
