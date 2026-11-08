@@ -17,3 +17,5 @@ obj-$(CONFIG_QPNP_VM_BMS)		+= qpnp-vm-bms.o batterydata-lib.o batterydata-interf
 obj-$(CONFIG_QPNP_LINEAR_CHARGER)	+= qpnp-linear-charger.o
 
 obj-$(CONFIG_QPNP_SMBCHARGER) += qpnp-smbcharger.o battery-msm8996.o pmic-voter.o
+
+obj-$(CONFIG_QPNP_FG) += qpnp-fg.o

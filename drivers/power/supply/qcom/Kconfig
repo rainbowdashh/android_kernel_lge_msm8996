@@ -2,6 +2,18 @@
 
 menu "Qualcomm Technologies, Inc. Charger and Fuel Gauge support"
 
+config QPNP_FG
+	tristate "QPNP PMI8994 fuel gauge"
+	depends on MFD_SPMI_PMIC
+	help
+	  Support battery monitoring and profiles on PMI8994 and PMI8996.
+
+config QPNP_FG_EXTENSION
+	bool "MSM8996 fuel gauge extensions"
+	depends on QPNP_FG
+	help
+	  Retain the battery profile and aging policy used by LG MSM8996 devices.
+
 config QPNP_SMBCHARGER
 	tristate "QPNP SMB charger"
 	depends on MFD_SPMI_PMIC && EXTCON
