@@ -4260,7 +4260,8 @@ static int msm_pcie_get_resources(struct msm_pcie_dev_t *dev,
 				"PCIe: RC%d:Failed to register bus client %s\n",
 				dev->rc_idx, dev->pdev->name);
 			msm_bus_cl_clear_pdata(dev->bus_scale_table);
-			return -ENODEV;
+			dev->bus_scale_table = NULL;
+			return -EPROBE_DEFER;
 		}
 	}
 

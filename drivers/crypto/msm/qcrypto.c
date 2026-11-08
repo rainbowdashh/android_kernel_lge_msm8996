@@ -4940,7 +4940,7 @@ static int  _qcrypto_probe(struct platform_device *pdev)
 				cp->platform_support.bus_scale_table);
 		if (!pengine->bus_scale_handle) {
 			dev_err(&pdev->dev, "failed to get bus scale handle\n");
-			rc = -ENOMEM;
+			rc = -EPROBE_DEFER;
 			goto exit_kzfree;
 		}
 		pengine->bw_state = BUS_NO_BANDWIDTH;

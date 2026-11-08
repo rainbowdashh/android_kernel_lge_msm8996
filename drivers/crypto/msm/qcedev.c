@@ -2180,7 +2180,7 @@ static int qcedev_probe_device(struct platform_device *pdev)
 				podev->platform_support.bus_scale_table);
 	if (!podev->bus_scale_handle) {
 		pr_err("%s not able to get bus scale\n", __func__);
-		rc = -ENOMEM;
+		rc = -EPROBE_DEFER;
 		goto exit_del_cdev;
 	}
 
