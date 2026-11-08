@@ -311,7 +311,7 @@ void tcpm_mux_control(uint8_t port, uint8_t data_role, mux_ctrl_t ctrl, uint8_t 
 
 void tcpm_hpd_out_control(uint8_t port, uint8_t val)
 {
-	DEBUG("HPD_OUT: %u\n", val);
+	TUSB422_DBG("HPD_OUT: %u\n", val);
 #ifdef CONFIG_TUSB422_PAL
 	// << Call platform functions to send HPD to DisplayPort source here >>
 #elif defined CONFIG_TUSB422 /* For BeagleBone Black EVM platform */

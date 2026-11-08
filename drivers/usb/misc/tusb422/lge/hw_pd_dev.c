@@ -209,7 +209,7 @@ int pd_dpm_handle_pe_event(enum pd_dpm_pe_evt event, void *state)
 			(struct pd_dpm_vbus_state *)state;
 		int tmpval = 0;
 
-		DEBUG("vbus_type(%d), mv(%d), ma(%d)\n",
+		TUSB422_DBG("vbus_type(%d), mv(%d), ma(%d)\n",
 		      vbus_state->vbus_type, vbus_state->mv, vbus_state->ma);
 
 		set_pr(dev, DUAL_ROLE_PROP_PR_SNK);
@@ -234,7 +234,7 @@ int pd_dpm_handle_pe_event(enum pd_dpm_pe_evt event, void *state)
 
 			if (dev->chg_psy_d.type == POWER_SUPPLY_TYPE_USB_HVDCP ||
 			    dev->chg_psy_d.type == POWER_SUPPLY_TYPE_USB_HVDCP_3) {
-				DEBUG("HVDCP is present. ignore Rp advertisement\n");
+				TUSB422_DBG("HVDCP is present. ignore Rp advertisement\n");
 				if (dev->curr_max) {
 					dev->curr_max = 0;
 					dev->volt_max = 0;
@@ -295,7 +295,7 @@ print_vbus_state:
 		struct pd_dpm_pd_state *pd_state =
 			(struct pd_dpm_pd_state *)state;
 
-		DEBUG("connected(%d)\n", pd_state->connected);
+		TUSB422_DBG("connected(%d)\n", pd_state->connected);
 
 		if (pd_state->connected == PD_CONNECT_PE_READY_SNK)
 			set_property_on_battery(dev, POWER_SUPPLY_PROP_CURRENT_CAPABILITY);
@@ -308,7 +308,7 @@ print_vbus_state:
 		struct pd_dpm_typec_state *tc_state =
 			(struct pd_dpm_typec_state *)state;
 
-		DEBUG("polarity(%d), new_state(%d)\n",
+		TUSB422_DBG("polarity(%d), new_state(%d)\n",
 		      tc_state->polarity, tc_state->new_state);
 
 		/* new_state */

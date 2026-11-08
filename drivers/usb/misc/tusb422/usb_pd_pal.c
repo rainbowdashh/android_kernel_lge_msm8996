@@ -42,7 +42,7 @@ void usb_pd_pal_source_vbus(unsigned int port, bool usb_pd, uint16_t mv, uint16_
 
 void usb_pd_pal_disable_vbus(unsigned int port)
 {
-	DEBUG("%s\n", __func__);
+	TUSB422_DBG("%s\n", __func__);
 
 	pd_dpm_handle_pe_event(PD_DPM_PE_EVT_DIS_VBUS_CTRL, NULL);
 	return;
@@ -53,7 +53,7 @@ void usb_pd_pal_sink_vbus(unsigned int port, bool usb_pd, uint16_t mv, uint16_t 
 	struct pd_dpm_vbus_state vbus_state;
 
 #ifdef CONFIG_LGE_USB_TYPE_C
-	DEBUG("%s: %u mV, %u mA %s\n", __func__, mv, ma, (usb_pd) ? "USB_PD" : "TYPE-C");
+	TUSB422_DBG("%s: %u mV, %u mA %s\n", __func__, mv, ma, (usb_pd) ? "USB_PD" : "TYPE-C");
 #else
 	PRINT("%s: %u mV, %u mA %s\n", __func__, mv, ma, (usb_pd) ? "USB_PD" : "TYPE-C");
 #endif
@@ -126,7 +126,7 @@ void usb_pd_pal_notify_connect_state(unsigned int port, tcpc_state_t state, bool
 	{
 		case TCPC_STATE_UNATTACHED_SRC:
 		case TCPC_STATE_UNATTACHED_SNK:
-			DEBUG("%s: TYPEC_UNATTACHED, polarity = 0x%x\n", __func__, polarity);
+			TUSB422_DBG("%s: TYPEC_UNATTACHED, polarity = 0x%x\n", __func__, polarity);
 			tc_state.new_state = PD_DPM_TYPEC_UNATTACHED;
 			pd_dpm_handle_pe_event(PD_DPM_PE_EVT_TYPEC_STATE, (void*)&tc_state);
 			break;

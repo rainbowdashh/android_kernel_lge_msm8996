@@ -283,7 +283,7 @@ static void timeout_no_response(unsigned int port)
 {
 	usb_pd_port_t *dev = &pd[port];
 
-	DEBUG("%s\n", __func__);
+	TUSB422_DBG("%s\n", __func__);
 
 	dev->no_response_timed_out = true;
 
@@ -2913,7 +2913,7 @@ static void pe_src_negotiate_capability_entry(usb_pd_port_t *dev)
 	{
 		src_max_current = dev->src_pdo[dev->object_position - 1] & 0x3FF;
 
-		DEBUG("PE_SRC_NEG_CAP: ObjPos = %u, req = %u mA, avail = %u mA\n",
+		TUSB422_DBG("PE_SRC_NEG_CAP: ObjPos = %u, req = %u mA, avail = %u mA\n",
 			  dev->object_position, operating_current * 10, src_max_current * 10);
 
 		if (operating_current <= src_max_current)
@@ -2928,7 +2928,7 @@ static void pe_src_negotiate_capability_entry(usb_pd_port_t *dev)
 	}
 	else
 	{
-		DEBUG("PE_SRC_NEG_CAP: ObjPos = %u is invalid!\n", dev->object_position);
+		TUSB422_DBG("PE_SRC_NEG_CAP: ObjPos = %u is invalid!\n", dev->object_position);
 
 		// Request cannot be met.
 		pe_set_state(dev, PE_SRC_CAPABILITY_RESPONSE);
@@ -3592,7 +3592,7 @@ static void timeout_sink_wait_cap(unsigned int port)
 {
 	usb_pd_port_t *dev = &pd[port];
 
-	DEBUG("%s: HR cnt = %u.\n", __func__, dev->hard_reset_cnt);
+	TUSB422_DBG("%s: HR cnt = %u.\n", __func__, dev->hard_reset_cnt);
 
 	if (dev->hard_reset_cnt <= N_HARD_RESET_COUNT)
 	{
@@ -3800,7 +3800,7 @@ static void pe_snk_ready_entry(usb_pd_port_t *dev)
 	{
 		// Set Sink Disconnect Threshold to 80% of min voltage.
 		threshold = (min_voltage * 8) / 10;
-		DEBUG("SNK VBUS Disconn Thres = %u mV.\n", threshold * 25);
+		TUSB422_DBG("SNK VBUS Disconn Thres = %u mV.\n", threshold * 25);
 #ifdef USE_VOLTAGE_ALARM_FOR_SINK_DISCONNECT
 		// Set voltage alarm low to new threshold.
 		tcpm_set_voltage_alarm_lo(dev->port, threshold);

@@ -394,7 +394,7 @@ bool HAL_I2C_Event(void)
 	ret = SMBus_masterProcessInt(&sSMBMaster[SMBUS_MASTER0]);
 	if (ret != SMBus_State_OK)
 	{
-		DEBUG("SMBus state %02u.\n", ret);
+		TUSB422_DBG("SMBus state %02u.\n", ret);
 	}
 
 	return(false);

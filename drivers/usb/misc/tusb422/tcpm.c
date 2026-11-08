@@ -187,7 +187,7 @@ static void tcpm_notify_conn_state(unsigned int port, tcpc_state_t state)
 
 static void tcpm_notify_current_change(unsigned int port, tcpc_cc_snk_state_t state)
 {
-	DEBUG("Current advertisement change detected: %s\n",
+	TUSB422_DBG("Current advertisement change detected: %s\n",
 		  (state == CC_SNK_STATE_POWER30) ? "3.0A" :
 		  (state == CC_SNK_STATE_POWER15) ? "1.5A" :
 		  (state == CC_SNK_STATE_DEFAULT) ? "500/900mA" : "?");
@@ -206,7 +206,7 @@ static void tcpm_notify_hard_reset(unsigned int port)
 
 static void tcpm_notify_pd_transmit(unsigned int port, tx_status_t status)
 {
-	DEBUG("PD Tx %s.\n", (status == TX_STATUS_SUCCESS) ? "OK" :
+	TUSB422_DBG("PD Tx %s.\n", (status == TX_STATUS_SUCCESS) ? "OK" :
 		  (status == TX_STATUS_DISCARDED) ? "discarded" :
 		  (status == TX_STATUS_FAILED) ? "failed" : "?");
 
@@ -216,21 +216,21 @@ static void tcpm_notify_pd_transmit(unsigned int port, tx_status_t status)
 
 static void tcpm_notify_pd_receive(unsigned int port)
 {
-	DEBUG("PD Rx\n");
+	TUSB422_DBG("PD Rx\n");
 	if (pd_receive_cbk)	pd_receive_cbk(port);
 	return;
 }
 
 static void tcpm_notify_voltage_alarm(unsigned int port, bool hi_voltage)
 {
-	DEBUG("%s-Voltage alarm\n", (hi_voltage) ? "Hi" : "Lo");
+	TUSB422_DBG("%s-Voltage alarm\n", (hi_voltage) ? "Hi" : "Lo");
 	if (volt_alarm_cbk)	volt_alarm_cbk(port, hi_voltage);
 	return;
 }
 
 void tcpm_src_vbus_disable(unsigned int port)
 {
-	DEBUG("SRC VBUS off.\n");
+	TUSB422_DBG("SRC VBUS off.\n");
 	tcpc_write8(port, TCPC_REG_COMMAND, TCPC_CMD_DISABLE_SRC_VBUS);
 	tcpm_source_vbus_disable(port);
 	return;
@@ -239,7 +239,7 @@ void tcpm_src_vbus_disable(unsigned int port)
 
 void tcpm_src_vbus_enable(unsigned int port, uint16_t mv)
 {
-	DEBUG("-> SRC VBUS %umV.\n", mv);
+	TUSB422_DBG("-> SRC VBUS %umV.\n", mv);
 
 	if (mv == 5000)
 	{
@@ -258,7 +258,7 @@ void tcpm_src_vbus_enable(unsigned int port, uint16_t mv)
 
 void tcpm_snk_vbus_enable(unsigned int port)
 {
-	DEBUG("-> SNK VBUS.\n");
+	TUSB422_DBG("-> SNK VBUS.\n");
 	tcpc_write8(port, TCPC_REG_COMMAND, TCPC_CMD_SNK_VBUS);
 	tcpm_sink_vbus(port, false, 5000, GET_SRC_CURRENT_MA(tcpc_dev[port].src_current_adv));
 	return;
@@ -266,7 +266,7 @@ void tcpm_snk_vbus_enable(unsigned int port)
 
 void tcpm_snk_vbus_disable(unsigned int port)
 {
-	DEBUG("SNK VBUS off.\n");
+	TUSB422_DBG("SNK VBUS off.\n");
 	tcpc_write8(port, TCPC_REG_COMMAND, TCPC_CMD_DISABLE_SNK_VBUS);
 	tcpm_sink_vbus_disable(port);
 	return;
@@ -275,7 +275,7 @@ void tcpm_snk_vbus_disable(unsigned int port)
 void tcpm_set_voltage_alarm_hi(unsigned int port, uint16_t threshold_25mv)
 {
 #ifdef CONFIG_LGE_USB_TYPE_C
-	DEBUG("%s: %umV\n", __func__, threshold_25mv * 25);
+	TUSB422_DBG("%s: %umV\n", __func__, threshold_25mv * 25);
 #else
 	INFO("%s: %umV\n", __func__, threshold_25mv * 25);
 #endif
@@ -286,7 +286,7 @@ void tcpm_set_voltage_alarm_hi(unsigned int port, uint16_t threshold_25mv)
 void tcpm_set_voltage_alarm_lo(unsigned int port, uint16_t threshold_25mv)
 {
 #ifdef CONFIG_LGE_USB_TYPE_C
-	DEBUG("%s: %umV\n", __func__, threshold_25mv * 25);
+	TUSB422_DBG("%s: %umV\n", __func__, threshold_25mv * 25);
 #else
 	INFO("%s: %umV\n", __func__, threshold_25mv * 25);
 #endif
@@ -672,7 +672,7 @@ static void cc_fault_timeout(unsigned int port)
 	dev->cc_fault_timeout_function = NULL;
 
 	timeout_remain = timespec_sub(dev->cc_fault_timeout, CURRENT_TIME);
-	DEBUG("%s: timeout_remain: tv_sec(%ld), tvnsec(%ld)\n", __func__, timeout_remain.tv_sec, timeout_remain.tv_nsec);
+	TUSB422_DBG("%s: timeout_remain: tv_sec(%ld), tvnsec(%ld)\n", __func__, timeout_remain.tv_sec, timeout_remain.tv_nsec);
 
 	if (timespec_valid(&timeout_remain))
 	{
@@ -826,7 +826,7 @@ static unsigned int cc_swing_get_timeout_ms(unsigned int port)
 		timeout_tbl = &timeout_tbl1;
 		timeout_tbl_len = sizeof(timeout_tbl1) / sizeof(*timeout_tbl1);
 	}
-	DEBUG("%s: timeout_tbl_len(%d)\n", __func__, timeout_tbl_len);
+	TUSB422_DBG("%s: timeout_tbl_len(%d)\n", __func__, timeout_tbl_len);
 
 	for (i = 0; i < timeout_tbl_len; i++) {
 		if (dev->cc_swing_recheck_cnt <= (*timeout_tbl)[i][0])
@@ -856,14 +856,14 @@ static bool tcpm_is_cc_swing(unsigned int port)
 
 	if (dev->state == TCPC_STATE_CC_FAULT_SWING && dev->cc_swing_cnt > CC_SWING_THRESHOLD)
 	{
-		DEBUG("%s: CC swing is already detected.\n", __func__);
+		TUSB422_DBG("%s: CC swing is already detected.\n", __func__);
 		cc_fault_timer_start(port, cc_swing_get_timeout_ms(port), timeout_cc_swing);
 		return true;
 	}
 
 	dev->last_cc_status = dev->cc_status;
 	tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
-	DEBUG("%s CC status = 0x%x\n", __func__, dev->cc_status);
+	TUSB422_DBG("%s CC status = 0x%x\n", __func__, dev->cc_status);
 
 if (!(dev->moisture_detect_use_sbu)) {
 	if (dev->state != TCPC_STATE_CC_FAULT_SWING &&
@@ -888,7 +888,7 @@ if (!(dev->moisture_detect_use_sbu)) {
 			if ((cc1 == CC_SNK_STATE_OPEN && cc2 != CC_SNK_STATE_OPEN) ||
 			    (cc1 != CC_SNK_STATE_OPEN && cc2 == CC_SNK_STATE_OPEN))
 			{
-				DEBUG("%s: ignore Rp advertisement.\n", __func__);
+				TUSB422_DBG("%s: ignore Rp advertisement.\n", __func__);
 				dev->cc_swing_cnt >>= 1;
 				goto out;
 			}
@@ -915,7 +915,7 @@ if (!(dev->moisture_detect_use_sbu)) {
 			dev->cc_swing_cnt = CC_SWING_THRESHOLD;
 
 		dev->cc_swing_cnt++;
-		DEBUG("%s: increase cc_swing_cnt. (%d/%d)\n", __func__, dev->cc_swing_cnt, CC_SWING_THRESHOLD);
+		TUSB422_DBG("%s: increase cc_swing_cnt. (%d/%d)\n", __func__, dev->cc_swing_cnt, CC_SWING_THRESHOLD);
 
 		if (dev->cc_swing_cnt > CC_SWING_THRESHOLD)
 		{
@@ -966,12 +966,12 @@ if (!(dev->moisture_detect_use_sbu)) {
 	}
 	else if (time_after(jiffies, dev->cc_swing_timeout + msecs_to_jiffies(T_CC_SWING_TIMEOUT_MS)))
 	{
-		DEBUG("%s: reset cc_swing_cnt.\n", __func__);
+		TUSB422_DBG("%s: reset cc_swing_cnt.\n", __func__);
 		dev->cc_swing_cnt = 0;
 	}
 	else
 	{
-		DEBUG("%s: decrease cc_swing_cnt. (%d)\n", __func__, dev->cc_swing_cnt);
+		TUSB422_DBG("%s: decrease cc_swing_cnt. (%d)\n", __func__, dev->cc_swing_cnt);
 		dev->cc_swing_cnt >>= 1;
 	}
 
@@ -991,7 +991,7 @@ static void timeout_cc_swing(unsigned int port)
 	if (dev->cc_swing_cnt == 0)
 	{
 		tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
-		DEBUG("%s CC status = 0x%x\n", __func__, dev->cc_status);
+		TUSB422_DBG("%s CC status = 0x%x\n", __func__, dev->cc_status);
 
 		cc1 = TCPC_CC1_STATE(dev->cc_status);
 		cc2 = TCPC_CC2_STATE(dev->cc_status);
@@ -1182,7 +1182,7 @@ static void timeout_cc_debounce(unsigned int port)
 	// Read CC status.
 	tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
 #endif
-	DEBUG("%s CC status = 0x%x\n", __func__, dev->cc_status);
+	TUSB422_DBG("%s CC status = 0x%x\n", __func__, dev->cc_status);
 
 	cc1 = TCPC_CC1_STATE(dev->cc_status);
 	cc2 = TCPC_CC2_STATE(dev->cc_status);
@@ -1351,7 +1351,7 @@ static void timeout_drp_try(unsigned int port)
 	unsigned int cc1, cc2;
 	tcpc_device_t *dev = &tcpc_dev[port];
 
-	DEBUG("%s\n", __func__);
+	TUSB422_DBG("%s\n", __func__);
 
 	if (dev->state == TCPC_STATE_TRY_SNK)
 	{
@@ -1361,7 +1361,7 @@ static void timeout_drp_try(unsigned int port)
 	{
 		// Read CC status.
 		tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
-		DEBUG("%s CC status = 0x%x\n", __func__, dev->cc_status);
+		TUSB422_DBG("%s CC status = 0x%x\n", __func__, dev->cc_status);
 
 		cc1 = TCPC_CC1_STATE(dev->cc_status);
 		cc2 = TCPC_CC2_STATE(dev->cc_status);
@@ -1401,7 +1401,7 @@ static void timeout_drp_try_wait(unsigned int port)
 {
 	tcpc_device_t *dev = &tcpc_dev[port];
 
-	DEBUG("%s\n", __func__);
+	TUSB422_DBG("%s\n", __func__);
 
 	return;
 }
@@ -1420,7 +1420,7 @@ static void timeout_pd_debounce(unsigned int port)
 	// Read CC status.
 	tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
 #endif
-	DEBUG("%s CC status = 0x%x\n", __func__, dev->cc_status);
+	TUSB422_DBG("%s CC status = 0x%x\n", __func__, dev->cc_status);
 
 	cc1 = TCPC_CC1_STATE(dev->cc_status);
 	cc2 = TCPC_CC2_STATE(dev->cc_status);
@@ -1664,7 +1664,7 @@ void tcpm_set_autodischarge_disconnect(unsigned int port, bool enable)
 void tcpm_set_sink_disconnect_threshold(unsigned int port, uint16_t threshold_25mv)
 {
 #ifdef CONFIG_LGE_USB_TYPE_C
-	DEBUG("%s: %dmV\n", __func__, threshold_25mv * 25);
+	TUSB422_DBG("%s: %dmV\n", __func__, threshold_25mv * 25);
 #endif
 	tcpc_write16(port, TCPC_REG_VBUS_SINK_DISCONNECT_THRESH, threshold_25mv);
 	return;
@@ -1745,12 +1745,12 @@ void tcpm_read_message(unsigned int port, uint8_t *buf, uint8_t len)
 	print_hex_dump(KERN_INFO, PRINT_PREFIX "rx_buf: ", DUMP_PREFIX_NONE, 16, 1, buf, byte_cnt, 0);
 #endif
 #else
-	DEBUG("rx_buf: 0x");
+	TUSB422_DBG("rx_buf: 0x");
 	for (i = 0; i < byte_cnt; i++)
 	{
-		DEBUG("%02x ", buf[i]);
+		TUSB422_DBG("%02x ", buf[i]);
 	}
-	DEBUG("\n");
+	TUSB422_DBG("\n");
 #endif
 
 	return;
@@ -1788,12 +1788,12 @@ void tcpm_read_message(unsigned int port, uint8_t *buf, uint8_t len)
 		// Copy message to buffer. (Subtract 3-bytes for frame type and header)
 		memcpy(buf, &local_buf[4], (byte_cnt - 3));
 
-		DEBUG("rx_buf: 0x");
+		TUSB422_DBG("rx_buf: 0x");
 		for (i = 0; i < (byte_cnt - 3); i++)
 		{
-			DEBUG("%02x ", buf[i]);
+			TUSB422_DBG("%02x ", buf[i]);
 		}
-		DEBUG("\n");
+		TUSB422_DBG("\n");
 	}
 
 	return;
@@ -2193,7 +2193,7 @@ void tcpm_connection_state_machine(unsigned int port)
 #endif
 				dev->src_current_adv = (tcpc_cc_snk_state_t)cc1;
 
-				DEBUG("SRC current: %s\n",
+				TUSB422_DBG("SRC current: %s\n",
 					  (cc1 == CC_SNK_STATE_POWER30) ? "3.0A" :
 					  (cc1 == CC_SNK_STATE_POWER15) ? "1.5A" :
 					  (cc1 == CC_SNK_STATE_DEFAULT) ? "500/900mA" : "?");
@@ -2210,7 +2210,7 @@ void tcpm_connection_state_machine(unsigned int port)
 #endif
 				dev->src_current_adv = (tcpc_cc_snk_state_t)cc2;
 
-				DEBUG("SRC current: %s\n",
+				TUSB422_DBG("SRC current: %s\n",
 					  (cc2 == CC_SNK_STATE_POWER30) ? "3.0A" :
 					  (cc2 == CC_SNK_STATE_POWER15) ? "1.5A" :
 					  (cc2 == CC_SNK_STATE_DEFAULT) ? "500/900mA" : "?");
@@ -2455,7 +2455,7 @@ static void alert_cc_status_handler(tcpc_device_t *dev)
 #endif
 
 #ifdef CONFIG_LGE_USB_TYPE_C
-	DEBUG("%s CC status = 0x%02x\n", __func__, dev->cc_status);
+	TUSB422_DBG("%s CC status = 0x%02x\n", __func__, dev->cc_status);
 #else
 	CRIT("%s CC status = 0x%02x\n", __func__, dev->cc_status);
 #endif
@@ -2793,7 +2793,7 @@ static void alert_power_status_handler(tcpc_device_t *dev)
 #ifdef CONFIG_LGE_USB_TYPE_C
 			PRINT("VBUS present\n");
 #else
-			DEBUG("VBUS present\n");
+			TUSB422_DBG("VBUS present\n");
 #endif
 
 			if (dev->src_detected)
@@ -2880,7 +2880,7 @@ static void alert_fault_status_handler(tcpc_device_t *dev)
 
 	if (status & TCPC_VCONN_OCP_FAULT_STATUS)
 	{
-		DEBUG("VCONN OCP\n");
+		TUSB422_DBG("VCONN OCP\n");
 		dev->vconn_ocp_cnt++;
 	}
 
@@ -3015,7 +3015,7 @@ static void tcpm_alert_handler(unsigned int port)
 		{
 			// Read CC status.
 			tcpc_read8(port, TCPC_REG_CC_STATUS, &dev->cc_status);
-			DEBUG("%s CC status = 0x%x\n", __func__, dev->cc_status);
+			TUSB422_DBG("%s CC status = 0x%x\n", __func__, dev->cc_status);
 
 			cc1 = TCPC_CC1_STATE(dev->cc_status);
 			cc2 = TCPC_CC2_STATE(dev->cc_status);
