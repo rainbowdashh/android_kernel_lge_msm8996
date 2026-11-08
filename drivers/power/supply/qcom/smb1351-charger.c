@@ -2952,6 +2952,7 @@ static int smb1351_parallel_charger_probe(struct i2c_client *client,
 	chip->dev = &client->dev;
 	chip->parallel_charger = true;
 	chip->parallel_charger_suspended = true;
+	chip->target_fastchg_current_max_ma = SMB1351_CHG_FAST_MIN_MA;
 
 	chip->usb_suspended_status = of_property_read_bool(node,
 					"qcom,charging-disabled");
