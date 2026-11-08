@@ -2,6 +2,13 @@
 
 menu "Qualcomm Technologies, Inc. Charger and Fuel Gauge support"
 
+config QPNP_SMBCHARGER
+	tristate "QPNP SMB charger"
+	depends on MFD_SPMI_PMIC && EXTCON
+	depends on SENSORS_QPNP_ADC_VOLTAGE
+	help
+	  Support PMI8994 and PMI8996 USB detection and battery charging.
+
 config QPNP_SMB2
         tristate "SMB2 Battery Charger"
         depends on MFD_SPMI_PMIC
