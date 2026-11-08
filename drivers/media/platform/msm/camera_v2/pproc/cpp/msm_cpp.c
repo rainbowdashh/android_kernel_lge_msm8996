@@ -4765,7 +4765,6 @@ cpp_probe_init_error:
 	media_entity_cleanup(&cpp_dev->msm_sd.sd.entity);
 	msm_sd_unregister(&cpp_dev->msm_sd);
 get_reset_err:
-	reset_control_put(cpp_dev->micro_iface_reset);
 get_reg_err:
 	msm_camera_put_clk_info(pdev, &cpp_dev->clk_info, &cpp_dev->cpp_clk,
 		cpp_dev->num_clks);
@@ -4826,7 +4825,6 @@ static int cpp_device_remove(struct platform_device *dev)
 	mutex_destroy(&cpp_dev->mutex);
 	kfree(cpp_dev->work);
 
-	reset_control_put(cpp_dev->micro_iface_reset);
 
 	destroy_workqueue(cpp_dev->timer_wq);
 	kfree(cpp_dev->cpp_clk);
