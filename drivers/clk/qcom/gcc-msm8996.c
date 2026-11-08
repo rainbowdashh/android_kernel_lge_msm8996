@@ -1162,10 +1162,16 @@ static struct clk_rcg2 tsif_ref_clk_src = {
 	},
 };
 
+static const struct freq_tbl ftbl_gcc_sleep_clk_src[] = {
+	F(32764, P_SLEEP_CLK, 1, 0, 0),
+	{ }
+};
+
 static struct clk_rcg2 gcc_sleep_clk_src = {
 	.cmd_rcgr = 0x43014,
 	.hid_width = 5,
 	.parent_map = gcc_sleep_clk_map,
+	.freq_tbl = ftbl_gcc_sleep_clk_src,
 	.clkr.hw.init = &(struct clk_init_data){
 		.name = "gcc_sleep_clk_src",
 		.parent_names = gcc_sleep_clk,
