@@ -215,7 +215,7 @@ static struct clk_hw *qcom_cc_clk_hw_get(struct of_phandle_args *clkspec,
 	struct qcom_cc *cc = data;
 	unsigned int idx = clkspec->args[0];
 
-	if (idx >= cc->num_rclks + cc->num_hwclks) {
+	if (idx >= cc->num_rclks && idx >= cc->num_hwclks) {
 		pr_err("invalid index %u\n", idx);
 		return ERR_PTR(-EINVAL);
 	}
@@ -223,7 +223,10 @@ static struct clk_hw *qcom_cc_clk_hw_get(struct of_phandle_args *clkspec,
 	if (idx < cc->num_hwclks && cc->hwclks[idx])
 		return cc->hwclks[idx];
 
-	return cc->rclks[idx] ? &cc->rclks[idx]->hw : ERR_PTR(-ENOENT);
+	if (idx < cc->num_rclks && cc->rclks[idx])
+		return &cc->rclks[idx]->hw;
+
+	return ERR_PTR(-ENOENT);
 }
 
 int qcom_cc_really_probe(struct platform_device *pdev,
