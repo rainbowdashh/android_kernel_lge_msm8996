@@ -46,7 +46,7 @@ static struct device_attribute dual_role_attrs[] = {
 	DUAL_ROLE_ATTR(power_role),
 	DUAL_ROLE_ATTR(data_role),
 	DUAL_ROLE_ATTR(powers_vconn),
-#ifdef CONFIG_LGE_USB
+#if defined(CONFIG_LGE_USB) || defined(CONFIG_LGE_USB_TYPE_C)
 	DUAL_ROLE_ATTR(control),
 	DUAL_ROLE_ATTR(cc1),
 	DUAL_ROLE_ATTR(cc2),
@@ -304,7 +304,7 @@ static char *vconn_supply_text[] = {
 	"n", "y"
 };
 
-#ifdef CONFIG_LGE_USB
+#if defined(CONFIG_LGE_USB) || defined(CONFIG_LGE_USB_TYPE_C)
 /* Control */
 static char *control_text[] = {
 	"auto", "on"
@@ -399,7 +399,7 @@ static ssize_t dual_role_show_property(struct device *dev,
 					vconn_supply_text[value]);
 		else
 			return -EIO;
-#ifdef CONFIG_LGE_USB
+#if defined(CONFIG_LGE_USB) || defined(CONFIG_LGE_USB_TYPE_C)
 	} else if (off == DUAL_ROLE_PROP_CONTROL) {
 		BUILD_BUG_ON(DUAL_ROLE_PROP_CONTROL_TOTAL !=
 			     ARRAY_SIZE(control_text));
@@ -553,7 +553,7 @@ static ssize_t dual_role_store_property(struct device *dev,
 		total = DUAL_ROLE_PROP_DR_TOTAL;
 		text_array = dr_text;
 		break;
-#ifdef CONFIG_LGE_USB
+#if defined(CONFIG_LGE_USB) || defined(CONFIG_LGE_USB_TYPE_C)
 	case DUAL_ROLE_PROP_CONTROL:
 		total = DUAL_ROLE_PROP_CC_TOTAL;
 		text_array = control_text;
