@@ -159,15 +159,16 @@ static int clk_rcg2_set_force_enable(struct clk_hw *hw)
 		return ret;
 
 	for (; count > 0; count--) {
-		if (clk_rcg2_is_enabled(hw))
-			return ret;
+		ret = clk_rcg2_is_enabled(hw);
+		if (ret)
+			return ret < 0 ? ret : 0;
 		/* Delay for 1usec and retry polling the status bit */
 		udelay(1);
 	}
 
 	WARN_CLK(hw->core, clk_hw_get_name(hw), count == 0,
 		"rcg didn't turn on.");
-	return ret;
+	return -ETIMEDOUT;
 }
 
 static int clk_rcg2_clear_force_enable(struct clk_hw *hw)
@@ -731,8 +732,16 @@ static int clk_rcg2_enable(struct clk_hw *hw)
 	const struct freq_tbl *f;
 	int ret;
 
-	if (rcg->flags & FORCE_ENABLE_RCG)
-		clk_rcg2_set_force_enable(hw);
+	if (rcg->flags & FORCE_ENABLE_RCG) {
+		pr_debug("startup: %s enabling root\n", clk_hw_get_name(hw));
+		ret = clk_rcg2_set_force_enable(hw);
+		pr_debug("startup: %s root enable returned %d\n",
+			clk_hw_get_name(hw), ret);
+		if (ret) {
+			clk_rcg2_clear_force_enable(hw);
+			return ret;
+		}
+	}
 
 	if (!rcg->enable_safe_config)
 		return 0;
