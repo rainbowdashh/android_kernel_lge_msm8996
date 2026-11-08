@@ -2108,28 +2108,29 @@ end:
 static int cam_smmu_populate_sids(struct device *dev,
 	struct cam_context_bank_info *cb)
 {
-	int i, j, rc = 0;
-	unsigned int cnt = 0, iommu_cells_cnt = 0;
-	const void *property;
+	struct of_phandle_args args;
+	int count, i, rc;
 
-	/* set the name of the context bank */
-	property = of_get_property(dev->of_node, "iommus", &cnt);
-	cnt /= 4;
-	rc = of_property_read_u32_index(dev->of_node, "iommu-cells", 0,
-		&iommu_cells_cnt);
-	if (rc < 0)
-		pr_err("invalid iommu-cells count : %d\n", rc);
-	iommu_cells_cnt++;
-	for (i = 0, j = 0; i < cnt; i = i + iommu_cells_cnt, j++) {
-		rc = of_property_read_u32_index(dev->of_node,
-			"iommus", i + 1, &cb->sids[j]);
-		if (rc < 0)
-			pr_err("misconfiguration, can't fetch SID\n");
+	count = of_count_phandle_with_args(dev->of_node, "iommus",
+					   "#iommu-cells");
+	if (count < 0)
+		return count;
+	if (!count || count > ARRAY_SIZE(cb->sids))
+		return -EINVAL;
 
-		pr_err("__debug cnt = %d, cb->name: :%s sid [%d] = %d\n",
-			cnt, cb->name, j, cb->sids[j]);
+	for (i = 0; i < count; i++) {
+		rc = of_parse_phandle_with_args(dev->of_node, "iommus",
+						"#iommu-cells", i, &args);
+		if (rc)
+			return rc;
+		of_node_put(args.np);
+		if (!args.args_count)
+			return -EINVAL;
+
+		cb->sids[i] = args.args[0];
 	}
-	return rc;
+
+	return 0;
 }
 
 static int cam_alloc_smmu_context_banks(struct device *dev)

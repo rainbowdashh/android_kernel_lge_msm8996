@@ -38,7 +38,7 @@ static struct list_head    ordered_sd_list;
 static struct mutex        ordered_sd_mtx;
 static struct mutex        v4l2_event_mtx;
 
-static atomic_t qos_add_request_done = ATOMIC_INIT(0);
+static DEFINE_MUTEX(msm_v4l2_pm_qos_lock);
 static struct pm_qos_request msm_v4l2_pm_qos_request;
 
 static struct msm_queue_head *msm_session_q;
@@ -227,26 +227,32 @@ static inline int __msm_queue_find_command_ack_q(void *d1, void *d2)
 	return (ack->stream_id == *(unsigned int *)d2) ? 1 : 0;
 }
 
-static inline void msm_pm_qos_add_request(void)
+static void msm_pm_qos_add_request(void)
 {
-	pr_info("%s: add request\n", __func__);
-	if (atomic_cmpxchg(&qos_add_request_done, 0, 1))
-		return;
-	pm_qos_add_request(&msm_v4l2_pm_qos_request, PM_QOS_CPU_DMA_LATENCY,
-	PM_QOS_DEFAULT_VALUE);
+	mutex_lock(&msm_v4l2_pm_qos_lock);
+	if (!pm_qos_request_active(&msm_v4l2_pm_qos_request))
+		pm_qos_add_request(&msm_v4l2_pm_qos_request,
+				  PM_QOS_CPU_DMA_LATENCY, PM_QOS_DEFAULT_VALUE);
+	mutex_unlock(&msm_v4l2_pm_qos_lock);
 }
 
 static void msm_pm_qos_remove_request(void)
 {
-	pr_info("%s: remove request\n", __func__);
-	pm_qos_remove_request(&msm_v4l2_pm_qos_request);
+	mutex_lock(&msm_v4l2_pm_qos_lock);
+	if (pm_qos_request_active(&msm_v4l2_pm_qos_request))
+		pm_qos_remove_request(&msm_v4l2_pm_qos_request);
+	mutex_unlock(&msm_v4l2_pm_qos_lock);
 }
 
 void msm_pm_qos_update_request(int val)
 {
-	pr_info("%s: update request %d\n", __func__, val);
-	msm_pm_qos_add_request();
-	pm_qos_update_request(&msm_v4l2_pm_qos_request, val);
+	mutex_lock(&msm_v4l2_pm_qos_lock);
+	if (pm_qos_request_active(&msm_v4l2_pm_qos_request))
+		pm_qos_update_request(&msm_v4l2_pm_qos_request, val);
+	else
+		pm_qos_add_request(&msm_v4l2_pm_qos_request,
+				  PM_QOS_CPU_DMA_LATENCY, val);
+	mutex_unlock(&msm_v4l2_pm_qos_lock);
 }
 
 struct msm_session *msm_session_find(unsigned int session_id)
@@ -392,6 +398,11 @@ static inline int __msm_sd_register_subdev(struct v4l2_subdev *sd)
 	sd->entity.info.dev.major = VIDEO_MAJOR;
 	sd->entity.info.dev.minor = vdev->minor;
 	sd->entity.name = video_device_node_name(vdev);
+	/* Legacy CPP/VPE discovery reads the subdevice number from revision. */
+	if (IS_ENABLED(CONFIG_ARCH_MSM8996) &&
+	    (sd->entity.function == MSM_CAMERA_SUBDEV_CPP ||
+	     sd->entity.function == MSM_CAMERA_SUBDEV_VPE))
+		sd->entity.legacy_revision = vdev->num;
 #endif
 	sd->devnode = vdev;
 	return 0;
@@ -423,16 +434,41 @@ static void msm_add_sd_in_position(struct msm_sd_subdev *msm_subdev,
 
 int msm_sd_register(struct msm_sd_subdev *msm_subdev)
 {
+	int rc;
+
 	if (WARN_ON(!msm_subdev))
 		return -EINVAL;
 
-	if (WARN_ON(!msm_v4l2_dev) || WARN_ON(!msm_v4l2_dev->dev))
-		return -EIO;
+	INIT_LIST_HEAD(&msm_subdev->list);
+	if (!smp_load_acquire(&msm_v4l2_dev))
+		return -EPROBE_DEFER;
+
+	if (IS_ENABLED(CONFIG_ARCH_MSM8996)) {
+		struct media_entity *entity = &msm_subdev->sd.entity;
+		u32 group = entity->legacy_type ? entity->legacy_group_id :
+			entity->function;
+
+		entity->function = group;
+		entity->legacy_type = MEDIA_ENT_F_V4L2_SUBDEV_UNKNOWN;
+		if (group == MSM_CAMERA_SUBDEV_CSID)
+			entity->legacy_group_id = 1;
+		else if (group == MSM_CAMERA_SUBDEV_BUF_MNGR)
+			entity->legacy_group_id = 13;
+		else if (group >= MSM_CAMERA_SUBDEV_PROXY &&
+			 group <= MSM_CAMERA_SUBDEV_IRIS)
+			entity->legacy_group_id = group - MSM_CAMERA_SUBDEV_PROXY + 20;
+		else
+			entity->legacy_group_id = group - MSM_CAMERA_SUBDEV_BASE;
+	}
+
+	rc = __msm_sd_register_subdev(&msm_subdev->sd);
+	if (rc)
+		return rc;
 
 	mutex_lock(&ordered_sd_mtx);
 	msm_add_sd_in_position(msm_subdev, &ordered_sd_list);
 	mutex_unlock(&ordered_sd_mtx);
-	return __msm_sd_register_subdev(&msm_subdev->sd);
+	return 0;
 }
 EXPORT_SYMBOL(msm_sd_register);
 
@@ -441,7 +477,12 @@ int msm_sd_unregister(struct msm_sd_subdev *msm_subdev)
 	if (WARN_ON(!msm_subdev))
 		return -EINVAL;
 
-	v4l2_device_unregister_subdev(&msm_subdev->sd);
+	if (msm_subdev->sd.v4l2_dev) {
+		mutex_lock(&ordered_sd_mtx);
+		list_del_init(&msm_subdev->list);
+		mutex_unlock(&ordered_sd_mtx);
+		v4l2_device_unregister_subdev(&msm_subdev->sd);
+	}
 	return 0;
 }
 EXPORT_SYMBOL(msm_sd_unregister);
@@ -1331,12 +1372,17 @@ static const struct file_operations logsync_fops = {
 static int msm_probe(struct platform_device *pdev)
 {
 	struct msm_video_device *pvdev = NULL;
+	struct v4l2_device *v4l2_dev;
 	static struct dentry *cam_debugfs_root;
 	int rc = 0;
 
-	msm_v4l2_dev = kzalloc(sizeof(*msm_v4l2_dev),
+	rc = cam_ahb_clk_init(pdev);
+	if (rc)
+		return rc;
+
+	v4l2_dev = kzalloc(sizeof(*v4l2_dev),
 		GFP_KERNEL);
-	if (WARN_ON(!msm_v4l2_dev)) {
+	if (WARN_ON(!v4l2_dev)) {
 		rc = -ENOMEM;
 		goto probe_end;
 	}
@@ -1355,31 +1401,36 @@ static int msm_probe(struct platform_device *pdev)
 	}
 
 #if defined(CONFIG_MEDIA_CONTROLLER)
-	msm_v4l2_dev->mdev = kzalloc(sizeof(struct media_device),
+	v4l2_dev->mdev = kzalloc(sizeof(struct media_device),
 		GFP_KERNEL);
-	if (!msm_v4l2_dev->mdev) {
+	if (!v4l2_dev->mdev) {
 		rc = -ENOMEM;
 		goto mdev_fail;
 	}
-	media_device_init(msm_v4l2_dev->mdev);
-	strlcpy(msm_v4l2_dev->mdev->model, MSM_CONFIGURATION_NAME,
-			sizeof(msm_v4l2_dev->mdev->model));
-	msm_v4l2_dev->mdev->dev = &(pdev->dev);
+	media_device_init(v4l2_dev->mdev);
+	v4l2_dev->mdev->legacy_entity_ids = IS_ENABLED(CONFIG_ARCH_MSM8996);
+	strlcpy(v4l2_dev->mdev->model, MSM_CONFIGURATION_NAME,
+			sizeof(v4l2_dev->mdev->model));
+	v4l2_dev->mdev->dev = &(pdev->dev);
 
-	rc = media_device_register(msm_v4l2_dev->mdev);
+	rc = media_device_register(v4l2_dev->mdev);
 	if (WARN_ON(rc < 0))
 		goto media_fail;
 
-	if (WARN_ON((rc == media_entity_pads_init(&pvdev->vdev->entity,
-			0, NULL)) < 0))
+	rc = media_entity_pads_init(&pvdev->vdev->entity, 0, NULL);
+	if (rc < 0)
 		goto entity_fail;
 
 	pvdev->vdev->entity.function = QCAMERA_VNODE_GROUP_ID;
+	if (IS_ENABLED(CONFIG_ARCH_MSM8996)) {
+		pvdev->vdev->entity.legacy_type = MEDIA_ENT_F_IO_V4L;
+		pvdev->vdev->entity.legacy_group_id = 2;
+	}
 #endif
 
-	msm_v4l2_dev->notify = msm_sd_notify;
+	v4l2_dev->notify = msm_sd_notify;
 
-	pvdev->vdev->v4l2_dev = msm_v4l2_dev;
+	pvdev->vdev->v4l2_dev = v4l2_dev;
 
 	rc = v4l2_device_register(&(pdev->dev), pvdev->vdev->v4l2_dev);
 	if (WARN_ON(rc < 0))
@@ -1405,8 +1456,10 @@ static int msm_probe(struct platform_device *pdev)
 	video_set_drvdata(pvdev->vdev, pvdev);
 
 	msm_session_q = kzalloc(sizeof(*msm_session_q), GFP_KERNEL);
-	if (WARN_ON(!msm_session_q))
-		goto v4l2_fail;
+	if (!msm_session_q) {
+		rc = -ENOMEM;
+		goto unregister_video;
+	}
 
 	msm_init_queue(msm_session_q);
 	spin_lock_init(&msm_eventq_lock);
@@ -1428,33 +1481,34 @@ static int msm_probe(struct platform_device *pdev)
 			pr_warn("NON-FATAL: failed to create logsync debugfs file\n");
 	}
 
-	rc = cam_ahb_clk_init(pdev);
-	if (rc < 0) {
-		pr_err("%s: failed to register ahb clocks\n", __func__);
-		goto v4l2_fail;
-	}
-
 	of_property_read_u32(pdev->dev.of_node,
 		"qcom,gpu-limit", &gpu_limit);
 
-	goto probe_end;
+	smp_store_release(&msm_v4l2_dev, v4l2_dev);
+	return 0;
 
+unregister_video:
+	video_unregister_device(pvdev->vdev);
+	pvdev->vdev = NULL;
 v4l2_fail:
-	v4l2_device_unregister(pvdev->vdev->v4l2_dev);
+	v4l2_device_unregister(v4l2_dev);
 register_fail:
 #if defined(CONFIG_MEDIA_CONTROLLER)
-	media_entity_cleanup(&pvdev->vdev->entity);
+	if (pvdev->vdev)
+		media_entity_cleanup(&pvdev->vdev->entity);
 entity_fail:
-	media_device_unregister(msm_v4l2_dev->mdev);
+	media_device_unregister(v4l2_dev->mdev);
 media_fail:
-	kzfree(msm_v4l2_dev->mdev);
+	media_device_cleanup(v4l2_dev->mdev);
+	kzfree(v4l2_dev->mdev);
 mdev_fail:
 #endif
-	video_device_release(pvdev->vdev);
+	if (pvdev->vdev)
+		video_device_release(pvdev->vdev);
 video_fail:
 	kfree(pvdev);
 pvdev_fail:
-	kzfree(msm_v4l2_dev);
+	kzfree(v4l2_dev);
 probe_end:
 	return rc;
 }

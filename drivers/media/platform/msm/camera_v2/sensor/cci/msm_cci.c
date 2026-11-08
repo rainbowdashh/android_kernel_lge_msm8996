@@ -2110,8 +2110,9 @@ static int msm_cci_probe(struct platform_device *pdev)
 		&new_cci_dev->num_clk);
 	if (rc < 0) {
 		pr_err("%s: msm_cci_get_clk_info() failed\n", __func__);
+		platform_set_drvdata(pdev, NULL);
 		kfree(new_cci_dev);
-		return -EFAULT;
+		return rc;
 	}
 
 	new_cci_dev->ref_count = 0;
@@ -2125,7 +2126,7 @@ static int msm_cci_probe(struct platform_device *pdev)
 	if (!new_cci_dev->irq) {
 		pr_err("%s: no irq resource?\n", __func__);
 		rc = -ENODEV;
-		goto cci_no_resource;
+		goto cci_unmap;
 	}
 	CDBG("%s line %d cci irq start %d end %d\n", __func__,
 		__LINE__,
@@ -2136,7 +2137,7 @@ static int msm_cci_probe(struct platform_device *pdev)
 	if (rc < 0) {
 		pr_err("%s: irq request fail\n", __func__);
 		rc = -EBUSY;
-		goto cci_release_mem;
+		goto cci_unmap;
 	}
 
 	msm_camera_enable_irq(new_cci_dev->irq, false);
@@ -2148,7 +2149,11 @@ static int msm_cci_probe(struct platform_device *pdev)
 	new_cci_dev->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_CCI;
 	new_cci_dev->msm_sd.sd.entity.name = new_cci_dev->msm_sd.sd.name;
 	new_cci_dev->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x6;
-	msm_sd_register(&new_cci_dev->msm_sd);
+	rc = msm_sd_register(&new_cci_dev->msm_sd);
+	if (rc) {
+		media_entity_cleanup(&new_cci_dev->msm_sd.sd.entity);
+		goto cci_free_irq;
+	}
 	new_cci_dev->pdev = pdev;
 	msm_cci_init_cci_params(new_cci_dev);
 	msm_cci_init_clk_params(new_cci_dev);
@@ -2188,8 +2193,18 @@ static int msm_cci_probe(struct platform_device *pdev)
 cci_invalid_vreg_data:
 	kfree(new_cci_dev->cci_vreg);
 cci_release_mem:
+	msm_sd_unregister(&new_cci_dev->msm_sd);
+	media_entity_cleanup(&new_cci_dev->msm_sd.sd.entity);
+cci_free_irq:
+	msm_camera_unregister_irq(pdev, new_cci_dev->irq, new_cci_dev);
+cci_unmap:
 	msm_camera_put_reg_base(pdev, new_cci_dev->base, "cci", true);
 cci_no_resource:
+	platform_set_drvdata(pdev, NULL);
+	msm_camera_put_clk_info_and_rates(pdev,
+		&new_cci_dev->cci_clk_info, &new_cci_dev->cci_clk,
+		&new_cci_dev->cci_clk_rates, new_cci_dev->num_clk_cases,
+		new_cci_dev->num_clk);
 	kfree(new_cci_dev);
 	return rc;
 }

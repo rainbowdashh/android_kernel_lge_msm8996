@@ -1,4 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0-only WITH Linux-syscall-note */
 #ifndef __UAPI_LINUX_MSM_CAMSENSOR_SDK_H
 #define __UAPI_LINUX_MSM_CAMSENSOR_SDK_H
 
@@ -51,11 +50,7 @@
 
 #define MSM_SENSOR_BYPASS_VIDEO_NODE    1
 
-#define SENSOR_PROBE_WRITE
-
-#define SECURE_CAMERA
-
-#define SECURE_CAM_RST_MODULES
+#define FRONT_AUX_SENSOR_SUPPORT
 
 enum msm_sensor_camera_id_t {
 	CAMERA_0,
@@ -77,6 +72,7 @@ enum camb_position_t {
 	BACK_CAMERA_B,
 	FRONT_CAMERA_B,
 	AUX_CAMERA_B = 0x100,
+	FRONT_AUX_CAMERA_B,
 	INVALID_CAMERA_B,
 };
 
@@ -117,6 +113,15 @@ enum msm_sensor_power_seq_gpio_t {
 	SENSOR_GPIO_VANA,
 	SENSOR_GPIO_VDIG,
 	SENSOR_GPIO_VAF,
+#ifdef CONFIG_MACH_LGE
+	SENSOR_GPIO_LDAF_EN,
+	SENSOR_GPIO_OIS_RESET,
+	SENSOR_GPIO_TCS_VANA,
+	SENSOR_GPIO_IRIS_VDD,
+	SENSOR_GPIO_OIS_VDD,
+	SENSOR_GPIO_OIS_DVDD,
+	SENSOR_GPIO_TCS_VIO,
+#endif
 	SENSOR_GPIO_FL_EN,
 	SENSOR_GPIO_FL_NOW,
 	SENSOR_GPIO_FL_RESET,
@@ -141,6 +146,14 @@ enum msm_camera_vreg_name_t {
 	CAM_VIO,
 	CAM_VANA,
 	CAM_VAF,
+
+#ifdef CONFIG_MACH_LGE
+	CAM_OISVDD,
+	CAM_OISDVDD,
+	CAM_I2C_PULL_UP,
+	CAM_TCS_VIO,
+	CAM_IRIS_VDD,
+#endif
 	CAM_V_CUSTOM1,
 	CAM_V_CUSTOM2,
 	CAM_VREG_MAX,
@@ -180,6 +193,10 @@ enum msm_actuator_write_type {
 enum msm_actuator_i2c_operation {
 	MSM_ACT_WRITE = 0,
 	MSM_ACT_POLL,
+
+#ifdef CONFIG_MACH_LGE
+	MSM_ACT_DELAY,
+#endif
 };
 
 enum actuator_type {
@@ -187,6 +204,9 @@ enum actuator_type {
 	ACTUATOR_PIEZO,
 	ACTUATOR_HVCM,
 	ACTUATOR_BIVCM,
+	#ifdef CONFIG_LG_OIS
+	ACTUATOR_CLOSE_LOOP_HVCM,
+	#endif
 };
 
 enum msm_flash_driver_type {
@@ -215,13 +235,6 @@ enum msm_ir_led_cfg_type_t {
 #define CFG_IR_LED_OFF CFG_IR_LED_OFF
 #define CFG_IR_LED_ON CFG_IR_LED_ON
 
-enum msm_laser_led_cfg_type_t {
-	CFG_LASER_LED_INIT,
-	CFG_LASER_LED_CONTROL,
-};
-#define CFG_LASER_LED_INIT CFG_LASER_LED_INIT
-#define CFG_LASER_LED_CONTROL CFG_LASER_LED_CONTROL
-
 enum msm_ir_cut_cfg_type_t {
 	CFG_IR_CUT_INIT = 0,
 	CFG_IR_CUT_RELEASE,
@@ -249,10 +262,10 @@ struct msm_sensor_power_setting {
 
 struct msm_sensor_power_setting_array {
 	struct msm_sensor_power_setting  power_setting_a[MAX_POWER_CONFIG];
-	struct msm_sensor_power_setting  *power_setting;
+	struct msm_sensor_power_setting *power_setting;
 	unsigned short size;
 	struct msm_sensor_power_setting  power_down_setting_a[MAX_POWER_CONFIG];
-	struct msm_sensor_power_setting  *power_down_setting;
+	struct msm_sensor_power_setting *power_down_setting;
 	unsigned short size_down;
 };
 
@@ -260,9 +273,6 @@ enum msm_camera_i2c_operation {
 	MSM_CAM_WRITE = 0,
 	MSM_CAM_POLL,
 	MSM_CAM_READ,
-	MSM_CAM_READ_PAGE,
-	MSM_CAM_WRITE_DELAYUSEC,
-	MSM_CAM_READ_CONTINUOUS,
 };
 
 struct msm_sensor_i2c_sync_params {
@@ -302,19 +312,10 @@ struct msm_sensor_init_params {
 	unsigned int            sensor_mount_angle;
 };
 
-struct msm_camera_i2c_reg_setting {
-	struct msm_camera_i2c_reg_array *reg_setting;
-	unsigned short size;
-	enum msm_camera_i2c_reg_addr_type addr_type;
-	enum msm_camera_i2c_data_type data_type;
-	unsigned short delay;
-};
-
 struct msm_sensor_id_info_t {
 	unsigned short sensor_id_reg_addr;
 	unsigned short sensor_id;
 	unsigned short sensor_id_mask;
-	struct msm_camera_i2c_reg_setting setting;
 };
 
 struct msm_camera_sensor_slave_info {
@@ -323,6 +324,13 @@ struct msm_camera_sensor_slave_info {
 	char actuator_name[32];
 	char ois_name[32];
 	char flash_name[32];
+
+#ifdef CONFIG_MACH_LGE
+	char proxy_name[32];
+	char tcs_name[32];
+	char iris_name[32];
+#endif
+
 	enum msm_sensor_camera_id_t camera_id;
 	unsigned short slave_addr;
 	enum i2c_freq_mode_t i2c_freq_mode;
@@ -339,6 +347,14 @@ struct msm_camera_i2c_reg_array {
 	unsigned short reg_addr;
 	unsigned short reg_data;
 	unsigned int delay;
+};
+
+struct msm_camera_i2c_reg_setting {
+	struct msm_camera_i2c_reg_array *reg_setting;
+	unsigned short size;
+	enum msm_camera_i2c_reg_addr_type addr_type;
+	enum msm_camera_i2c_data_type data_type;
+	unsigned short delay;
 };
 
 struct msm_camera_csid_vc_cfg {
@@ -360,9 +376,6 @@ struct msm_camera_csid_params {
 	unsigned int csi_clk;
 	struct msm_camera_csid_lut_params lut_params;
 	unsigned char csi_3p_sel;
-	unsigned char is_secure;
-	uint32_t topology;
-	unsigned char is_streamon;
 };
 
 struct msm_camera_csid_testmode_parms {
@@ -418,12 +431,19 @@ struct damping_params_t {
 
 struct region_params_t {
 	/* [0] = ForwardDirection Macro boundary
-	 *  [1] = ReverseDirection Inf boundary
-	 */
+	   [1] = ReverseDirection Inf boundary
+	*/
 	unsigned short step_bound[2];
 	unsigned short code_per_step;
 	/* qvalue for converting float type numbers to integer format */
 	unsigned int qvalue;
+#ifdef CONFIG_LG_OIS
+	int infinity_dac;
+	int macro_dac;
+	int dac_20;
+	int dac_40;
+	int macro_mecha_end;
+#endif
 };
 
 struct reg_settings_t {

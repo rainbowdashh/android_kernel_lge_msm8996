@@ -920,6 +920,7 @@ int camera_init_v4l2(struct device *dev, unsigned int *session)
 		goto mdev_fail;
 	}
 	media_device_init(v4l2_dev->mdev);
+	v4l2_dev->mdev->legacy_entity_ids = IS_ENABLED(CONFIG_ARCH_MSM8996);
 	strlcpy(v4l2_dev->mdev->model, MSM_CAMERA_NAME,
 			sizeof(v4l2_dev->mdev->model));
 
@@ -933,6 +934,10 @@ int camera_init_v4l2(struct device *dev, unsigned int *session)
 	if (WARN_ON(rc < 0))
 		goto entity_fail;
 	pvdev->vdev->entity.function = QCAMERA_VNODE_GROUP_ID;
+	if (IS_ENABLED(CONFIG_ARCH_MSM8996)) {
+		pvdev->vdev->entity.legacy_type = MEDIA_ENT_F_IO_V4L;
+		pvdev->vdev->entity.legacy_group_id = 2;
+	}
 #endif
 
 	v4l2_dev->notify = NULL;

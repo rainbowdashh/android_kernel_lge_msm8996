@@ -63,6 +63,13 @@ static int get_vector_index(char *name)
 	return rc;
 }
 
+static void cam_ahb_clk_release(void *unused)
+{
+	msm_bus_scale_unregister_client(data.ahb_client);
+	data.ahb_client = 0;
+	data.probe_done = false;
+}
+
 int cam_ahb_clk_init(struct platform_device *pdev)
 {
 	int i = 0, cnt = 0, rc = 0, index = 0;
@@ -171,7 +178,7 @@ int cam_ahb_clk_init(struct platform_device *pdev)
 		msm_bus_scale_register_client(data.pbus_data);
 	if (!data.ahb_client) {
 		pr_err("ahb vote registering failed\n");
-		rc = -EINVAL;
+		rc = -EPROBE_DEFER;
 		goto err5;
 	}
 
@@ -183,8 +190,9 @@ int cam_ahb_clk_init(struct platform_device *pdev)
 	}
 
 	/* request for svs in init */
-	msm_bus_scale_client_update_request(data.ahb_client,
-		index);
+	rc = msm_bus_scale_client_update_request(data.ahb_client, index);
+	if (rc)
+		goto err6;
 	data.ahb_clk_state = CAM_AHB_SUSPEND_VOTE;
 	data.probe_done = TRUE;
 	mutex_init(&data.lock);
@@ -192,10 +200,11 @@ int cam_ahb_clk_init(struct platform_device *pdev)
 	CDBG("dbg, done registering ahb votes\n");
 	CDBG("dbg, clk state :%u, probe :%d\n",
 		data.ahb_clk_state, data.probe_done);
-	return rc;
+	return devm_add_action_or_reset(&pdev->dev, cam_ahb_clk_release, NULL);
 
 err6:
 	msm_bus_scale_unregister_client(data.ahb_client);
+	data.ahb_client = 0;
 err5:
 	data.votes = NULL;
 err4:

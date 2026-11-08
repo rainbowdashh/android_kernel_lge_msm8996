@@ -812,6 +812,7 @@ no_data_count:
 	device->bus_vote.data = new_data;
 	device->bus_vote.data_count = num_data;
 	device->bus_vote.imem_size = device->res->imem_size;
+	device->bus_vote.total_bw_ddr = 0;
 
 	venus_hfi_for_each_bus(device, bus) {
 		if (!bus->is_prfm_gov_used) {
@@ -822,13 +823,15 @@ no_data_count:
 				dprintk(VIDC_ERR, "unable to get freq\n");
 				return rc;
 			}
-			device->bus_vote.total_bw_ddr = freq;
 		} else
 			freq = bus->range[1];
 
 		rc = __vote_bandwidth(bus, &freq);
 		if (rc)
 			return rc;
+		/* Performance-governed buses also hold a valid bandwidth vote. */
+		device->bus_vote.total_bw_ddr = max_t(u64,
+				device->bus_vote.total_bw_ddr, freq);
 	}
 
 err_no_mem:

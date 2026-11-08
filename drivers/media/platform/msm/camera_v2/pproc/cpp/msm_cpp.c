@@ -157,7 +157,11 @@ static int32_t msm_cpp_reset_vbif_and_load_fw(struct cpp_device *cpp_dev);
 	qcmd;			 \
 })
 
+#ifndef CONFIG_MACH_LGE
 #define MSM_CPP_MAX_TIMEOUT_TRIAL 1
+#else
+#define MSM_CPP_MAX_TIMEOUT_TRIAL 3
+#endif
 
 struct msm_cpp_timer_data_t {
 	struct cpp_device *cpp_dev;
@@ -948,6 +952,17 @@ static irqreturn_t msm_cpp_irq(int irq_num, void *data)
 	struct msm_cpp_tasklet_queue_cmd *queue_cmd;
 
 	irq_status = msm_camera_io_r(cpp_dev->base + MSM_CPP_MICRO_IRQGEN_STAT);
+
+	/* A halted microcontroller can keep asserting an error after ACK. */
+	if (irq_status & 0x7C0) {
+		u32 mask = msm_camera_io_r(cpp_dev->base +
+					MSM_CPP_MICRO_IRQGEN_MASK);
+
+		msm_camera_io_w_mb(mask & ~(irq_status & 0x7C0),
+			cpp_dev->base + MSM_CPP_MICRO_IRQGEN_MASK);
+		pr_err_ratelimited("microcontroller fault: status %#x pc %#x\n",
+			irq_status, msm_camera_io_r(cpp_dev->base + 0x50));
+	}
 
 	if (irq_status & 0x8) {
 		tx_level = msm_camera_io_r(cpp_dev->base +
@@ -2063,8 +2078,12 @@ static int msm_cpp_send_frame_to_hardware(struct cpp_device *cpp_dev,
 		spin_lock_irqsave(&cpp_timer.data.processed_frame_lock, flags);
 		msm_enqueue(&cpp_dev->processing_q,
 			&frame_qcmd->list_frame);
-		cpp_timer.data.processed_frame[cpp_dev->processing_q.len - 1] =
-			process_frame;
+		for (i = 0; i < MAX_CPP_PROCESSING_FRAME; i++) {
+			if (cpp_timer.data.processed_frame[i] == NULL) {
+				cpp_timer.data.processed_frame[i] = process_frame;
+				break;
+			}
+		}
 		queue_len = cpp_dev->processing_q.len;
 		spin_unlock_irqrestore(&cpp_timer.data.processed_frame_lock,
 			flags);
@@ -4765,7 +4784,6 @@ cpp_probe_init_error:
 	media_entity_cleanup(&cpp_dev->msm_sd.sd.entity);
 	msm_sd_unregister(&cpp_dev->msm_sd);
 get_reset_err:
-	reset_control_put(cpp_dev->micro_iface_reset);
 get_reg_err:
 	msm_camera_put_clk_info(pdev, &cpp_dev->clk_info, &cpp_dev->cpp_clk,
 		cpp_dev->num_clks);
@@ -4826,7 +4844,6 @@ static int cpp_device_remove(struct platform_device *dev)
 	mutex_destroy(&cpp_dev->mutex);
 	kfree(cpp_dev->work);
 
-	reset_control_put(cpp_dev->micro_iface_reset);
 
 	destroy_workqueue(cpp_dev->timer_wq);
 	kfree(cpp_dev->cpp_clk);
