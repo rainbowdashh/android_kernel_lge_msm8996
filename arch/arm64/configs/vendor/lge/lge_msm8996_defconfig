@@ -571,7 +571,7 @@ CONFIG_PANIC_TIMEOUT=5
 CONFIG_IPC_LOGGING=y
 
 # UART bring-up
-CONFIG_CMDLINE="earlycon keep_bootcon console=ttyMSM0,115200n8 loglevel=8 androidboot.selinux=permissive "
+CONFIG_CMDLINE="earlycon keep_bootcon console=ttyMSM0,115200n8 loglevel=8 androidboot.selinux=permissive dyndbg=\"format startup: +p\" "
 CONFIG_CMDLINE_EXTEND=y
 CONFIG_SERIAL_MSM=y
 CONFIG_SERIAL_MSM_CONSOLE=y
@@ -610,3 +610,6 @@ CONFIG_FW_LOADER_USER_HELPER_FALLBACK=y
 CONFIG_LEDS_QPNP_WLED=y
 
 CONFIG_RTC_DRV_QPNP=y
+
+CONFIG_DEBUG_FS=y
+CONFIG_DYNAMIC_DEBUG=y
