@@ -1658,6 +1658,7 @@ static int kgsl_iommu_start(struct kgsl_mmu *mmu)
 {
 	int status;
 	struct kgsl_iommu *iommu = _IOMMU_PRIV(mmu);
+	struct kgsl_device *device = KGSL_MMU_DEVICE(mmu);
 
 	kgsl_iommu_enable_clk(mmu);
 
@@ -1674,8 +1675,9 @@ static int kgsl_iommu_start(struct kgsl_mmu *mmu)
 		return status;
 	}
 
-	/* Set the following registers only when the MMU type is QSMMU */
-	if (mmu->subtype != KGSL_IOMMU_SMMU_V500) {
+	/* Preserve the firmware's A530 SMMU settings, as in the 4.4 driver. */
+	if (mmu->subtype != KGSL_IOMMU_SMMU_V500 &&
+			!adreno_is_a530(ADRENO_DEVICE(device))) {
 		/* Enable hazard check from GPU_SMMU_HUM_CFG */
 		writel_relaxed(0x02, iommu->regbase + 0x6800);
 
