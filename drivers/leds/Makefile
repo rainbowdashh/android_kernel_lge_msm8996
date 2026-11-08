@@ -95,3 +95,5 @@ obj-$(CONFIG_LEDS_USER)			+= uleds.o
 
 # LED Triggers
 obj-$(CONFIG_LEDS_TRIGGERS)		+= trigger/
+
+obj-$(CONFIG_LEDS_QPNP_WLED)		+= leds-qpnp-wled.o

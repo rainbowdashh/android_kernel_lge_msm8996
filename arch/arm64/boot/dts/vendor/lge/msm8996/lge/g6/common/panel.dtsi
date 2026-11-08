@@ -75,6 +75,7 @@
 			qcom,ibb-pwrup-dly = <1>;
 			qcom,led-strings-list = [00 01 02];
 			qcom,switch-freq-khz = <800>;
+			qcom,switching-slew-rate = <0>;
 			qcom,ilim-ma = <1420>;
 			qcom,en-cabc;
 		};
