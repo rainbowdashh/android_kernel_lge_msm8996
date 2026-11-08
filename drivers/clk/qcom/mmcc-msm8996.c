@@ -3582,7 +3582,7 @@ static int __init msm8996_cc_init(void)
 	return platform_register_drivers(msm8996_cc_drivers,
 					 ARRAY_SIZE(msm8996_cc_drivers));
 }
-module_init(msm8996_cc_init);
+core_initcall(msm8996_cc_init);
 
 static void __exit msm8996_cc_exit(void)
 {
