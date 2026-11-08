@@ -62,7 +62,7 @@ enum {
 	DUAL_ROLE_PROP_VCONN_SUPPLY_TOTAL,
 };
 
-#ifdef CONFIG_LGE_USB
+#if defined(CONFIG_LGE_USB) || defined(CONFIG_LGE_USB_TYPE_C)
 enum {
 	DUAL_ROLE_PROP_CONTROL_AUTO = 0,
 	DUAL_ROLE_PROP_CONTROL_ON,
@@ -119,7 +119,7 @@ enum dual_role_property {
 	DUAL_ROLE_PROP_PR,
 	DUAL_ROLE_PROP_DR,
 	DUAL_ROLE_PROP_VCONN_SUPPLY,
-#ifdef CONFIG_LGE_USB
+#if defined(CONFIG_LGE_USB) || defined(CONFIG_LGE_USB_TYPE_C)
 	DUAL_ROLE_PROP_CONTROL,
 	DUAL_ROLE_PROP_CC1,
 	DUAL_ROLE_PROP_CC2,
@@ -140,7 +140,7 @@ enum dual_role_property {
 #endif
 };
 
-#ifdef CONFIG_LGE_USB
+#if defined(CONFIG_LGE_USB) || defined(CONFIG_LGE_USB_TYPE_C)
 /* PDO */
 enum {
 	DUAL_ROLE_PROP_PDO_TYPE_FIXED,

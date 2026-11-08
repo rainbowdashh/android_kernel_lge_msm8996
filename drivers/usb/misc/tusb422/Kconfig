@@ -1,0 +1,26 @@
+config LGE_USB_TYPE_C
+	bool "LG MSM8996 Type-C integration"
+	depends on ARCH_MSM8996
+	help
+	  Enable the original LG Type-C power supply and USB role integration.
+
+config TUSB422
+	bool "Enable TUSB422 USB Power Delivery"
+	depends on I2C
+	default n
+
+config TUSB422_PAL
+	bool "Enable TUSB422 Platform Abstraction Layer"
+	default n
+	depends on TUSB422
+
+config LGE_USB_TUSB422
+	bool "Enable TUSB422 USB Power Delivery (LGE_USB)"
+	depends on LGE_USB_TYPE_C
+	select TUSB422
+
+config LGE_USB_TUSB422_PAL
+	bool "Enable TUSB422 Platform Abstraction Layer (LGE_USB)"
+	depends on LGE_USB_TUSB422
+	depends on LGE_USB_TYPE_C
+	select TUSB422_PAL
