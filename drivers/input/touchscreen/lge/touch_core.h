@@ -1,9 +1,8 @@
-/*
- * touch_core.h
+/* touch_core.h
  *
- * Copyright (c) 2015 LGE.
+ * Copyright (C) 2015 LGE.
  *
- * author : hoyeon.jang@lge.com
+ * Author: hoyeon.jang@lge.com
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -25,50 +24,23 @@
 #include <linux/platform_device.h>
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 #include <linux/earlysuspend.h>
-#elif defined(CONFIG_DRM_MSM) && defined(CONFIG_FB)
-#include <linux/msm_drm_notify.h>
 #elif defined(CONFIG_FB)
 #include <linux/fb.h>
 #endif
 #include <linux/notifier.h>
 #include <linux/atomic.h>
+#include <linux/pm_wakeup.h>
 #include <linux/input.h>
 #include <linux/input/mt.h>
+
 #include <touch_hwif.h>
 #include <linux/input/lge_touch_notify.h>
-#include <linux/input/lge_touch_module.h>
-#if defined(CONFIG_LGE_TOUCH_USE_PANEL_NOTIFY)
-#include <linux/lge_panel_notify.h>
-#endif
-#include <linux/pm_qos.h>
 
-#if defined(CONFIG_SECURE_TOUCH)
-#include <linux/completion.h>
-#include <linux/atomic.h>
-#include <linux/pm_runtime.h>
-#include <linux/clk.h>
-#endif
-#if defined(CONFIG_LGE_TOUCH_DEX)
-#include <touch_dex.h>
-#endif
-#if defined(CONFIG_LGE_TOUCH_ENCRYPTION)
-#include <touch_encryption.h>
-#endif
-
-#if defined(CONFIG_TRUSTONIC_TRUSTED_UI)
-#include <linux/input/tui_hal_ts.h>
-#endif
-#define LGE_TOUCH_NAME		"lge_touch"
-#define LGE_TOUCH_DRIVER_NAME	"lge_touch_driver"
-#define MAX_FINGER		10
-#define MAX_LPWG_CODE		128
-#define EUPGRADE		140
-#define EHWRESET_ASYNC		141
-#define EHWRESET_SYNC		142
-#define ESWRESET		143
-#define EGLOBALRESET		144
-
-#define UEVENT_TIMEOUT		300
+#define LGE_TOUCH_NAME			"lge_touch"
+#define LGE_TOUCH_DRIVER_NAME		"lge_touch_driver"
+#define MAX_FINGER			10
+#define MAX_LPWG_CODE			128
+#define EUPGRADE			140
 
 enum TOUCH_DEBUG {
 	_NONE                      = 0,
@@ -93,24 +65,18 @@ enum TOUCH_DEBUG {
 };
 
 #define TOUCH_I(fmt, args...)					\
-	pr_info("[Touch] "					\
+	pr_debug("[Touch] "					\
 			fmt, ##args)
 
 #define TOUCH_E(fmt, args...)					\
 	pr_err("[Touch E] [%s %d] "				\
 			fmt, __func__, __LINE__, ##args)
 
-#if defined(CONFIG_LGE_TOUCH_ENCRYPTION)
-#define TOUCH_ENCRYP(fmt, args...)					\
-	pr_info("[ENCRYP_Touch] "					\
-			fmt, ##args)
-#endif
-
 extern u32 touch_debug_mask;
 #define TOUCH_D(condition, fmt, args...)			\
 	do {							\
 		if (unlikely(touch_debug_mask & (condition)))	\
-			pr_info("[Touch] " fmt, ##args);	\
+			pr_debug("[Touch] " fmt, ##args);	\
 	} while (0)
 
 #define TOUCH_DEBUG_SHOW_FILE
@@ -128,33 +94,17 @@ extern u32 touch_debug_mask;
 #define TOUCH_IRQ_PASSWD		(1 << 2)
 #define TOUCH_IRQ_SWIPE_DOWN		(1 << 3)
 #define TOUCH_IRQ_SWIPE_UP		(1 << 4)
-#define TOUCH_IRQ_SWIPE_LEFT		(1 << 5)
-#define TOUCH_IRQ_SWIPE_RIGHT		(1 << 6)
-#define TOUCH_IRQ_WATER_MODE_ON		(1 << 7)
-#define TOUCH_IRQ_WATER_MODE_OFF	(1 << 8)
+#define TOUCH_IRQ_SWIPE_RIGHT		(1 << 5)
+#define TOUCH_IRQ_SWIPE_LEFT		(1 << 6)
 #define TOUCH_IRQ_AI_BUTTON		(1 << 9)
-#define TOUCH_IRQ_AI_PICK		(1 << 10)
-#define TOUCH_IRQ_SWIPE_LEFT2		(1 << 12)
-#define TOUCH_IRQ_SWIPE_RIGHT2		(1 << 13)
 #define TOUCH_IRQ_ERROR			(1 << 15)
-#define TOUCH_IRQ_LPWG_LONGPRESS_DOWN		(1 << 16)
-#define TOUCH_IRQ_LPWG_LONGPRESS_UP		(1 << 17)
-#define TOUCH_IRQ_LPWG_SINGLE_WAKEUP		(1 << 18)
-#define TOUCH_IRQ_PEN_WAKEUP		(1 << 19)
-#define TOUCH_IRQ_PEN_WAKEUP_BTN	(1 << 20)
-#define TOUCH_IRQ_PEN_DETECTION		(1 << 21)
 
 enum {
 	POWER_OFF = 0,
 	POWER_SLEEP,
 	POWER_WAKE,
 	POWER_ON,
-	POWER_HW_RESET_ASYNC,
-	POWER_HW_RESET_SYNC,
-	POWER_SW_RESET,
-	POWER_DSV_TOGGLE,
-	POWER_DSV_ALWAYS_ON,
-	POWER_ON_ETC,
+	POWER_SLEEP_STATUS,
 };
 
 enum {
@@ -180,7 +130,6 @@ enum {
 
 enum {
 	FB_RESUME = 0,
-	FB_CHANGED,
 	FB_SUSPEND,
 };
 
@@ -216,25 +165,23 @@ enum {
 };
 
 enum {
+	LPWG_SLEEP = 0,
+	LPWG_WAKE,
+	LPWG_KNOCK,
+	LPWG_PASSWD,
+	LPWG_PARTIAL,
+	LPWG_NORMAL,
+};
+
+enum {
+	LPWG_CMD_MODE = 0,
+	LPWG_CMD_AREA,
+};
+
+enum {
 	TCI_1 = 0,
 	TCI_2,
-};
-
-enum {
-	SWIPE_D = 0,
-	SWIPE_U,
-	SWIPE_R,
-	SWIPE_L,
-	SWIPE_R2,
-	SWIPE_L2,
-	SWIPE_DEFAULT,
-};
-
-enum {
-	PAY_TYPE_DISABLE = 0,
-	PAY_TYPE_SWIPE_U = 1,
-	PAY_TYPE_SWIPE_L = 2,
-	PAY_TYPE_SWIPE_R = 3,
+	SWIPE,
 };
 
 enum {
@@ -271,10 +218,6 @@ enum {
 	INCOMING_CALL_IDLE,
 	INCOMING_CALL_RINGING,
 	INCOMING_CALL_OFFHOOK,
-	INCOMING_CALL_CDMA_RINGING,
-	INCOMING_CALL_CDMA_OFFHOOK,
-	INCOMING_CALL_LTE_RINGING,
-	INCOMING_CALL_LTE_OFFHOOK,
 };
 
 enum {
@@ -282,7 +225,6 @@ enum {
 	MFTS_FOLDER,
 	MFTS_FLAT,
 	MFTS_CURVED,
-	MFTS_DS_FLAT,
 };
 
 enum { /* Command lists */
@@ -298,10 +240,20 @@ enum {
 enum {
 	CORE_NONE = 0,
 	CORE_PROBE,
+	CORE_CHARGER_LOGO,
+	CORE_MFTS,
 	CORE_UPGRADE,
 	CORE_NORMAL,
-	CORE_SHUTDOWN,
-	CORE_REMOVE,
+};
+
+enum {
+	CONNECT_INVALID = 0,
+	CONNECT_SDP,
+	CONNECT_DCP,
+	CONNECT_CDP,
+	CONNECT_PROPRIETARY,
+	CONNECT_FLOATED,
+	CONNECT_HUB, /* SHOULD NOT change the value */
 };
 
 enum {
@@ -317,31 +269,25 @@ enum {
 
 enum {
 	DEBUG_OPTION_DISABLE = 0,
-	DEBUG_OPTION_0 = (1 << 0),
-	DEBUG_OPTION_1 = (1 << 1),
-	DEBUG_OPTION_2 = (1 << 2),
-	DEBUG_OPTION_3 = (1 << 3),
-	DEBUG_OPTION_4 = (1 << 4),
-	DEBUG_OPTION_5 = (1 << 5),
-	DEBUG_OPTION_6 = (1 << 6),
-	DEBUG_OPTION_7 = (1 << 7),
-	DEBUG_OPTION_8 = (1 << 8),
-	DEBUG_OPTION_9 = (1 << 9),
-	DEBUG_OPTION_ALL = DEBUG_OPTION_0|DEBUG_OPTION_1|DEBUG_OPTION_2|
-		DEBUG_OPTION_3|DEBUG_OPTION_4|DEBUG_OPTION_5|
-		DEBUG_OPTION_6|DEBUG_OPTION_7|DEBUG_OPTION_8|DEBUG_OPTION_9,
+	DEBUG_OPTION_0 = 1,
+	DEBUG_OPTION_1 = 2,
+	DEBUG_OPTION_2 = 4,
+	DEBUG_OPTION_3 = 8,
+	DEBUG_OPTION_4 = 16,
+	DEBUG_OPTION_5 = 32,
+	DEBUG_OPTION_6 = 64,
+	DEBUG_OPTION_7 = 128,
+	DEBUG_OPTION_8 = 256,
+	DEBUG_OPTION_9 = 512,
+	DEBUG_OPTION_ALL = 1023,
 };
 
 enum {
-	TOUCH_NORMAL_BOOT = 0,
-	TOUCH_MINIOS_AAT,
-	TOUCH_MINIOS_MFTS_FOLDER,
-	TOUCH_MINIOS_MFTS_FLAT,
-	TOUCH_MINIOS_MFTS_CURVED,
-	TOUCH_MINIOS_MFTS_DS_FLAT,
-	TOUCH_CHARGER_MODE,
-	TOUCH_LAF_MODE,
-	TOUCH_RECOVERY_MODE,
+	NORMAL_BOOT = 0,
+	MINIOS_AAT,
+	MINIOS_MFTS_FOLDER,
+	MINIOS_MFTS_FLAT,
+	MINIOS_MFTS_CURVED,
 };
 
 enum {
@@ -349,72 +295,19 @@ enum {
 	TOUCH_UEVENT_PASSWD,
 	TOUCH_UEVENT_SWIPE_DOWN,
 	TOUCH_UEVENT_SWIPE_UP,
-	TOUCH_UEVENT_SWIPE_LEFT,
 	TOUCH_UEVENT_SWIPE_RIGHT,
-	TOUCH_UEVENT_SWIPE_LEFT2,
-	TOUCH_UEVENT_SWIPE_RIGHT2,
-	TOUCH_UEVENT_WATER_MODE_ON,
-	TOUCH_UEVENT_WATER_MODE_OFF,
+	TOUCH_UEVENT_SWIPE_LEFT,
 	TOUCH_UEVENT_AI_BUTTON,
-	TOUCH_UEVENT_AI_PICK,
-	TOUCH_UEVENT_LPWG_LONGPRESS_DOWN,
-	TOUCH_UEVENT_LPWG_LONGPRESS_UP,
-	TOUCH_UEVENT_LPWG_SINGLE_WAKEUP,
-	TOUCH_UEVENT_PEN_WAKEUP,
-	TOUCH_UEVENT_PEN_WAKEUP_BTN,
-	TOUCH_UEVENT_PEN_DETECTION,
-	TOUCH_UEVENT_SWITCH_AES_BOTH,
-	TOUCH_UEVENT_SWITCH_AES_TO_1,
-	TOUCH_UEVENT_SWITCH_AES_TO_2,
-	TOUCH_UEVENT_DS_UPDATE_STATE,
 	TOUCH_UEVENT_SIZE,
 };
 
 enum {
-	DS_UPDATE_NONE		= 0,
-	DS_UPDATE_CONNECT	= 1,
-	DS_UPDATE_CUSTOM	= 2,
-};
-/* use TOUCH_UEVENT_SIDE_PAY instead of TOUCH_UEVENT_SWIPE_LEFT2/RIGHT2 */
-#define TOUCH_UEVENT_SIDE_PAY (TOUCH_UEVENT_SWIPE_UP)
-
-enum {
-	KEY_GESTURE_SWIPE_DOWN = 247,
-	KEY_GESTURE_SWIPE_UP = 248,
-	KEY_GESTURE_SWIPE_RIGHT = 249,
-	KEY_GESTURE_SWIPE_LEFT = 250,
-	KEY_GESTURE_SWIPE_RIGHT2 = 251,
-	KEY_GESTURE_SWIPE_LEFT2 = 252,
-};
-
-enum {
-	APP_HOME = 0,
-	APP_CONTACTS,
-	APP_MENU,
 	LPWG_SET_COORDS = 3,
 	LPWG_SET_TAPS = 4,
 	LPWG_ENABLE_TAP_LISTENER = 8,
 	LPWG_MASTER = 9,
 };
 
-enum {
-	FIRST_RESUME_NOT_YET = 0,
-	FIRST_RESUME_IS_OK,
-};
-
-#if defined(CONFIG_LGE_TOUCH_APP_FW_UPGRADE)
-enum {
-	APP_FW_UPGRADE_IDLE = 0,
-	APP_FW_UPGRADE_GET_DATA,
-	APP_FW_UPGRADE_FLASHING,
-};
-#endif
-enum {
-	SWIVEL_NOT_INITIALIZED = -1,
-	SWIVEL_HALF = 0,
-	SWIVEL_CLOSED = 1,
-	SWIVEL_OPENED = 2,
-};
 struct state_info {
 	atomic_t core;
 	atomic_t pm;
@@ -425,27 +318,15 @@ struct state_info {
 	atomic_t connect; /* connection using USB port */
 	atomic_t wireless; /* connection using wirelees_charger */
 	atomic_t earjack; /* connection using earjack */
-	atomic_t fm_radio; /* connection using fm radio */
-	atomic_t swivel; /* set swivel state */
 	atomic_t lockscreen;
 	atomic_t ime;
-	atomic_t film;
+	atomic_t quick_cover;
 	atomic_t incoming_call;
 	atomic_t mfts;
 	atomic_t sp_link;
 	atomic_t debug_tool;
 	atomic_t debug_option_mask;
 	atomic_t onhand;
-	atomic_t active_pen;
-	atomic_t film_mode; /* protection film in manufcturing */
-	atomic_t dualscreen;
-	atomic_t dex_mode;
-	atomic_t first_resume;
-};
-
-enum {
-	AOD_VERTICAL_MODE = 0,
-	AOD_HORIZONTAL_MODE,
 };
 
 struct touch_driver {
@@ -458,21 +339,11 @@ struct touch_driver {
 	int (*irq_handler)(struct device *dev);
 	int (*power)(struct device *dev, int power_mode);
 	int (*upgrade)(struct device *dev);
-#if defined(CONFIG_LGE_TOUCH_APP_FW_UPGRADE)
-	int (*app_upgrade)(struct device *dev);
-#endif
-	int (*esd_recovery)(struct device *dev);
 	int (*lpwg)(struct device *dev,	u32 code, void *param);
-	int (*swipe_enable)(struct device *dev,	bool enable);
 	int (*notify)(struct device *dev, ulong event, void *data);
-	int (*init_pm)(struct device *dev);
 	int (*register_sysfs)(struct device *dev);
 	int (*set)(struct device *dev, u32 cmd, void *input, void *output);
 	int (*get)(struct device *dev, u32 cmd, void *input, void *output);
-#ifdef CONFIG_LGE_TOUCH_PEN
-	int (*pen_func)(struct device *dev, void *touch_core_data, void *data, int control);
-	int (*stop_pen_sensing)(struct device *dev, bool enable);
-#endif
 };
 
 struct touch_device_caps {
@@ -489,13 +360,17 @@ struct touch_device_caps {
 
 struct touch_operation_role {
 	bool use_lpwg;
-	bool use_lpwg_test;
+	u32 use_lpwg_test;
+	bool use_upgrade;
 	bool hide_coordinate;
-	bool use_film_status;
-	bool use_synaptics_touchcomm;
-	bool use_active_pen_status;
-	bool use_dex_mode;
-	bool encryption_coordi;
+	u32 mfts_lpwg;
+};
+
+struct touch_quick_cover {
+	u32 x1;
+	u32 y1;
+	u32 x2;
+	u32 y2;
 };
 
 struct tci_info {
@@ -521,30 +396,6 @@ struct tci_ctrl {
 	struct tci_info info[2];
 };
 
-struct swipe_active_area {
-	s16 x1;
-	s16 y1;
-	s16 x2;
-	s16 y2;
-};
-
-struct swipe_ctrl {
-	bool enable;
-	bool debug_enable;
-	u8 distance;
-	u8 ratio_thres;
-	u16 min_time;
-	u16 max_time;
-	u8 wrong_dir_thres;
-	u8 init_ratio_chk_dist;
-	u8 init_ratio_thres;
-	struct swipe_active_area area;
-	struct swipe_active_area start_area;
-	struct swipe_active_area border_area;
-	struct swipe_active_area start_border_area;
-	bool available;
-};
-
 struct touch_pinctrl {
 	struct pinctrl *ctrl;
 	struct pinctrl_state *active;
@@ -561,9 +412,6 @@ struct touch_data {
 	u16 pressure;
 	/* finger, palm, pen, glove, hover */
 	u16 type;
-#if defined(CONFIG_LGE_TOUCH_DEX)
-	struct touch_dex_data dex_data;
-#endif
 };
 
 struct point {
@@ -581,37 +429,6 @@ struct lpwg_info {
 	struct point code[MAX_LPWG_CODE];
 };
 
-struct app_info {
-	int app;
-	char version[10];
-	int icon_size;
-	int touch_slop;
-};
-
-struct perf_test_info {
-	bool enable;
-	u32 jig_size;
-	u32 delay;
-	u16 pressure;
-	u16 width;
-	u16 click_x;
-	u16 click_y;
-	u16 v_drag_x;
-	u16 v_drag_start_y;
-	u16 v_drag_end_y;
-	u16 h_drag_start_x;
-	u16 h_drag_end_x;
-	u16 h_drag_y;
-};
-
-#if defined(CONFIG_LGE_TOUCH_APP_FW_UPGRADE)
-struct app_fw_upgrade_info {
-	int status;
-	size_t max_data_size;
-	size_t offset;
-	u8 *data;
-};
-#endif
 struct touch_core_data {
 	struct platform_device *pdev;
 
@@ -624,18 +441,21 @@ struct touch_core_data {
 	struct touch_driver *driver;
 	struct kobject kobj;
 
+	struct wakeup_source *lpwg_wake_lock;
+
 	int reset_pin;
 	int int_pin;
 	int maker_id_pin;
-	int vcl_pin;
 	int vdd_pin;
+	int vio_pin;
 
-	void *vcl;
 	void *vdd;
+	void *vio;
 
 	struct touch_device_caps caps;
 	struct touch_operation_role role;
 	struct state_info state;
+	struct touch_quick_cover qcover;
 	struct touch_pinctrl pinctrl;
 
 	u32 intr_status;
@@ -646,103 +466,48 @@ struct touch_core_data {
 	int is_cancel;
 	struct lpwg_info lpwg;
 	struct tci_ctrl tci;
-	struct swipe_ctrl swipe[6];	/*down, up, right, left, right2, left2 */
 
 	u8 def_fwcnt;
-	const char *touch_ic_name;
 	const char *def_fwpath[4];
 	char test_fwpath[256];
 	const char *panel_spec;
 	const char *panel_spec_mfts;
-	const char *dual_panel_spec[4];
-	const char *dual_panel_spec_mfts[4];
 	const char *panel_spec_mfts_flat;
 	const char *panel_spec_mfts_curved;
 	u8 force_fwup;
 
-	int mfts_lpwg;
-
 	u8 *tx_buf;
 	u8 *rx_buf;
+	int buf_size;
 	struct touch_xfer_msg *xfer;
 
 	struct mutex lock;
-	struct mutex irq_lock;
-	struct mutex finger_mask_lock;
 	struct workqueue_struct *wq;
 	struct delayed_work init_work;
 	struct delayed_work upgrade_work;
-#if defined(CONFIG_LGE_TOUCH_ENCRYPTION)
-	struct delayed_work encryp_work;
-#endif
-#if defined(CONFIG_LGE_TOUCH_APP_FW_UPGRADE)
-	struct delayed_work app_upgrade_work;
-#endif
 	struct delayed_work notify_work;
 	struct delayed_work fb_work;
-	struct delayed_work panel_reset_work;
 
 	struct notifier_block blocking_notif;
 	struct notifier_block atomic_notif;
-	struct notifier_block display_notif;
 	struct notifier_block notif;
 	unsigned long notify_event;
 	int notify_data;
-	struct atomic_notify_event notify_event_arr[ATOMIC_NOTIFY_EVENT_SIZE];
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	struct early_suspend early_suspend;
-#elif defined(CONFIG_DRM_MSM) & defined(CONFIG_FB)
-	struct notifier_block drm_notif;
 #elif defined(CONFIG_FB)
 	struct notifier_block fb_notif;
 #endif
 	void *touch_device_data;
 
-#if defined(CONFIG_SECURE_TOUCH)
-	atomic_t st_enabled;
-	atomic_t st_pending_irqs;
-	struct completion st_powerdown;
-	struct completion st_irq_processed;
-	bool st_initialized;
-	struct clk *core_clk;
-	struct clk *iface_clk;
-	struct mutex touch_io_ctrl_mutex;
-#if defined(CONFIG_TRUSTONIC_TRUSTED_UI)
-    struct completion st_irq_received;
-#endif
-
-#endif
-
 	/* for MTK */
-	int vcl_id;
-	int vcl_vol;
 	int vdd_id;
 	int vdd_vol;
+	int vio_id;
+	int vio_vol;
 
-	dma_addr_t tx_pa;
-	dma_addr_t rx_pa;
-
-	struct app_info app_data[3];
-	struct perf_test_info perf_test;
-	struct pm_qos_request pm_qos_req;
-
-	/* prediction filter off : 0, on : 1 */
-	int pred_filter;
-	u8 aes_mode;
-	struct completion uevent_complete;
-#if defined(CONFIG_LGE_TOUCH_DEX)
-	int dex_tcount;
-	struct touch_dex_ctrl touch_dex;
-	struct input_dev *input_dex;
-#endif
-#if defined(CONFIG_LGE_TOUCH_APP_FW_UPGRADE)
-	struct app_fw_upgrade_info app_fw_upgrade;
-#endif
-	int aod_mode;
-#if defined(CONFIG_LGE_TOUCH_ENCRYPTION)
-	long encryption_matrix[ENCRYP_COEFF_MAT_SIZE][ENCRYP_COEFF_MAT_SIZE];
-	char str_encryption_RSA[BASE64_ENCODING_SIZE];
-#endif
+	u32 tx_pa;
+	u32 rx_pa;
 };
 
 #define PROPERTY_GPIO(np, string, target)				\
@@ -789,7 +554,7 @@ struct touch_attribute {
 
 #define TOUCH_ATTR(_name, _show, _store)		\
 			struct touch_attribute touch_attr_##_name	\
-			= __ATTR(_name, 0644, _show, _store)
+			= __ATTR(_name, S_IRUGO | S_IWUSR, _show, _store)
 
 static inline void touch_set_device(struct touch_core_data *ts, void *data)
 {
@@ -807,32 +572,32 @@ static inline struct touch_core_data *to_touch_core(struct device *dev)
 	return dev ? (struct touch_core_data *)dev_get_drvdata(dev) : NULL;
 }
 
-extern void module_write_file(struct device *dev, char *data, int write_time);
-extern void module_log_file_size_check(struct device *dev);
+int touch_lpwg(struct touch_core_data *ts, u32 code, int *value);
+
 extern irqreturn_t touch_irq_handler(int irq, void *dev_id);
 extern irqreturn_t touch_irq_thread(int irq, void *dev_id);
 extern void touch_msleep(unsigned int msecs);
 extern int touch_get_dts(struct touch_core_data *ts);
 extern int touch_get_platform_data(struct touch_core_data *ts);
 extern int touch_init_sysfs(struct touch_core_data *ts);
-extern int touch_init_sysfs_module(struct module_data *md_kobj, void *module_ts);
 extern void touch_interrupt_control(struct device *dev, int on_off);
 extern void touch_report_all_event(struct touch_core_data *ts);
-extern void touch_send_uevent(struct touch_core_data *ts, int type);
-extern void touch_report_cancel_event(struct touch_core_data *ts);
-extern void touch_restore_state(struct touch_core_data *ts);
-extern int touch_snprintf(char *buf, int size, const char *fmt, ...);
-#if defined(CONFIG_SECURE_TOUCH)
-extern void secure_touch_notify(struct touch_core_data *ts);
-extern void secure_touch_init(struct touch_core_data *ts);
-extern void secure_touch_stop(struct touch_core_data *ts, bool blocking);
-#endif
-#if defined(CONFIG_LGE_TOUCH_ENCRYPTION)
-extern void generate_coeff_matrix(void *ts);
-extern void encryption_coordinate(void *ts, int x, int y);
-#endif
+extern void touch_suspend(struct device *dev);
+extern void touch_resume(struct device *dev);
 
-#if defined(CONFIG_TRUSTONIC_TRUSTED_UI)
-ssize_t tui_sysfs_ctl(struct device *dev, const char *buf, size_t count);
-#endif
+enum touch_device_type {
+	TYPE_LG4946 = 0,
+	TYPE_LG4945,
+	TYPE_S3320,
+	TYPE_TD4302,
+	TYPE_SW49407_COMMAND,
+	TYPE_SW49407_VIDEO,
+	TYPE_SW49407_LUCY_VIDEO,
+	TYPE_SW49408,
+	TYPE_NOTOUCH,
+	TYPE_FTM4,
+	TYPE_MAX,
+};
+
+extern enum touch_device_type touch_get_device_type(void);
 #endif /* LGE_TOUCH_CORE_H */
