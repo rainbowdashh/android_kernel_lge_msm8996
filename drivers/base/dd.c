@@ -484,7 +484,26 @@ static void driver_deferred_probe_add_trigger(struct device *dev,
 static int nsec64_probe_spend = 30000; /* over 30ms */
 static int pos = 0;
 static int create_debugfs = 0;
-char probe_time[1024] = "";
+static char probe_time[1024];
+static DEFINE_MUTEX(probe_time_lock);
+
+static void record_probe_time(struct device *dev, const char *kind,
+			      int start_ms, int duration_ms)
+{
+	char entry[128];
+	int len;
+
+	len = scnprintf(entry, sizeof(entry), "%d %s %d\n", start_ms,
+			dev_driver_string(dev), duration_ms);
+	mutex_lock(&probe_time_lock);
+	if (pos + len >= sizeof(probe_time))
+		pos = 0;
+	memcpy(probe_time + pos, entry, len + 1);
+	pos += len;
+	mutex_unlock(&probe_time_lock);
+
+	pr_debug("%s probe : %s", kind, entry);
+}
 
 #ifdef SUPPORT_DEBUGFS
 static struct dentry *debugfs_probe_time;
@@ -492,7 +511,9 @@ static struct dentry *debugfs_probe_time;
 
 static int probe_time_show(struct seq_file *m, void *unused)
 {
+	mutex_lock(&probe_time_lock);
 	seq_printf(m, "%s\n", probe_time);
+	mutex_unlock(&probe_time_lock);
 	return 0;
 }
 
@@ -505,6 +526,7 @@ static const struct file_operations probe_time_fops = {
 	.open		= probe_time_open,
 	.read		= seq_read,
 	.llseek		= seq_lseek,
+	.release	= single_release,
 };
 #endif
 
@@ -518,6 +540,7 @@ static int really_probe(struct device *dev, struct device_driver *drv)
 #if defined(CONFIG_MACH_LGE)
 	ktime_t bus_stime, bus_etime, drv_stime, drv_etime;
 
+	mutex_lock(&probe_time_lock);
 #ifdef SUPPORT_DEBUGFS
 	if (!create_debugfs) {
 		debugfs_probe_time = debugfs_create_file("probe_time",
@@ -531,8 +554,7 @@ static int really_probe(struct device *dev, struct device_driver *drv)
 		create_debugfs = 1;
 	}
 #endif
-	if (pos > sizeof(probe_time) - 100)
-		pos = 0;
+	mutex_unlock(&probe_time_lock);
 #endif
 
 	if (defer_all_probes) {
@@ -610,15 +632,8 @@ re_probe:
 			do_div(usecs64, NSEC_PER_USEC);
 			usecs = usecs64;
 			if (usecs64 > (u64)nsec64_probe_spend-1) {
-				pos += sprintf(&probe_time[pos], "%d %s %d\n",
-					bus_us/1000,
-					dev_driver_string(dev),
-					usecs/1000);
-				printk(KERN_EMERG
-					"bus probe : %d %s %d\n",
-					bus_us/1000,
-					dev_driver_string(dev),
-					usecs/1000);
+				record_probe_time(dev, "bus", bus_us/1000,
+						  usecs/1000);
 			}
 		}
 #endif
@@ -649,15 +664,8 @@ re_probe:
 			do_div(usecs64, NSEC_PER_USEC);
 			usecs = usecs64;
 			if (usecs64 > (u64)nsec64_probe_spend-1) {
-				pos += sprintf(&probe_time[pos], "%d %s %d\n",
-					drv_us/1000,
-					dev_driver_string(dev),
-					usecs/1000);
-				printk(KERN_EMERG
-					"drv probe : %d %s %d\n",
-					drv_us/1000,
-					dev_driver_string(dev),
-					usecs/1000);
+				record_probe_time(dev, "drv", drv_us/1000,
+						  usecs/1000);
 			}
 		}
 #endif
