@@ -8124,53 +8124,57 @@ static int fg_init_irqs(struct fg_chip *chip)
 
 static void fg_cancel_all_works(struct fg_chip *chip)
 {
+	/* Recovery may call this helper, but teardown must wait for recovery. */
+	if (current_work() != &chip->ima_error_recovery_work)
+		cancel_work_sync(&chip->ima_error_recovery_work);
+	cancel_work_sync(&chip->init_work);
 	cancel_delayed_work_sync(&chip->check_sanity_work);
+	cancel_delayed_work_sync(&chip->batt_profile_init);
 	cancel_delayed_work_sync(&chip->update_sram_data);
 	cancel_delayed_work_sync(&chip->update_temp_work);
 	cancel_delayed_work_sync(&chip->update_jeita_setting);
 	cancel_delayed_work_sync(&chip->check_empty_work);
-	cancel_delayed_work_sync(&chip->batt_profile_init);
-	alarm_try_to_cancel(&chip->fg_cap_learning_alarm);
-	alarm_try_to_cancel(&chip->hard_jeita_alarm);
-	if (!chip->ima_error_handling)
-		cancel_work_sync(&chip->ima_error_recovery_work);
+	alarm_cancel(&chip->fg_cap_learning_alarm);
+	alarm_cancel(&chip->hard_jeita_alarm);
 	cancel_work_sync(&chip->rslow_comp_work);
 	cancel_work_sync(&chip->set_resume_soc_work);
 	cancel_work_sync(&chip->fg_cap_learning_work);
 	cancel_work_sync(&chip->dump_sram);
 	cancel_work_sync(&chip->status_change_work);
 	cancel_work_sync(&chip->cycle_count_work);
+	cancel_work_sync(&chip->battery_age_work);
 	cancel_work_sync(&chip->update_esr_work);
 	cancel_work_sync(&chip->sysfs_restart_work);
 	cancel_work_sync(&chip->gain_comp_work);
-	cancel_work_sync(&chip->init_work);
 	cancel_work_sync(&chip->charge_full_work);
 	cancel_work_sync(&chip->bcl_hi_power_work);
 	cancel_work_sync(&chip->esr_extract_config_work);
 	cancel_work_sync(&chip->slope_limiter_work);
 	cancel_work_sync(&chip->dischg_gain_work);
 	cancel_work_sync(&chip->cc_soc_store_work);
+	/* A work item may have rearmed an alarm while being drained. */
+	alarm_cancel(&chip->fg_cap_learning_alarm);
+	alarm_cancel(&chip->hard_jeita_alarm);
 }
 
-static void fg_cleanup(struct fg_chip *chip)
+static void fg_stop_work(void *data)
 {
+	struct fg_chip *chip = data;
+
 	fg_cancel_all_works(chip);
-	power_supply_unregister(chip->bms_psy);
+	chip->power_supply_registered = false;
+}
+
+static void fg_destroy_locks(void *data)
+{
+	struct fg_chip *chip = data;
+
 	mutex_destroy(&chip->rslow_comp.lock);
 	mutex_destroy(&chip->rw_lock);
 	mutex_destroy(&chip->cyc_ctr.lock);
 	mutex_destroy(&chip->learning_data.learning_lock);
 	mutex_destroy(&chip->sysfs_restart_lock);
 	mutex_destroy(&chip->ima_recovery_lock);
-}
-
-static int fg_remove(struct platform_device *pdev)
-{
-	struct fg_chip *chip = dev_get_drvdata(&pdev->dev);
-
-	fg_cleanup(chip);
-	dev_set_drvdata(&pdev->dev, NULL);
-	return 0;
 }
 
 static int fg_memif_data_open(struct inode *inode, struct file *file)
@@ -8561,6 +8565,15 @@ struct dentry *fg_dfs_get_root(void)
 	}
 	mutex_unlock(&dbgfs_data.lock);
 	return dbgfs_data.root;
+}
+
+static void fg_dfs_remove(void *data)
+{
+	mutex_lock(&dbgfs_data.lock);
+	debugfs_remove_recursive(dbgfs_data.root);
+	dbgfs_data.root = NULL;
+	dbgfs_data.chip = NULL;
+	mutex_unlock(&dbgfs_data.lock);
 }
 
 /*
@@ -9338,7 +9351,6 @@ static void delayed_init_work(struct work_struct *work)
 			return;
 		}
 		fg_mem_release(chip);
-		fg_cleanup(chip);
 		return;
 	}
 	/* release memory access before update_sram_data is called */
@@ -9363,19 +9375,24 @@ static void delayed_init_work(struct work_struct *work)
 
 	if (chip->wa_flag & IADC_GAIN_COMP_WA) {
 		rc = fg_init_iadc_config(chip);
-		if (rc)
-			goto done;
+		if (rc) {
+			pr_err("failed to initialize IADC rc=%d\n", rc);
+			return;
+		}
 	}
 
 	chip->input_present = is_input_present(chip);
 	chip->otg_present = is_otg_present(chip);
 	chip->init_done = true;
 	pr_debug("FG: HW_init success\n");
-
-	return;
-done:
-	fg_cleanup(chip);
 }
+
+#ifdef CONFIG_QPNP_FG_EXTENSION
+static void fg_remove_sysfs(void *data)
+{
+	somc_fg_unregister(data);
+}
+#endif
 
 static int fg_probe(struct platform_device *pdev)
 {
@@ -9385,7 +9402,7 @@ static int fg_probe(struct platform_device *pdev)
 	unsigned int base;
 	u8 subtype, reg;
 	int rc = 0;
-	struct power_supply_config bms_psy_cfg;
+	struct power_supply_config bms_psy_cfg = {};
 
 	if (!pdev) {
 		pr_err("no valid spmi pointer\n");
@@ -9509,10 +9526,14 @@ static int fg_probe(struct platform_device *pdev)
 	init_completion(&chip->fg_reset_done);
 	dev_set_drvdata(&pdev->dev, chip);
 
+	rc = devm_add_action_or_reset(dev, fg_destroy_locks, chip);
+	if (rc)
+		return rc;
+
 	if (of_get_available_child_count(pdev->dev.of_node) == 0) {
 		pr_err("no child nodes\n");
 		rc = -ENXIO;
-		goto of_init_fail;
+		return rc;
 	}
 
 	for_each_available_child_of_node(pdev->dev.of_node, child) {
@@ -9521,7 +9542,7 @@ static int fg_probe(struct platform_device *pdev)
 			dev_err(&pdev->dev,
 				"Couldn't find reg in node = %s rc = %d\n",
 				child->full_name, rc);
-			goto of_init_fail;
+			return rc;
 		}
 
 		if (strcmp("qcom,fg-adc-vbat", child->name) == 0) {
@@ -9539,7 +9560,7 @@ static int fg_probe(struct platform_device *pdev)
 				base + REG_OFFSET_PERP_SUBTYPE, 1);
 		if (rc) {
 			pr_err("Peripheral subtype read failed rc=%d\n", rc);
-			goto of_init_fail;
+			return rc;
 		}
 
 		switch (subtype) {
@@ -9567,20 +9588,20 @@ static int fg_probe(struct platform_device *pdev)
 	rc = fg_memif_init(chip);
 	if (rc) {
 		pr_err("Unable to setup mem_if offsets rc=%d\n", rc);
-		goto of_init_fail;
+		return rc;
 	}
 
 	rc = fg_of_init(chip);
 	if (rc) {
 		pr_err("failed to parse devicetree rc%d\n", rc);
-		goto of_init_fail;
+		return rc;
 	}
 
 	if (chip->jeita_hysteresis_support) {
 		rc = fg_init_batt_temp_state(chip);
 		if (rc) {
 			pr_err("failed to get battery status rc%d\n", rc);
-			goto of_init_fail;
+			return rc;
 		}
 	}
 
@@ -9592,13 +9613,7 @@ static int fg_probe(struct platform_device *pdev)
 	rc = fg_write(chip, &reg, INT_EN_CLR(chip->mem_base), 1);
 	if (rc) {
 		pr_err("failed to clear interrupts %d\n", rc);
-		goto of_init_fail;
-	}
-
-	rc = fg_init_irqs(chip);
-	if (rc) {
-		pr_err("failed to request interrupts %d\n", rc);
-		goto cancel_work;
+		return rc;
 	}
 
 	chip->batt_type = default_batt_type;
@@ -9606,6 +9621,14 @@ static int fg_probe(struct platform_device *pdev)
 #ifdef CONFIG_QPNP_FG_EXTENSION
 	somc_fg_set_slope_limiter(chip);
 #endif
+
+	/* Fake temperature till the actual temperature is read */
+	chip->last_good_temp = 250;
+
+	/* Initialize batt_info variables */
+	chip->batt_range_ocv = &fg_batt_valid_ocv;
+	chip->batt_range_pct = &fg_batt_range_pct;
+	memset(chip->batt_info, INT_MAX, sizeof(chip->batt_info));
 
 	chip->bms_psy_d.name = "bms";
 	chip->bms_psy_d.type = POWER_SUPPLY_TYPE_BMS;
@@ -9624,9 +9647,9 @@ static int fg_probe(struct platform_device *pdev)
 			&chip->bms_psy_d,
 			&bms_psy_cfg);
 	if (IS_ERR(chip->bms_psy)) {
-		pr_err("batt failed to register rc = %ld\n",
-				PTR_ERR(chip->bms_psy));
-		goto of_init_fail;
+		rc = PTR_ERR(chip->bms_psy);
+		pr_err("batt failed to register rc = %d\n", rc);
+		return rc;
 	}
 	chip->power_supply_registered = true;
 	/*
@@ -9635,29 +9658,40 @@ static int fg_probe(struct platform_device *pdev)
 	 */
 	chip->batt_psy_name = "battery";
 
-	if (chip->mem_base) {
-		rc = fg_dfs_create(chip);
-		if (rc < 0)
-			dev_dbg(chip->dev, "debugfs unavailable: %d\n", rc);
+	/* Release IRQs, drain work, then unregister the managed power supply. */
+	rc = devm_add_action_or_reset(dev, fg_stop_work, chip);
+	if (rc)
+		return rc;
+
+	rc = fg_init_irqs(chip);
+	if (rc) {
+		pr_err("failed to request interrupts %d\n", rc);
+		return rc;
 	}
 
-	/* Fake temperature till the actual temperature is read */
-	chip->last_good_temp = 250;
-
-	/* Initialize batt_info variables */
-	chip->batt_range_ocv = &fg_batt_valid_ocv;
-	chip->batt_range_pct = &fg_batt_range_pct;
-	memset(chip->batt_info, INT_MAX, sizeof(chip->batt_info));
-
-	schedule_work(&chip->init_work);
+	if (chip->mem_base) {
+		rc = fg_dfs_create(chip);
+		if (rc < 0) {
+			dev_dbg(chip->dev, "debugfs unavailable: %d\n", rc);
+		} else {
+			rc = devm_add_action_or_reset(dev, fg_dfs_remove, chip);
+			if (rc)
+				return rc;
+		}
+	}
 
 #ifdef CONFIG_QPNP_FG_EXTENSION
 	rc = somc_fg_register(chip);
 	if (rc < 0) {
 		pr_err("somc fg register failed rc = %d\n", rc);
-		goto cancel_work;
+		return rc;
 	}
+	rc = devm_add_action_or_reset(dev, fg_remove_sysfs, chip);
+	if (rc)
+		return rc;
 #endif
+
+	schedule_work(&chip->init_work);
 
 	pr_info("FG Probe success - FG Revision DIG:%d.%d ANA:%d.%d PMIC subtype=%d\n",
 		chip->revision[DIG_MAJOR], chip->revision[DIG_MINOR],
@@ -9665,20 +9699,6 @@ static int fg_probe(struct platform_device *pdev)
 		chip->pmic_subtype);
 
 	return 0;
-
-cancel_work:
-#ifdef CONFIG_QPNP_FG_EXTENSION
-	somc_fg_unregister(chip);
-#endif
-	fg_cancel_all_works(chip);
-of_init_fail:
-	mutex_destroy(&chip->rslow_comp.lock);
-	mutex_destroy(&chip->rw_lock);
-	mutex_destroy(&chip->cyc_ctr.lock);
-	mutex_destroy(&chip->learning_data.learning_lock);
-	mutex_destroy(&chip->sysfs_restart_lock);
-	mutex_destroy(&chip->ima_recovery_lock);
-	return rc;
 }
 
 static void check_and_update_sram_data(struct fg_chip *chip)
@@ -9923,7 +9943,6 @@ static struct platform_driver fg_driver = {
 		.pm		= &qpnp_fg_pm_ops,
 	},
 	.probe		= fg_probe,
-	.remove		= fg_remove,
 	.shutdown	= fg_shutdown,
 };
 
