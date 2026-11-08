@@ -6609,7 +6609,8 @@ static int smbchg_set_sdp_current(struct smbchg_chip *chip, int current_ma)
 			current_ma = chip->typec_current_ma;
 		}
 		pr_smb(PR_MISC, "from USB current_ma = %d\n", current_ma);
-		vote(chip->usb_icl_votable, PSY_ICL_VOTER, true, current_ma);
+		return vote(chip->usb_icl_votable, PSY_ICL_VOTER, true,
+			    current_ma);
 	}
 
 	return 0;
@@ -6671,7 +6672,8 @@ static int smbchg_usb_set_property(struct power_supply *psy,
 			pr_smb(PR_MISC, "USB-PD, skipping SDP current from dwc3\n");
 		else
 #endif
-			smbchg_set_sdp_current(chip, val->intval);
+			return smbchg_set_sdp_current(chip, val->intval);
+		break;
 	default:
 		return -EINVAL;
 	}
