@@ -224,10 +224,12 @@ static void set_dload_mode(int on)
 }
 
 #ifndef CONFIG_LGE_HANDLE_PANIC
+#ifndef CONFIG_MACH_LGE
 static bool get_dload_mode(void)
 {
 	return dload_mode_enabled;
 }
+#endif
 
 static void enable_emergency_dload_mode(void)
 {
@@ -811,7 +813,9 @@ static void do_msm_restart(enum reboot_mode reboot_mode, const char *cmd)
 	halt_spmi_pmic_arbiter();
 	deassert_ps_hold();
 
-	msleep(10000);
+	/* Restart runs with interrupts disabled and secondary CPUs stopped. */
+	mdelay(10000);
+	pr_emerg("Restart failed after PS_HOLD deassertion\n");
 }
 
 static void do_msm_poweroff(void)
@@ -831,7 +835,7 @@ static void do_msm_poweroff(void)
 	halt_spmi_pmic_arbiter();
 	deassert_ps_hold();
 
-	msleep(10000);
+	mdelay(10000);
 	pr_err("Powering off has failed\n");
 }
 
