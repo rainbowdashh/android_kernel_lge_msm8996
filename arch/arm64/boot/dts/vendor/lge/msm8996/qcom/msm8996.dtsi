@@ -2336,6 +2336,7 @@
 		clock-names = "xo";
 		qcom,proxy-clock-names = "xo";
 
+		qcom,mas-crypto = <&mas_crypto_c0>;
 		qcom,pas-id = <1>;
 		qcom,proxy-timeout-ms = <10000>;
 		qcom,smem-id = <423>;
@@ -2371,6 +2372,7 @@
 		qcom,msm-bus,vectors-KBps =
 				<63 512 0 0>,
 				<63 512 0 304000>;
+		qcom,mas-crypto = <&mas_crypto_c0>;
 		qcom,pas-id = <9>;
 		qcom,proxy-timeout-ms = <100>;
 		qcom,firmware-name = "venus";
@@ -2447,6 +2449,7 @@
 		clock-names = "xo", "aggre2";
 		qcom,proxy-clock-names = "xo", "aggre2";
 
+		qcom,mas-crypto = <&mas_crypto_c0>;
 		qcom,pas-id = <12>;
 		qcom,proxy-timeout-ms = <10000>;
 		qcom,smem-id = <424>;
