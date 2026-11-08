@@ -212,6 +212,7 @@ static int gdsc_enable(struct regulator_dev *rdev)
 {
 	struct gdsc *sc = rdev_get_drvdata(rdev);
 	uint32_t regval, hw_ctrl_regval = 0x0;
+	bool root_enabled = false;
 	int i, ret = 0;
 
 	if (sc->skip_disable_before_enable)
@@ -234,8 +235,14 @@ static int gdsc_enable(struct regulator_dev *rdev)
 		sc->is_bus_enabled = true;
 	}
 
-	if (sc->root_en || sc->force_root_en)
-		clk_prepare_enable(sc->clocks[sc->root_clk_idx]);
+	if (sc->root_en || sc->force_root_en) {
+		ret = clk_prepare_enable(sc->clocks[sc->root_clk_idx]);
+		if (ret) {
+			dev_err(&rdev->dev, "root clock enable failed: %d\n", ret);
+			goto end;
+		}
+		root_enabled = true;
+	}
 
 	regmap_read(sc->regmap, REG_OFFSET, &regval);
 	if (regval & HW_CONTROL_MASK) {
@@ -371,11 +378,11 @@ static int gdsc_enable(struct regulator_dev *rdev)
 	/* Delay to account for staggered memory powerup. */
 	udelay(1);
 
-	if (sc->force_root_en)
-		clk_disable_unprepare(sc->clocks[sc->root_clk_idx]);
-
 	sc->is_gdsc_enabled = true;
 end:
+	if (root_enabled && (ret || sc->force_root_en))
+		clk_disable_unprepare(sc->clocks[sc->root_clk_idx]);
+
 	if (ret && sc->bus_handle) {
 		msm_bus_scale_client_update_request(sc->bus_handle, 0);
 		sc->is_bus_enabled = false;
