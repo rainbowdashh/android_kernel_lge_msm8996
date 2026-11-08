@@ -728,29 +728,39 @@
 		operating-points-v2 = <&memlat_cpu0_opp_table>;
 	};
 
-	qcom,arm-memlat-mon-0 {
-		compatible = "qcom,arm-memlat-mon";
-		qcom,cpulist =	<&CPU0 &CPU1>;
-		qcom,target-dev = <&memlat_cpu0>;
-		qcom,core-dev-table =
-			<  307200 1525>,
-			<  537600 3509>,
-			<  691200 4066>,
-			<  768000 5928>;
+	qcom,arm-memlat-cpugrp-0 {
+		compatible = "qcom,arm-memlat-cpugrp";
+		qcom,cpulist = <&CPU0 &CPU1>;
+
+		qcom,arm-memlat-mon-0 {
+			compatible = "qcom,arm-memlat-mon";
+			qcom,cachemiss-ev = <0x17>;
+			qcom,target-dev = <&memlat_cpu0>;
+			qcom,core-dev-table =
+				<  307200 1525>,
+				<  537600 3509>,
+				<  691200 4066>,
+				<  768000 5928>;
+		};
 	};
 
-	qcom,arm-memlat-mon-2 {
-		compatible = "qcom,arm-memlat-mon";
-		qcom,cpulist =	<&CPU2 &CPU3>;
-		qcom,target-dev = <&memlat_cpu2>;
-		qcom,core-dev-table =
-			<  307200 1525>,
-			<  825600 3509>,
-			<  1209600 4066>,
-			<  1440000 7904>,
-			<  1747200 9887>,
-			<  2054400 11863>,
-			<  2342400 13763>;
+	qcom,arm-memlat-cpugrp-2 {
+		compatible = "qcom,arm-memlat-cpugrp";
+		qcom,cpulist = <&CPU2 &CPU3>;
+
+		qcom,arm-memlat-mon-2 {
+			compatible = "qcom,arm-memlat-mon";
+			qcom,cachemiss-ev = <0x17>;
+			qcom,target-dev = <&memlat_cpu2>;
+			qcom,core-dev-table =
+				<  307200 1525>,
+				<  825600 3509>,
+				<  1209600 4066>,
+				<  1440000 7904>,
+				<  1747200 9887>,
+				<  2054400 11863>,
+				<  2342400 13763>;
+		};
 	};
 
 	devfreq_cpufreq: devfreq-cpufreq {
