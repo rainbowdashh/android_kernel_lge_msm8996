@@ -3034,7 +3034,6 @@ static DEFINE_CLK_VOTER(mdss_rotator_vote_clk, mdss_rotator_clk, 0);
 static struct clk_hw *mmcc_msm8996_hws[] = {
 	[MDSS_MDP_VOTE_CLK] = &mdss_mdp_vote_clk.hw,
 	[MDSS_ROTATOR_VOTE_CLK] = &mdss_rotator_vote_clk.hw,
-	&gpll0_div.hw,
 };
 
 static struct clk_regmap *mmcc_msm8996_clocks[] = {
@@ -3281,6 +3280,8 @@ static const struct qcom_cc_desc mmcc_msm8996_desc = {
 	.config = &mmcc_msm8996_regmap_config,
 	.clks = mmcc_msm8996_clocks,
 	.num_clks = ARRAY_SIZE(mmcc_msm8996_clocks),
+	.hwclks = mmcc_msm8996_hws,
+	.num_hwclks = ARRAY_SIZE(mmcc_msm8996_hws),
 	.resets = mmcc_msm8996_resets,
 	.num_resets = ARRAY_SIZE(mmcc_msm8996_resets),
 };
@@ -3496,7 +3497,7 @@ static struct platform_driver gpucc_msm8996_driver = {
 static int mmcc_msm8996_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
-	int i, ret;
+	int ret;
 	struct regmap *regmap;
 
 	vdd_corner[VDD_DIG_LOWER] = RPM_REGULATOR_CORNER_SVS_KRAIT;
@@ -3577,13 +3578,9 @@ static int mmcc_msm8996_probe(struct platform_device *pdev)
 	/* Disable the NoC FSM for mmss_mmagic_cfg_ahb_clk */
 	regmap_update_bits(regmap, 0x5054, BIT(15), 0);
 
-	for (i = 0; i < ARRAY_SIZE(mmcc_msm8996_hws); i++) {
-		if (!mmcc_msm8996_hws[i])
-			continue;
-		ret = devm_clk_hw_register(dev, mmcc_msm8996_hws[i]);
-		if (ret)
-			return ret;
-	}
+	ret = devm_clk_hw_register(dev, &gpll0_div.hw);
+	if (ret)
+		return ret;
 
 	/* PLL9 supplies graphics through its fixed divide-by-two output. */
 	regmap_update_bits(regmap, 0x4210, GENMASK(11, 8), BIT(8));
