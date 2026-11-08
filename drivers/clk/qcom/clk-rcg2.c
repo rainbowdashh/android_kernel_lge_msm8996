@@ -1048,6 +1048,9 @@ static int clk_byte2_determine_rate(struct clk_hw *hw,
 		return -EINVAL;
 
 	p = req->best_parent_hw;
+	if (!p)
+		return -EINVAL;
+
 	req->best_parent_rate = parent_rate = clk_hw_round_rate(p, rate);
 
 	div = DIV_ROUND_UP((2 * parent_rate), rate) - 1;
@@ -1124,6 +1127,9 @@ static int clk_pixel_determine_rate(struct clk_hw *hw,
 	unsigned long request, src_rate;
 	int delta = 100000;
 	const struct frac_entry *frac = frac_table_pixel;
+
+	if (!req->best_parent_hw)
+		return -EINVAL;
 
 	for (; frac->num; frac++) {
 		request = (req->rate * frac->den) / frac->num;
