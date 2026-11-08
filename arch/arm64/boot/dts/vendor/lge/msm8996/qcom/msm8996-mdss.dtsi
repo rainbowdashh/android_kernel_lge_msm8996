@@ -246,6 +246,7 @@
 		smmu_mdp_unsec: qcom,smmu_mdp_unsec_cb {
 			compatible = "qcom,smmu_mdp_unsec";
 			iommus = <&mdp_smmu 0>;
+			qcom,iommu-dma-addr-pool = <0x00020000 0xf8000000>;
 			reg = <0x00d08000 0xd00>;
 			reg-names = "mmu_cb";
 			gdsc-mmagic-mdss-supply = <&gdsc_mmagic_mdss>;
@@ -259,6 +260,7 @@
 		smmu_rot_unsec: qcom,smmu_rot_unsec_cb {
 			compatible = "qcom,smmu_rot_unsec";
 			iommus = <&rot_smmu 0>;
+			qcom,iommu-dma-addr-pool = <0x00020000 0xf8000000>;
 			reg = <0x00d09000 0xd00>;
 			reg-names = "mmu_cb";
 			gdsc-mmagic-mdss-supply = <&gdsc_mmagic_mdss>;
@@ -272,6 +274,8 @@
 		smmu_mdp_sec: qcom,smmu_mdp_sec_cb {
 			compatible = "qcom,smmu_mdp_sec";
 			iommus = <&mdp_smmu 1>;
+			qcom,iommu-dma-addr-pool = <0x00020000 0xf8000000>;
+			qcom,iommu-vmid = <0xa>; /* VMID_CP_PIXEL */
 			reg = <0x00d0a000 0xd00>;
 			reg-names = "mmu_cb";
 			gdsc-mmagic-mdss-supply = <&gdsc_mmagic_mdss>;
@@ -285,6 +289,8 @@
 		smmu_rot_sec: qcom,smmu_rot_sec_cb {
 			compatible = "qcom,smmu_rot_sec";
 			iommus = <&rot_smmu 1>;
+			qcom,iommu-dma-addr-pool = <0x00020000 0xf8000000>;
+			qcom,iommu-vmid = <0xa>; /* VMID_CP_PIXEL */
 			reg = <0x00d0b000 0xd00>;
 			reg-names = "mmu_cb";
 			gdsc-mmagic-mdss-supply = <&gdsc_mmagic_mdss>;
