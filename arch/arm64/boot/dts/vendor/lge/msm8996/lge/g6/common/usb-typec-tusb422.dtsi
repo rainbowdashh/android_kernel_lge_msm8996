@@ -86,7 +86,7 @@
 		ti,auto-accept-swap-to-sink;
 		ti,auto-accept-vconn-swap;
 
-		ti,src-settling-time-ms = /bits/ 16 <50>;
+		ti,src-settling-time-ms = <50>;
 		ti,fast-role-swap-support = <0>;
 		ti,pdo-priority = <0>;
 		ti,role = <2>;    /* 0 = SRC, 1 = SNK, 2 = DRP */
