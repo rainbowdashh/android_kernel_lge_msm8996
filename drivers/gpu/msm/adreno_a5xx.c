@@ -892,7 +892,7 @@ static int _read_fw2_block_header(struct kgsl_device *device,
 		case HEADER_TIME:
 			break;
 		default:
-			dev_err(device->dev, "GPMU unknown header ID %d\n",
+			dev_dbg(device->dev, "Ignoring GPMU header ID %d\n",
 					header[i]);
 		}
 	}
@@ -2006,12 +2006,12 @@ static int a5xx_rb_start(struct adreno_device *adreno_dev)
 	/*
 	 * The size of the ringbuffer in the hardware is the log2
 	 * representation of the size in quadwords (sizedwords / 2).
-	 * Also disable the host RPTR shadow register as it might be unreliable
-	 * in certain circumstances.
+	 * Keep automatic RPTR writeback on A530, where preemption startup
+	 * cannot append a WHERE_AM_I packet after the yield.
 	 */
 
 	adreno_writereg(adreno_dev, ADRENO_REG_CP_RB_CNTL,
-		A5XX_CP_RB_CNTL_DEFAULT);
+		a5xx_rb_cntl(adreno_dev));
 
 	adreno_writereg64(adreno_dev, ADRENO_REG_CP_RB_BASE,
 			ADRENO_REG_CP_RB_BASE_HI, rb->buffer_desc.gpuaddr);
@@ -2036,9 +2036,7 @@ static int a5xx_rb_start(struct adreno_device *adreno_dev)
 	if (ret)
 		return ret;
 
-	a5xx_post_start(adreno_dev);
-
-	return 0;
+	return a5xx_post_start(adreno_dev);
 }
 
 static int _load_firmware(struct kgsl_device *device, const char *fwfile,

@@ -1658,6 +1658,7 @@ static int kgsl_iommu_start(struct kgsl_mmu *mmu)
 {
 	int status;
 	struct kgsl_iommu *iommu = _IOMMU_PRIV(mmu);
+	struct kgsl_device *device = KGSL_MMU_DEVICE(mmu);
 
 	kgsl_iommu_enable_clk(mmu);
 
@@ -1674,8 +1675,9 @@ static int kgsl_iommu_start(struct kgsl_mmu *mmu)
 		return status;
 	}
 
-	/* Set the following registers only when the MMU type is QSMMU */
-	if (mmu->subtype != KGSL_IOMMU_SMMU_V500) {
+	/* Preserve the firmware's A530 SMMU settings, as in the 4.4 driver. */
+	if (mmu->subtype != KGSL_IOMMU_SMMU_V500 &&
+			!adreno_is_a530(ADRENO_DEVICE(device))) {
 		/* Enable hazard check from GPU_SMMU_HUM_CFG */
 		writel_relaxed(0x02, iommu->regbase + 0x6800);
 
@@ -1689,16 +1691,18 @@ static int kgsl_iommu_start(struct kgsl_mmu *mmu)
 	if (mmu->defaultpagetable != NULL && !mmu->globalpt_mapped) {
 		status = kgsl_iommu_map_globals(mmu->defaultpagetable);
 		if (status)
-			return status;
+			goto disable_clocks;
 
 		mmu->globalpt_mapped = true;
 	}
 
 	/* Make sure the hardware is programmed to the default pagetable */
-	kgsl_iommu_set_pt(mmu, mmu->defaultpagetable);
+	status = kgsl_iommu_set_pt(mmu, mmu->defaultpagetable);
+	if (!status)
+		set_bit(KGSL_MMU_STARTED, &mmu->flags);
+disable_clocks:
 	kgsl_iommu_disable_clk(mmu);
-	set_bit(KGSL_MMU_STARTED, &mmu->flags);
-	return 0;
+	return status;
 }
 
 static int
@@ -2620,6 +2624,9 @@ static int _kgsl_iommu_cb_probe(struct kgsl_device *device,
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
 	int i;
 
+	if (!pdev)
+		return -EPROBE_DEFER;
+
 	for (i = 0; i < ARRAY_SIZE(kgsl_iommu_cbs); i++) {
 		if (!strcmp(node->name, kgsl_iommu_cbs[i].name)) {
 			int id = kgsl_iommu_cbs[i].id;
@@ -2661,8 +2668,7 @@ static int _kgsl_iommu_cb_probe(struct kgsl_device *device,
 			return PTR_ERR(ctx->dev);
 	}
 
-	of_dma_configure(ctx->dev, node, true);
-	return 0;
+	return of_dma_configure(ctx->dev, node, true);
 }
 
 static const struct {
@@ -2686,6 +2692,9 @@ static int _kgsl_iommu_probe(struct kgsl_device *device,
 	struct device_node *child, *iommu_node = NULL;
 	struct platform_device *pdev = of_find_device_by_node(node);
 
+	if (!pdev)
+		return -EPROBE_DEFER;
+
 	memset(iommu, 0, sizeof(*iommu));
 
 	if (of_property_read_u32_array(node, "reg", reg_val, 2)) {
@@ -2702,7 +2711,7 @@ static int _kgsl_iommu_probe(struct kgsl_device *device,
 		if (IS_ERR(c)) {
 			dev_err(device->dev,
 				"dt: Couldn't get clock: %s\n", cname);
-			return -ENODEV;
+			return PTR_ERR(c);
 		}
 		if (i >= KGSL_IOMMU_MAX_CLKS) {
 			dev_err(device->dev, "dt: too many clocks defined.\n");

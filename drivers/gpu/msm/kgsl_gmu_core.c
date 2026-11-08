@@ -49,8 +49,14 @@ int gmu_core_probe(struct kgsl_device *device)
 	struct gmu_core_ops *gmu_core_ops;
 	int i = 0, ret = -ENXIO;
 
-	device->gmu_core.flags = ADRENO_FEATURE(ADRENO_DEVICE(device),
-			ADRENO_GPMU) ? BIT(GMU_GPMU) : 0;
+	device->gmu_core.flags = 0;
+
+	/* A5xx GPMU firmware is managed by the GPU driver, without a GMU. */
+	if (!adreno_is_a6xx(ADRENO_DEVICE(device)))
+		return 0;
+
+	if (ADRENO_FEATURE(ADRENO_DEVICE(device), ADRENO_GPMU))
+		set_bit(GMU_GPMU, &device->gmu_core.flags);
 
 	for (i = 0; i < ARRAY_SIZE(gmu_subtypes); i++) {
 		node = of_find_compatible_node(device->pdev->dev.of_node,
