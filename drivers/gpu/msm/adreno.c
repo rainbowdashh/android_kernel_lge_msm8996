@@ -1911,7 +1911,8 @@ static int adreno_init(struct kgsl_device *device)
 			return ret;
 	}
 
-	 adreno_iommu_init(adreno_dev);
+	dev_dbg(device->dev, "startup: GPU aware, initializing counters\n");
+	adreno_iommu_init(adreno_dev);
 
 	adreno_perfcounter_init(adreno_dev);
 	adreno_fault_detect_init(adreno_dev);
@@ -1927,6 +1928,7 @@ static int adreno_init(struct kgsl_device *device)
 		gpudev->init(adreno_dev);
 
 	set_bit(ADRENO_DEVICE_INITIALIZED, &adreno_dev->priv);
+	dev_dbg(device->dev, "startup: GPU initialization complete\n");
 
 	/*
 	 * Allocate a small chunk of memory for precise drawobj profiling for

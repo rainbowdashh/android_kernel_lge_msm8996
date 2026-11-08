@@ -1856,7 +1856,11 @@ static int _regulator_enable(struct kgsl_device *device,
 	if (IS_ERR_OR_NULL(regulator->reg))
 		return 0;
 
+	dev_dbg(device->dev, "startup: enabling regulator %s\n",
+		regulator->name);
 	ret = regulator_enable(regulator->reg);
+	dev_dbg(device->dev, "startup: regulator %s returned %d\n",
+		regulator->name, ret);
 	if (ret)
 		dev_err(device->dev,
 			     "Failed to enable regulator '%s': %d\n",
@@ -2139,7 +2143,12 @@ static void _gpu_clk_prepare_enable(struct kgsl_device *device,
 		return;
 	}
 
+	if (clk)
+		dev_dbg(device->dev, "startup: enabling clock %s\n", name);
 	ret = clk_prepare_enable(clk);
+	if (clk)
+		dev_dbg(device->dev, "startup: clock %s returned %d\n",
+			name, ret);
 	if (!ret)
 		return;
 err:
@@ -2642,8 +2651,13 @@ static int kgsl_pwrctrl_enable(struct kgsl_device *device)
 	if (status)
 		return status;
 	kgsl_pwrctrl_clk(device, KGSL_PWRFLAGS_ON, KGSL_STATE_ACTIVE);
+	dev_dbg(device->dev, "startup: GPU clocks enabled\n");
 	kgsl_pwrctrl_axi(device, KGSL_PWRFLAGS_ON);
-	return device->ftbl->regulator_enable(device);
+	dev_dbg(device->dev, "startup: GPU bus enabled\n");
+	status = device->ftbl->regulator_enable(device);
+	dev_dbg(device->dev, "startup: GPU internal power returned %d\n",
+		status);
+	return status;
 }
 
 static void kgsl_pwrctrl_disable(struct kgsl_device *device)
