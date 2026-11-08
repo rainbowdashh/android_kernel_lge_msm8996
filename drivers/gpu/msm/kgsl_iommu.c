@@ -2620,6 +2620,9 @@ static int _kgsl_iommu_cb_probe(struct kgsl_device *device,
 	struct adreno_device *adreno_dev = ADRENO_DEVICE(device);
 	int i;
 
+	if (!pdev)
+		return -EPROBE_DEFER;
+
 	for (i = 0; i < ARRAY_SIZE(kgsl_iommu_cbs); i++) {
 		if (!strcmp(node->name, kgsl_iommu_cbs[i].name)) {
 			int id = kgsl_iommu_cbs[i].id;
@@ -2661,8 +2664,7 @@ static int _kgsl_iommu_cb_probe(struct kgsl_device *device,
 			return PTR_ERR(ctx->dev);
 	}
 
-	of_dma_configure(ctx->dev, node, true);
-	return 0;
+	return of_dma_configure(ctx->dev, node, true);
 }
 
 static const struct {
@@ -2686,6 +2688,9 @@ static int _kgsl_iommu_probe(struct kgsl_device *device,
 	struct device_node *child, *iommu_node = NULL;
 	struct platform_device *pdev = of_find_device_by_node(node);
 
+	if (!pdev)
+		return -EPROBE_DEFER;
+
 	memset(iommu, 0, sizeof(*iommu));
 
 	if (of_property_read_u32_array(node, "reg", reg_val, 2)) {
@@ -2702,7 +2707,7 @@ static int _kgsl_iommu_probe(struct kgsl_device *device,
 		if (IS_ERR(c)) {
 			dev_err(device->dev,
 				"dt: Couldn't get clock: %s\n", cname);
-			return -ENODEV;
+			return PTR_ERR(c);
 		}
 		if (i >= KGSL_IOMMU_MAX_CLKS) {
 			dev_err(device->dev, "dt: too many clocks defined.\n");
