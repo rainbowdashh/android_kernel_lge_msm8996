@@ -1255,6 +1255,7 @@
 			<0 0>,
 			<0 0>;
 
+		dev-ref-clk-freq = <0>; /* 19.2 MHz */
 		lanes-per-direction = <1>;
 		qcom,msm-bus,name = "ufs1";
 		qcom,msm-bus,num-cases = <12>;
