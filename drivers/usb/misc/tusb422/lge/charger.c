@@ -171,14 +171,16 @@ static int chg_get_property(struct power_supply *psy,
 		val->intval = dev->chg_psy_d.type;
 //		val->intval = dev->typec_mode;
 		break;
-#if defined(CONFIG_LGE_USB_MOISTURE_DETECT) && defined(CONFIG_LGE_PM_WATERPROOF_PROTECTION)
 	case POWER_SUPPLY_PROP_INPUT_SUSPEND:
+#if defined(CONFIG_LGE_USB_MOISTURE_DETECT) && defined(CONFIG_LGE_PM_WATERPROOF_PROTECTION)
 		dev->sbu_ov_cnt = 0;
 
 		val->intval = (dev->mode == DUAL_ROLE_PROP_MODE_FAULT) ? 1 : 0;
 		DEBUG("%s: input_suspend(%d)\n", __func__, val->intval);
-		break;
+#else
+		val->intval = 0;
 #endif
+		break;
 	default:
 		return -EINVAL;
 	}
@@ -321,9 +323,10 @@ int charger_init(struct hw_pd_dev *dev)
 	chg_psy_cfg.num_supplicants = ARRAY_SIZE(chg_supplicants);
 
 	dev->chg_psy = devm_power_supply_register(cdev, &dev->chg_psy_d, &chg_psy_cfg);
-	if (IS_ERR(&dev->chg_psy)) {
+	if (IS_ERR(dev->chg_psy)) {
+		rc = PTR_ERR(dev->chg_psy);
 		PRINT("Unable to register chg_psy rc = %d\n", rc);
-		return -EPROBE_DEFER;
+		return rc;
 	}
 
 #ifdef CONFIG_LGE_USB_MOISTURE_DETECT
