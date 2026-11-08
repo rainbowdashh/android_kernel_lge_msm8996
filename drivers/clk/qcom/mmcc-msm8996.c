@@ -1337,6 +1337,7 @@ static struct clk_rcg2 fd_core_clk_src = {
 
 static struct clk_branch mmss_mmagic_ahb_clk = {
 	.halt_reg = 0x5024,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x5024,
 		.enable_mask = BIT(0),
@@ -1352,6 +1353,7 @@ static struct clk_branch mmss_mmagic_ahb_clk = {
 
 static struct clk_branch mmss_mmagic_cfg_ahb_clk = {
 	.halt_reg = 0x5054,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x5054,
 		.enable_mask = BIT(0),
@@ -1441,6 +1443,7 @@ static struct clk_branch mmagic_camss_noc_cfg_ahb_clk = {
 
 static struct clk_branch smmu_vfe_ahb_clk = {
 	.halt_reg = 0x3c04,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x3c04,
 		.enable_mask = BIT(0),
@@ -1456,6 +1459,7 @@ static struct clk_branch smmu_vfe_ahb_clk = {
 
 static struct clk_branch smmu_vfe_axi_clk = {
 	.halt_reg = 0x3c08,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x3c08,
 		.enable_mask = BIT(0),
@@ -1471,6 +1475,7 @@ static struct clk_branch smmu_vfe_axi_clk = {
 
 static struct clk_branch smmu_cpp_ahb_clk = {
 	.halt_reg = 0x3c14,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x3c14,
 		.enable_mask = BIT(0),
@@ -1486,6 +1491,7 @@ static struct clk_branch smmu_cpp_ahb_clk = {
 
 static struct clk_branch smmu_cpp_axi_clk = {
 	.halt_reg = 0x3c18,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x3c18,
 		.enable_mask = BIT(0),
@@ -1501,6 +1507,7 @@ static struct clk_branch smmu_cpp_axi_clk = {
 
 static struct clk_branch smmu_jpeg_ahb_clk = {
 	.halt_reg = 0x3c24,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x3c24,
 		.enable_mask = BIT(0),
@@ -1516,6 +1523,7 @@ static struct clk_branch smmu_jpeg_ahb_clk = {
 
 static struct clk_branch smmu_jpeg_axi_clk = {
 	.halt_reg = 0x3c28,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x3c28,
 		.enable_mask = BIT(0),
@@ -1561,6 +1569,7 @@ static struct clk_branch mmagic_mdss_noc_cfg_ahb_clk = {
 
 static struct clk_branch smmu_rot_ahb_clk = {
 	.halt_reg = 0x2444,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x2444,
 		.enable_mask = BIT(0),
@@ -1576,6 +1585,7 @@ static struct clk_branch smmu_rot_ahb_clk = {
 
 static struct clk_branch smmu_rot_axi_clk = {
 	.halt_reg = 0x2448,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x2448,
 		.enable_mask = BIT(0),
@@ -1591,6 +1601,7 @@ static struct clk_branch smmu_rot_axi_clk = {
 
 static struct clk_branch smmu_mdp_ahb_clk = {
 	.halt_reg = 0x2454,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x2454,
 		.enable_mask = BIT(0),
@@ -1606,6 +1617,7 @@ static struct clk_branch smmu_mdp_ahb_clk = {
 
 static struct clk_branch smmu_mdp_axi_clk = {
 	.halt_reg = 0x2458,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x2458,
 		.enable_mask = BIT(0),
@@ -1651,6 +1663,7 @@ static struct clk_branch mmagic_video_noc_cfg_ahb_clk = {
 
 static struct clk_branch smmu_video_ahb_clk = {
 	.halt_reg = 0x1174,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x1174,
 		.enable_mask = BIT(0),
@@ -1666,6 +1679,7 @@ static struct clk_branch smmu_video_ahb_clk = {
 
 static struct clk_branch smmu_video_axi_clk = {
 	.halt_reg = 0x1178,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x1178,
 		.enable_mask = BIT(0),
@@ -1726,6 +1740,7 @@ static struct clk_branch gpu_gx_rbbmtimer_clk = {
 
 static struct clk_branch gpu_ahb_clk = {
 	.halt_reg = 0x403c,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x403c,
 		.enable_mask = BIT(0),
