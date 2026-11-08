@@ -1410,6 +1410,7 @@ static struct clk_branch gcc_mmss_noc_cfg_ahb_clk = {
 
 static struct clk_branch gcc_mmss_bimc_gfx_clk = {
 	.halt_reg = 0x9010,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x9010,
 		.enable_mask = BIT(0),
@@ -2990,6 +2991,7 @@ static struct clk_branch gcc_aggre0_cnoc_ahb_clk = {
 
 static struct clk_branch gcc_smmu_aggre0_axi_clk = {
 	.halt_reg = 0x81014,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x81014,
 		.enable_mask = BIT(0),
@@ -3005,6 +3007,7 @@ static struct clk_branch gcc_smmu_aggre0_axi_clk = {
 
 static struct clk_branch gcc_smmu_aggre0_ahb_clk = {
 	.halt_reg = 0x81018,
+	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
 		.enable_reg = 0x81018,
 		.enable_mask = BIT(0),
