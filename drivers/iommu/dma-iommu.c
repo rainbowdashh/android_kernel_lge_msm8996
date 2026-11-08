@@ -847,7 +847,7 @@ int iommu_dma_map_sg(struct device *dev, struct scatterlist *sg,
 	struct iommu_dma_cookie *cookie;
 	struct iova_domain *iovad;
 	dma_addr_t iova;
-	size_t iova_len;
+	size_t iova_len, mapped;
 
 	domain = iommu_get_domain_for_dev(dev);
 	if (!domain)
@@ -858,15 +858,24 @@ int iommu_dma_map_sg(struct device *dev, struct scatterlist *sg,
 	iova_len = iommu_dma_prepare_map_sg(dev, iovad, sg, nents);
 
 	iova = iommu_dma_alloc_iova(domain, iova_len, dma_get_mask(dev), dev);
-	if (!iova)
+	if (!iova) {
+		dev_err_ratelimited(dev,
+			"failed to allocate %zu bytes of IOVA (DMA mask %#llx)\n",
+			iova_len, (unsigned long long)dma_get_mask(dev));
 		goto out_restore_sg;
+	}
 
 	/*
 	 * We'll leave any physical concatenation to the IOMMU driver's
 	 * implementation - it knows better than we do.
 	 */
-	if (iommu_map_sg(domain, iova, sg, nents, prot) < iova_len)
+	mapped = iommu_map_sg(domain, iova, sg, nents, prot);
+	if (mapped < iova_len) {
+		dev_err_ratelimited(dev,
+			"failed to map IOVA %#llx: %zu of %zu bytes mapped\n",
+			(unsigned long long)iova, mapped, iova_len);
 		goto out_free_iova;
+	}
 
 	return iommu_dma_finalise_sg(dev, sg, nents, iova);
 
