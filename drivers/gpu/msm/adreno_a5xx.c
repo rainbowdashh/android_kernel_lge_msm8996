@@ -892,7 +892,7 @@ static int _read_fw2_block_header(struct kgsl_device *device,
 		case HEADER_TIME:
 			break;
 		default:
-			dev_err(device->dev, "GPMU unknown header ID %d\n",
+			dev_dbg(device->dev, "Ignoring GPMU header ID %d\n",
 					header[i]);
 		}
 	}
