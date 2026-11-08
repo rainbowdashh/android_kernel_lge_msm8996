@@ -4679,31 +4679,24 @@ static int derive_device_list(struct device **device_list,
 	return 0;
 }
 
-static int clk_get_voltage(struct clk_core *core, unsigned long rate, int n)
+static int clk_get_voltage(struct clk_core *core, unsigned long rate)
 {
-	struct clk_vdd_class *vdd;
+	struct clk_vdd_class *vdd = core->vdd_class;
 	int level, corner;
 
-	/* Use the first regulator in the vdd class for the OPP table. */
-	vdd = core->vdd_class;
-	if (vdd->num_regulators > 1) {
-		corner = vdd->vdd_uv[vdd->num_regulators * n];
-	} else {
-		level = clk_find_vdd_level(core, rate);
-		if (level < 0) {
-			pr_err("Could not find vdd level\n");
-			return -EINVAL;
-		}
-		corner = vdd->vdd_uv[level];
-	}
-
-	if (!corner) {
-		pr_err("%s: Unable to find vdd level for rate %lu\n",
-					core->name, rate);
+	if (!vdd || !vdd->num_regulators)
 		return -EINVAL;
-	}
 
-	return corner;
+	level = clk_find_vdd_level(core, rate);
+	if (level < 0)
+		return level;
+
+	/* OPP voltages describe the first supply, in microvolts. */
+	corner = vdd->vdd_uv[level * vdd->num_regulators];
+	if (!corner)
+		return -EINVAL;
+
+	return regulator_list_corner_voltage(vdd->regulator[0], corner);
 }
 
 static int clk_add_and_print_opp(struct clk_hw *hw,
@@ -4737,7 +4730,7 @@ static void clk_populate_clock_opp_table(struct device_node *np,
 	struct clk_core *core = hw->core;
 	char clk_handle_name[MAX_LEN_OPP_HANDLE];
 	int n, len, count, uv, ret;
-	unsigned long rate = 0, rrate = 0;
+	unsigned long rate = 0;
 
 	if (!core || !core->num_rate_max)
 		return;
@@ -4776,24 +4769,27 @@ static void clk_populate_clock_opp_table(struct device_node *np,
 		return;
 	}
 
-	for (n = 0; ; n++) {
-		rrate = clk_hw_round_rate(hw, rate + 1);
-		if (!rrate) {
-			pr_err("clk_round_rate failed for %s\n",
-							core->name);
-			goto err_derive_device_list;
+	for (n = 1; ; n++) {
+		if (core->ops->list_rate) {
+			long rounded_rate = clk_hw_round_rate(hw, rate + 1);
+
+			if (rounded_rate <= 0) {
+				pr_err("clk_round_rate failed for %s\n", core->name);
+				goto err_derive_device_list;
+			}
+			if (rate == rounded_rate)
+				break;
+			rate = rounded_rate;
+		} else {
+			/* Mux/divider clocks expose their OPPs through fmax. */
+			if (n >= core->num_rate_max)
+				break;
+			rate = core->rate_max[n];
+			if (!rate)
+				continue;
 		}
 
-		/*
-		 * If clk_hw_round_rate gives the same value on consecutive
-		 * iterations, exit the loop since we're at the maximum clock
-		 * frequency.
-		 */
-		if (rate == rrate)
-			break;
-		rate = rrate;
-
-		uv = clk_get_voltage(core, rate, n);
+		uv = clk_get_voltage(core, rate);
 		if (uv < 0)
 			goto err_derive_device_list;
 
