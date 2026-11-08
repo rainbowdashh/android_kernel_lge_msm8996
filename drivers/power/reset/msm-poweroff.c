@@ -224,10 +224,12 @@ static void set_dload_mode(int on)
 }
 
 #ifndef CONFIG_LGE_HANDLE_PANIC
+#ifndef CONFIG_MACH_LGE
 static bool get_dload_mode(void)
 {
 	return dload_mode_enabled;
 }
+#endif
 
 static void enable_emergency_dload_mode(void)
 {
