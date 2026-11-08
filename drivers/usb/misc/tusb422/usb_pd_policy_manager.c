@@ -353,7 +353,7 @@ void usb_pd_pm_evaluate_src_caps(unsigned int port)
 #endif
 
 	CRIT("PDO-%u 0x%08x selected\n", dev->object_position, dev->selected_pdo);
-	DEBUG("selected_snk_pdo_idx: %u\n", dev->selected_snk_pdo_idx);
+	TUSB422_DBG("selected_snk_pdo_idx: %u\n", dev->selected_snk_pdo_idx);
 
 	return;
 }

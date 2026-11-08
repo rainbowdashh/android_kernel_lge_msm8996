@@ -95,15 +95,15 @@
 #if DEBUG_LEVEL >= 3
 // Variadic macro requires "--gcc" compiler switch.
 #ifdef CONFIG_LGE_USB_TYPE_C
-	#define DEBUG(str, args...)  printk_ratelimited(PRINT_PREFIX str, ##args)
+	#define TUSB422_DBG(str, args...)  printk_ratelimited(PRINT_PREFIX str, ##args)
 #else
-	#define DEBUG(str, args...)  printk(PRINT_PREFIX str, ##args)
+	#define TUSB422_DBG(str, args...)  printk(PRINT_PREFIX str, ##args)
 #endif
 #else
 #ifdef CONFIG_LGE_USB_TYPE_C
-	#define DEBUG(str, args...)  pr_debug_ratelimited(PRINT_PREFIX str, ##args)
+	#define TUSB422_DBG(str, args...)  pr_debug_ratelimited(PRINT_PREFIX str, ##args)
 #else
-	#define DEBUG(str, args...)  {}
+	#define TUSB422_DBG(str, args...)  {}
 #endif
 #endif
 

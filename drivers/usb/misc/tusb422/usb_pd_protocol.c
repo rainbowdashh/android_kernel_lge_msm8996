@@ -220,7 +220,7 @@ static void usb_pd_prl_tx_msg(unsigned int port, uint8_t *buf, tcpc_transmit_t s
 
 void usb_pd_prl_tx_ctrl_msg(unsigned int port, uint8_t *buf, msg_hdr_ctrl_msg_type_t msg_type, tcpc_transmit_t sop_type)
 {
-	DEBUG("Tx msg_type: %u (%s), sop: %u\n", msg_type, ctrlmsg2string[msg_type], sop_type);
+	TUSB422_DBG("Tx msg_type: %u (%s), sop: %u\n", msg_type, ctrlmsg2string[msg_type], sop_type);
 
 	if (msg_type == CTRL_MSG_TYPE_SOFT_RESET)
 	{
@@ -242,7 +242,7 @@ void usb_pd_prl_tx_ctrl_msg(unsigned int port, uint8_t *buf, msg_hdr_ctrl_msg_ty
 
 void usb_pd_prl_tx_data_msg(unsigned int port, uint8_t *buf, msg_hdr_data_msg_type_t msg_type, tcpc_transmit_t sop_type, unsigned int ndo)
 {
-	DEBUG("Tx msg_type: %u (%s), sop: %u, ndo: %u\n", msg_type, datamsg2string[msg_type], sop_type, ndo);
+	TUSB422_DBG("Tx msg_type: %u (%s), sop: %u, ndo: %u\n", msg_type, datamsg2string[msg_type], sop_type, ndo);
 
 	buf[0] = (ndo << 2) + 2; // Each data object is 4-bytes plus 2-byte header.
 	buf[1] = USB_PD_HDR_GEN_BYTE0((sop_type == TCPC_TX_SOP) ? pd[port].data_role : 0, msg_type);

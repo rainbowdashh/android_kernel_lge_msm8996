@@ -130,29 +130,29 @@ static int chg_get_property(struct power_supply *psy,
 
 	switch(prop) {
 	case POWER_SUPPLY_PROP_USB_OTG:
-		DEBUG("%s: is_otg(%d)\n", __func__,
+		TUSB422_DBG("%s: is_otg(%d)\n", __func__,
 			dev->is_otg);
 		val->intval = dev->is_otg;
 		break;
 
 	case POWER_SUPPLY_PROP_PRESENT:
-		DEBUG("%s: is_present(%d)\n", __func__,
+		TUSB422_DBG("%s: is_present(%d)\n", __func__,
 			dev->is_present);
 		val->intval = dev->is_present;
 		break;
 
 	case POWER_SUPPLY_PROP_VOLTAGE_MAX:
-		DEBUG("%s: volt_max(%dmV)\n", __func__, dev->volt_max);
+		TUSB422_DBG("%s: volt_max(%dmV)\n", __func__, dev->volt_max);
 		val->intval = dev->volt_max;
 		break;
 
 	case POWER_SUPPLY_PROP_CURRENT_MAX:
-		DEBUG("%s: curr_max(%dmA)\n", __func__, dev->curr_max);
+		TUSB422_DBG("%s: curr_max(%dmA)\n", __func__, dev->curr_max);
 		val->intval = dev->curr_max;
 		break;
 
 	case POWER_SUPPLY_PROP_TYPE:
-		DEBUG("%s: type(%s)\n", __func__, chg_to_string(dev->mode));
+		TUSB422_DBG("%s: type(%s)\n", __func__, chg_to_string(dev->mode));
 		if (dev->mode == DUAL_ROLE_PROP_MODE_UFP)
 			val->intval = POWER_SUPPLY_TYPE_UFP;
 		else if (dev->mode == DUAL_ROLE_PROP_MODE_DFP)
@@ -162,13 +162,13 @@ static int chg_get_property(struct power_supply *psy,
 		break;
 
 	case POWER_SUPPLY_PROP_CURRENT_CAPABILITY:
-		DEBUG("%s: current_capability(%dmA)\n", __func__,
+		TUSB422_DBG("%s: current_capability(%dmA)\n", __func__,
 		      dev->curr_max);
 		val->intval = dev->curr_max;
 		break;
 
 	case POWER_SUPPLY_PROP_TYPEC_MODE:
-		DEBUG("%s: typec_mode(%d)\n", __func__, dev->chg_psy_d.type);
+		TUSB422_DBG("%s: typec_mode(%d)\n", __func__, dev->chg_psy_d.type);
 		val->intval = dev->chg_psy_d.type;
 //		val->intval = dev->typec_mode;
 		break;
@@ -177,7 +177,7 @@ static int chg_get_property(struct power_supply *psy,
 		dev->sbu_ov_cnt = 0;
 
 		val->intval = (dev->mode == DUAL_ROLE_PROP_MODE_FAULT) ? 1 : 0;
-		DEBUG("%s: input_suspend(%d)\n", __func__, val->intval);
+		TUSB422_DBG("%s: input_suspend(%d)\n", __func__, val->intval);
 #else
 		val->intval = 0;
 #endif
@@ -200,7 +200,7 @@ static int chg_set_property(struct power_supply *psy,
 		if (dev->is_otg == val->intval)
 			break;
 		dev->is_otg = val->intval;
-		DEBUG("%s: is_otg(%d)\n", __func__, dev->is_otg);
+		TUSB422_DBG("%s: is_otg(%d)\n", __func__, dev->is_otg);
 
 		set_property_on_battery(dev, POWER_SUPPLY_PROP_USB_OTG);
 		break;
@@ -209,7 +209,7 @@ static int chg_set_property(struct power_supply *psy,
 		if (dev->is_present == val->intval)
 			break;
 		dev->is_present = val->intval;
-		DEBUG("%s: is_present(%d)\n", __func__, dev->is_present);
+		TUSB422_DBG("%s: is_present(%d)\n", __func__, dev->is_present);
 
 #ifdef CONFIG_LGE_USB_MOISTURE_DETECT
 		if (dev->mode == DUAL_ROLE_PROP_MODE_FAULT) {
@@ -244,7 +244,7 @@ static int chg_set_property(struct power_supply *psy,
 
 	case POWER_SUPPLY_PROP_TYPE:
 		if (val->intval == dev->chg_psy_d.type) {
-			DEBUG("%s: type already set (%s)\n", __func__,
+			TUSB422_DBG("%s: type already set (%s)\n", __func__,
 						chg_to_string(dev->chg_psy_d.type));
 			break;
 		}
@@ -259,7 +259,7 @@ static int chg_set_property(struct power_supply *psy,
 			dev->chg_psy_d.type = POWER_SUPPLY_TYPE_UNKNOWN;
 			break;
 		}
-		DEBUG("%s: type(%s)\n", __func__,
+		TUSB422_DBG("%s: type(%s)\n", __func__,
 					chg_to_string(dev->chg_psy_d.type));
 		break;
 

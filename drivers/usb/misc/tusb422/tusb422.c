@@ -205,7 +205,7 @@ void tusb422_isr(unsigned int port)
 
 	if (irq_status & TUSB422_INT_LFO_TIMER)
 	{
-		DEBUG("LFO timer expired!\n");
+		TUSB422_DBG("LFO timer expired!\n");
 
 		if (lfo_timer[port]->function)
 		{
@@ -225,7 +225,7 @@ void tusb422_isr(unsigned int port)
 
 	if (irq_status & TUSB422_INT_FAST_ROLE_SWAP)
 	{
-		DEBUG("FR Swap Rx'd!\n");
+		TUSB422_DBG("FR Swap Rx'd!\n");
 	}
 
 	// Clear interrupt status.
@@ -250,7 +250,7 @@ void tusb422_pd_reset(unsigned int port)
 	uint8_t data;
 
 #ifdef CONFIG_LGE_USB_TYPE_C
-	DEBUG("%s\n", __func__);
+	TUSB422_DBG("%s\n", __func__);
 #endif
 
 	// Reset Tx/Rx PD state machines (write 0, then 1).
@@ -268,7 +268,7 @@ void tusb422_sw_reset(unsigned int port)
 	uint8_t data;
 
 #ifdef CONFIG_LGE_USB_TYPE_C
-	DEBUG("%s\n", __func__);
+	TUSB422_DBG("%s\n", __func__);
 #endif
 
 #ifdef CONFIG_LGE_USB_TYPE_C
