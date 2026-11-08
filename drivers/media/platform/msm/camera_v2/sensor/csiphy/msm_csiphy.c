@@ -2431,7 +2431,11 @@ static int csiphy_probe(struct platform_device *pdev)
 	media_entity_pads_init(&new_csiphy_dev->msm_sd.sd.entity, 0, NULL);
 	new_csiphy_dev->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_CSIPHY;
 	new_csiphy_dev->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x4;
-	msm_sd_register(&new_csiphy_dev->msm_sd);
+	rc = msm_sd_register(&new_csiphy_dev->msm_sd);
+	if (rc) {
+		media_entity_cleanup(&new_csiphy_dev->msm_sd.sd.entity);
+		goto csiphy_no_irq_resource;
+	}
 
 	new_csiphy_dev->csiphy_3phase = 0;
 	new_csiphy_dev->num_irq_registers = 0x8;

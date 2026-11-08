@@ -1360,7 +1360,11 @@ static int csid_probe(struct platform_device *pdev)
 	media_entity_pads_init(&new_csid_dev->msm_sd.sd.entity, 0, NULL);
 	new_csid_dev->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_CSID;
 	new_csid_dev->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x5;
-	msm_sd_register(&new_csid_dev->msm_sd);
+	rc = msm_sd_register(&new_csid_dev->msm_sd);
+	if (rc) {
+		media_entity_cleanup(&new_csid_dev->msm_sd.sd.entity);
+		goto csid_invalid_irq;
+	}
 
 #ifdef CONFIG_COMPAT
 	msm_cam_copy_v4l2_subdev_fops(&msm_csid_v4l2_subdev_fops);

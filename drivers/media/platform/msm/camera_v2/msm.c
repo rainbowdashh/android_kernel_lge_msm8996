@@ -423,16 +423,23 @@ static void msm_add_sd_in_position(struct msm_sd_subdev *msm_subdev,
 
 int msm_sd_register(struct msm_sd_subdev *msm_subdev)
 {
+	int rc;
+
 	if (WARN_ON(!msm_subdev))
 		return -EINVAL;
 
-	if (WARN_ON(!msm_v4l2_dev) || WARN_ON(!msm_v4l2_dev->dev))
-		return -EIO;
+	INIT_LIST_HEAD(&msm_subdev->list);
+	if (!smp_load_acquire(&msm_v4l2_dev))
+		return -EPROBE_DEFER;
+
+	rc = __msm_sd_register_subdev(&msm_subdev->sd);
+	if (rc)
+		return rc;
 
 	mutex_lock(&ordered_sd_mtx);
 	msm_add_sd_in_position(msm_subdev, &ordered_sd_list);
 	mutex_unlock(&ordered_sd_mtx);
-	return __msm_sd_register_subdev(&msm_subdev->sd);
+	return 0;
 }
 EXPORT_SYMBOL(msm_sd_register);
 
@@ -441,7 +448,12 @@ int msm_sd_unregister(struct msm_sd_subdev *msm_subdev)
 	if (WARN_ON(!msm_subdev))
 		return -EINVAL;
 
-	v4l2_device_unregister_subdev(&msm_subdev->sd);
+	if (msm_subdev->sd.v4l2_dev) {
+		mutex_lock(&ordered_sd_mtx);
+		list_del_init(&msm_subdev->list);
+		mutex_unlock(&ordered_sd_mtx);
+		v4l2_device_unregister_subdev(&msm_subdev->sd);
+	}
 	return 0;
 }
 EXPORT_SYMBOL(msm_sd_unregister);
@@ -1331,12 +1343,17 @@ static const struct file_operations logsync_fops = {
 static int msm_probe(struct platform_device *pdev)
 {
 	struct msm_video_device *pvdev = NULL;
+	struct v4l2_device *v4l2_dev;
 	static struct dentry *cam_debugfs_root;
 	int rc = 0;
 
-	msm_v4l2_dev = kzalloc(sizeof(*msm_v4l2_dev),
+	rc = cam_ahb_clk_init(pdev);
+	if (rc)
+		return rc;
+
+	v4l2_dev = kzalloc(sizeof(*v4l2_dev),
 		GFP_KERNEL);
-	if (WARN_ON(!msm_v4l2_dev)) {
+	if (WARN_ON(!v4l2_dev)) {
 		rc = -ENOMEM;
 		goto probe_end;
 	}
@@ -1355,31 +1372,31 @@ static int msm_probe(struct platform_device *pdev)
 	}
 
 #if defined(CONFIG_MEDIA_CONTROLLER)
-	msm_v4l2_dev->mdev = kzalloc(sizeof(struct media_device),
+	v4l2_dev->mdev = kzalloc(sizeof(struct media_device),
 		GFP_KERNEL);
-	if (!msm_v4l2_dev->mdev) {
+	if (!v4l2_dev->mdev) {
 		rc = -ENOMEM;
 		goto mdev_fail;
 	}
-	media_device_init(msm_v4l2_dev->mdev);
-	strlcpy(msm_v4l2_dev->mdev->model, MSM_CONFIGURATION_NAME,
-			sizeof(msm_v4l2_dev->mdev->model));
-	msm_v4l2_dev->mdev->dev = &(pdev->dev);
+	media_device_init(v4l2_dev->mdev);
+	strlcpy(v4l2_dev->mdev->model, MSM_CONFIGURATION_NAME,
+			sizeof(v4l2_dev->mdev->model));
+	v4l2_dev->mdev->dev = &(pdev->dev);
 
-	rc = media_device_register(msm_v4l2_dev->mdev);
+	rc = media_device_register(v4l2_dev->mdev);
 	if (WARN_ON(rc < 0))
 		goto media_fail;
 
-	if (WARN_ON((rc == media_entity_pads_init(&pvdev->vdev->entity,
-			0, NULL)) < 0))
+	rc = media_entity_pads_init(&pvdev->vdev->entity, 0, NULL);
+	if (rc < 0)
 		goto entity_fail;
 
 	pvdev->vdev->entity.function = QCAMERA_VNODE_GROUP_ID;
 #endif
 
-	msm_v4l2_dev->notify = msm_sd_notify;
+	v4l2_dev->notify = msm_sd_notify;
 
-	pvdev->vdev->v4l2_dev = msm_v4l2_dev;
+	pvdev->vdev->v4l2_dev = v4l2_dev;
 
 	rc = v4l2_device_register(&(pdev->dev), pvdev->vdev->v4l2_dev);
 	if (WARN_ON(rc < 0))
@@ -1405,8 +1422,10 @@ static int msm_probe(struct platform_device *pdev)
 	video_set_drvdata(pvdev->vdev, pvdev);
 
 	msm_session_q = kzalloc(sizeof(*msm_session_q), GFP_KERNEL);
-	if (WARN_ON(!msm_session_q))
-		goto v4l2_fail;
+	if (!msm_session_q) {
+		rc = -ENOMEM;
+		goto unregister_video;
+	}
 
 	msm_init_queue(msm_session_q);
 	spin_lock_init(&msm_eventq_lock);
@@ -1428,33 +1447,34 @@ static int msm_probe(struct platform_device *pdev)
 			pr_warn("NON-FATAL: failed to create logsync debugfs file\n");
 	}
 
-	rc = cam_ahb_clk_init(pdev);
-	if (rc < 0) {
-		pr_err("%s: failed to register ahb clocks\n", __func__);
-		goto v4l2_fail;
-	}
-
 	of_property_read_u32(pdev->dev.of_node,
 		"qcom,gpu-limit", &gpu_limit);
 
-	goto probe_end;
+	smp_store_release(&msm_v4l2_dev, v4l2_dev);
+	return 0;
 
+unregister_video:
+	video_unregister_device(pvdev->vdev);
+	pvdev->vdev = NULL;
 v4l2_fail:
-	v4l2_device_unregister(pvdev->vdev->v4l2_dev);
+	v4l2_device_unregister(v4l2_dev);
 register_fail:
 #if defined(CONFIG_MEDIA_CONTROLLER)
-	media_entity_cleanup(&pvdev->vdev->entity);
+	if (pvdev->vdev)
+		media_entity_cleanup(&pvdev->vdev->entity);
 entity_fail:
-	media_device_unregister(msm_v4l2_dev->mdev);
+	media_device_unregister(v4l2_dev->mdev);
 media_fail:
-	kzfree(msm_v4l2_dev->mdev);
+	media_device_cleanup(v4l2_dev->mdev);
+	kzfree(v4l2_dev->mdev);
 mdev_fail:
 #endif
-	video_device_release(pvdev->vdev);
+	if (pvdev->vdev)
+		video_device_release(pvdev->vdev);
 video_fail:
 	kfree(pvdev);
 pvdev_fail:
-	kzfree(msm_v4l2_dev);
+	kzfree(v4l2_dev);
 probe_end:
 	return rc;
 }
