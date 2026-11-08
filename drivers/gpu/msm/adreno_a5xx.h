@@ -136,6 +136,16 @@ void a5xx_hwcg_set(struct adreno_device *adreno_dev, bool on);
 
 #define A5XX_CP_RB_CNTL_DEFAULT ((1 << 27) | ((ilog2(4) << 8) & 0x1F00) | \
 		(ilog2(KGSL_RB_DWORDS >> 1) & 0x3F))
+
+static inline unsigned int a5xx_rb_cntl(struct adreno_device *adreno_dev)
+{
+	/* A530 needs automatic RPTR writeback after a preemption yield. */
+	if (adreno_is_a530(adreno_dev))
+		return A5XX_CP_RB_CNTL_DEFAULT & ~BIT(27);
+
+	return A5XX_CP_RB_CNTL_DEFAULT;
+}
+
 /* GPMU interrupt multiplexor */
 #define FW_INTR_INFO			(0)
 #define LLM_ACK_ERR_INTR		(1)

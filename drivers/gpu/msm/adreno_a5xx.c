@@ -2010,12 +2010,12 @@ static int a5xx_rb_start(struct adreno_device *adreno_dev)
 	/*
 	 * The size of the ringbuffer in the hardware is the log2
 	 * representation of the size in quadwords (sizedwords / 2).
-	 * Also disable the host RPTR shadow register as it might be unreliable
-	 * in certain circumstances.
+	 * Keep automatic RPTR writeback on A530, where preemption startup
+	 * cannot append a WHERE_AM_I packet after the yield.
 	 */
 
 	adreno_writereg(adreno_dev, ADRENO_REG_CP_RB_CNTL,
-		A5XX_CP_RB_CNTL_DEFAULT);
+		a5xx_rb_cntl(adreno_dev));
 
 	adreno_writereg64(adreno_dev, ADRENO_REG_CP_RB_BASE,
 			ADRENO_REG_CP_RB_BASE_HI, rb->buffer_desc.gpuaddr);
