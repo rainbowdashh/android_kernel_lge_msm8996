@@ -9,6 +9,7 @@
 #include <linux/uaccess.h>
 
 #include "ion.h"
+#include "ion-legacy.h"
 #include "ion_system_secure_heap.h"
 
 union ion_ioctl_arg {
@@ -47,6 +48,12 @@ long ion_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 	int ret = 0;
 	unsigned int dir;
 	union ion_ioctl_arg data;
+
+#ifdef CONFIG_ION_LEGACY
+	if (cmd != ION_IOC_ALLOC && cmd != ION_IOC_HEAP_QUERY &&
+	    cmd != ION_IOC_PREFETCH && cmd != ION_IOC_DRAIN)
+		return ion_legacy_ioctl(filp, cmd, arg);
+#endif
 
 	dir = ion_ioctl_dir(cmd);
 

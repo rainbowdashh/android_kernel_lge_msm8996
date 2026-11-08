@@ -290,6 +290,9 @@ int ion_heap_map_user(struct ion_heap *heap, struct ion_buffer *buffer,
 int ion_heap_buffer_zero(struct ion_buffer *buffer);
 int ion_heap_pages_zero(struct page *page, size_t size, pgprot_t pgprot);
 
+bool is_ion_dma_buf(struct dma_buf *buf);
+struct dma_buf *ion_alloc_dmabuf(size_t len, unsigned int heap_id_mask,
+				 unsigned int flags);
 int ion_alloc_fd(size_t len, unsigned int heap_id_mask, unsigned int flags);
 
 /**
