@@ -967,6 +967,7 @@
 
 		clock_gpu: gpu-clock-controller {
 			compatible = "qcom,gpucc-msm8996";
+			qcom,gfx3d_clk_src-opp-handle = <&msm_gpu>;
 			vdd_gfx-supply = <&gfx_vreg>;
 			vdd_mx-supply = <&pm8994_s2_corner>;
 			vdd_gpu_mx-supply = <&pm8994_s2_corner>;
