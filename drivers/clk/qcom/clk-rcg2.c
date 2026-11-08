@@ -1348,6 +1348,9 @@ static int clk_gfx3d_set_rate_and_parent(struct clk_hw *hw, unsigned long rate,
 	u32 cfg, old_cfg;
 	int ret;
 
+	pr_debug("startup: %s switching to parent %u at %lu\n",
+		clk_hw_get_name(hw), index, rate);
+
 	/* Read back the old configuration */
 	regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG, &old_cfg);
 
@@ -1357,7 +1360,10 @@ static int clk_gfx3d_set_rate_and_parent(struct clk_hw *hw, unsigned long rate,
 	if (ret)
 		return ret;
 
-	return update_config(rcg, old_cfg);
+	ret = update_config(rcg, old_cfg);
+	pr_debug("startup: %s mux update returned %d\n",
+		clk_hw_get_name(hw), ret);
+	return ret;
 }
 
 static int clk_gfx3d_set_rate(struct clk_hw *hw, unsigned long rate,

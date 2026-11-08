@@ -255,6 +255,8 @@ int kgsl_clk_set_rate(struct kgsl_device *device,
 	struct kgsl_pwrlevel *pl = &pwr->pwrlevels[pwrlevel];
 	int ret = 0;
 
+	dev_dbg(device->dev, "startup: setting GPU rate %u\n",
+		pl->gpu_freq);
 	/* GMU scales GPU freq */
 	if (gmu_core_gpmu_isenabled(device))
 		ret = gmu_core_dcvs_set(device, pwrlevel, INVALID_DCVS_IDX);
@@ -262,6 +264,8 @@ int kgsl_clk_set_rate(struct kgsl_device *device,
 		/* Linux clock driver scales GPU freq */
 		ret = kgsl_pwrctrl_clk_set_rate(pwr->grp_clks[0],
 			pl->gpu_freq, clocks[0]);
+
+	dev_dbg(device->dev, "startup: GPU rate returned %d\n", ret);
 
 	if (ret)
 		dev_err(device->dev, "GPU clk freq set failure: %d\n",

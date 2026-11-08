@@ -689,14 +689,22 @@ static int clk_update_vdd(struct clk_vdd_class *vdd_class)
 	for (i = 0; i < vdd_class->num_regulators; i++) {
 		pr_debug("Set Voltage level Min %d, Max %d\n", uv[new_base + i],
 				uv[max_lvl + i]);
+		pr_debug("startup: %s regulator %d setting voltage %d\n",
+			vdd_class->class_name, i, uv[new_base + i]);
 		rc = regulator_set_voltage(r[i], uv[new_base + i], INT_MAX);
+		pr_debug("startup: %s regulator %d voltage returned %d\n",
+			vdd_class->class_name, i, rc);
 		if (rc)
 			goto set_voltage_fail;
 
+		pr_debug("startup: %s regulator %d updating enable state\n",
+			vdd_class->class_name, i);
 		if (cur_lvl == 0 || cur_lvl == vdd_class->num_levels)
 			rc = regulator_enable(r[i]);
 		else if (level == 0)
 			rc = regulator_disable(r[i]);
+		pr_debug("startup: %s regulator %d enable state returned %d\n",
+			vdd_class->class_name, i, rc);
 		if (rc)
 			goto enable_disable_fail;
 	}
