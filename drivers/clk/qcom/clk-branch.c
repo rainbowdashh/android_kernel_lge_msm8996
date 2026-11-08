@@ -260,12 +260,28 @@ static unsigned long clk_branch2_recalc_rate(struct clk_hw *hw,
 
 static int clk_branch2_enable(struct clk_hw *hw)
 {
-	return clk_branch_toggle(hw, true, clk_branch2_check_halt);
+	struct clk_hw *dep = to_clk_regmap(hw)->dependent_hw;
+	int ret;
+
+	if (dep) {
+		ret = clk_enable(dep->clk);
+		if (ret)
+			return ret;
+	}
+
+	ret = clk_branch_toggle(hw, true, clk_branch2_check_halt);
+	if (ret && dep) {
+		clk_disable_regmap(hw);
+		mb();
+		clk_disable(dep->clk);
+	}
+	return ret;
 }
 
 static int clk_branch2_prepare(struct clk_hw *hw)
 {
 	struct clk_branch *branch;
+	struct clk_hw *dep;
 	struct clk_hw *parent;
 	unsigned long curr_rate;
 	int ret = 0;
@@ -278,14 +294,23 @@ static int clk_branch2_prepare(struct clk_hw *hw)
 	if (!branch)
 		return -EINVAL;
 
+	dep = branch->clkr.dependent_hw;
+	if (dep) {
+		ret = clk_prepare(dep->clk);
+		if (ret)
+			return ret;
+	}
+
 	/*
 	 * Do the rate aggregation and scaling of the RCG in the prepare/
 	 * unprepare functions to avoid potential RPM(/h) communication due to
 	 * votes on the voltage rails.
 	 */
 	if (branch->aggr_sibling_rates) {
-		if (!parent)
-			return -EINVAL;
+		if (!parent) {
+			ret = -EINVAL;
+			goto exit;
+		}
 		curr_rate = clk_aggregate_rate(hw, parent->core);
 
 		if (branch->rate > curr_rate) {
@@ -298,12 +323,18 @@ static int clk_branch2_prepare(struct clk_hw *hw)
 		}
 	}
 exit:
+	if (ret && dep)
+		clk_unprepare(dep->clk);
 	return ret;
 }
 
 static void clk_branch2_disable(struct clk_hw *hw)
 {
+	struct clk_hw *dep = to_clk_regmap(hw)->dependent_hw;
+
 	clk_branch_toggle(hw, false, clk_branch2_check_halt);
+	if (dep)
+		clk_disable(dep->clk);
 }
 
 static void clk_branch2_unprepare(struct clk_hw *hw)
@@ -322,7 +353,7 @@ static void clk_branch2_unprepare(struct clk_hw *hw)
 
 	if (branch->aggr_sibling_rates) {
 		if (!parent)
-			return;
+			goto unprepare_dep;
 		new_rate = clk_aggregate_rate(hw, parent->core);
 		curr_rate = max(new_rate, branch->rate);
 		if (new_rate < curr_rate)
@@ -330,6 +361,9 @@ static void clk_branch2_unprepare(struct clk_hw *hw)
 				pr_err("Failed to scale %s to %lu\n",
 					clk_hw_get_name(parent), new_rate);
 	}
+unprepare_dep:
+	if (branch->clkr.dependent_hw)
+		clk_unprepare(branch->clkr.dependent_hw->clk);
 }
 
 static void clk_branch2_list_registers(struct seq_file *f, struct clk_hw *hw)
