@@ -1,9 +1,8 @@
-/*
- * touch_common.h
+/* touch_core.h
  *
- * Copyright (c) 2015 LGE.
+ * Copyright (C) 2015 LGE.
  *
- * author : hoyeon.jang@lge.com
+ * Author: hoyeon.jang@lge.com
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -21,5 +20,4 @@
 
 void touch_msleep(unsigned int msecs);
 void touch_interrupt_control(struct device *dev, int on_off);
-int touch_snprintf(char *buf, int size, const char *fmt, ...);
 #endif /* LGE_TOUCH_CORE_H */

@@ -1,5 +1,5 @@
 /*
- * touch_common.c
+ * touch_core.c
  *
  * Copyright (c) 2015 LGE.
  *
@@ -15,6 +15,7 @@
  * GNU General Public License for more details.
  *
  */
+#define TS_MODULE "[common]"
 
 #include <linux/kernel.h>
 #include <linux/module.h>
@@ -43,8 +44,6 @@ void touch_interrupt_control(struct device *dev, int on_off)
 {
 	struct touch_core_data *ts = to_touch_core(dev);
 
-	TOUCH_TRACE();
-
 	if (on_off) {
 		if (atomic_cmpxchg(&ts->state.irq_enable, 0, 1) == 0) {
 			touch_enable_irq(ts->irq);
@@ -61,27 +60,3 @@ void touch_interrupt_control(struct device *dev, int on_off)
 		}
 	}
 }
-
-int touch_snprintf(char *buf, int size, const char *fmt, ...)
-{
-
-	va_list args;
-	int ret = 0;
-
-	if(size <= 0) {
-		TOUCH_E("size is negative!\n");
-		return 0;
-	}
-
-	va_start(args, fmt);
-	ret = vsnprintf(buf, (size_t)size, fmt, args);
-	va_end(args);
-
-	if (ret < 0) {
-		TOUCH_E("snprintf error. change ret value(%d -> 0)\n", ret);
-		ret = 0;
-	}
-
-	return ret;
-}
-
