@@ -577,6 +577,8 @@ static struct clk_init_data gfx3d_clk_init = {
 static struct clk_rcg2 gfx3d_clk_src = {
 	.cmd_rcgr = 0x4000,
 	.hid_width = 5,
+	/* Keep the root running while the GPU power domains are sequenced. */
+	.flags = FORCE_ENABLE_RCG,
 	.parent_map = mmss_xo_mmpll0_mmpll9_mmpll2_mmpll8_gpll0_map,
 	.clkr.hw.init = &gfx3d_clk_init,
 };
