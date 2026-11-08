@@ -1408,9 +1408,11 @@ static void usbhid_stop(struct hid_device *hid)
 	if (hid->product == 0x637a) {
 		TOUCH_I("[%s] remove 'uevent_wq'\n", __func__);
 		dualscreen_connected = 0;
+#ifdef NOTIFY_DUALSCREEN_STATE
 		if (IS_REACHABLE(CONFIG_LGE_TOUCH_CORE_BASE))
 			touch_notifier_call_chain(NOTIFY_DUALSCREEN_STATE,
 						  &dualscreen_connected);
+#endif
 		cancel_work_sync(&hid->uevent_work);
 		flush_workqueue(hid->uevent_wq);
 		destroy_workqueue(hid->uevent_wq);
@@ -1629,9 +1631,11 @@ static int usbhid_probe(struct usb_interface *intf, const struct usb_device_id *
 		TOUCH_I("Attach LGE Dualscreen 3 !!! [%s]\n", hid->name);
 		/* Create hid touch gesture wake-up uevent queue */
 		dualscreen_connected = 1;
+#ifdef NOTIFY_DUALSCREEN_STATE
 		if (IS_REACHABLE(CONFIG_LGE_TOUCH_CORE_BASE))
 			touch_notifier_call_chain(NOTIFY_DUALSCREEN_STATE,
 						  &dualscreen_connected);
+#endif
 		hid->uevent_wq = create_singlethread_workqueue("uevent_wq");
 		if (!hid->uevent_wq) {
 			TOUCH_E(", failed to create uevent workqueue\n");

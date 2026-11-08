@@ -5274,6 +5274,25 @@ void mdss_fb_report_panel_dead(struct msm_fb_data_type *mfd)
 	pr_err("Panel has gone bad, sending uevent - %s\n", envp[0]);
 }
 
+#if IS_ENABLED(CONFIG_LGE_TOUCH_CORE_BASE)
+/* Preserve the recovery notification used by the 4.4 LG touch driver. */
+bool lge_panel_recovery_mode(void)
+{
+	struct fb_info *info = READ_ONCE(fbi_list[0]);
+	struct msm_fb_data_type *mfd;
+
+	if (!info)
+		return false;
+	mfd = info->par;
+	if (!mfd || !mdss_fb_is_power_on(mfd))
+		return false;
+
+	mdss_fb_report_panel_dead(mfd);
+	return true;
+}
+EXPORT_SYMBOL(lge_panel_recovery_mode);
+#endif
+
 
 /*
  * mdss_fb_calc_fps() - Calculates fps value.
