@@ -217,6 +217,7 @@ struct usb_bam_ctx_type {
 	u8				pipes_enabled_per_bam;
 	u32				inactivity_timer_ms;
 	bool				is_bam_inactivity;
+	bool				ipa_resources_created;
 	struct usb_bam_pipe_connect	*usb_bam_connections;
 	struct msm_usb_bam_data *usb_bam_data;
 	spinlock_t		usb_bam_lock;
@@ -1786,7 +1787,7 @@ static void usb_bam_ipa_create_resources(enum usb_ctrl cur_bam)
 	if (ret) {
 		log_event_err("%s: Failed to create USB_PROD resource\n",
 						       __func__);
-	return;
+		return;
 	}
 
 	/* Create USB_CONS entity */
@@ -1799,13 +1800,21 @@ static void usb_bam_ipa_create_resources(enum usb_ctrl cur_bam)
 	if (ret) {
 		log_event_err("%s: Failed to create USB_CONS resource\n",
 			__func__);
-	return;
+		ipa_rm_delete_resource(ipa_rm_resource_prod[cur_bam]);
+		return;
 	}
+	ctx->ipa_resources_created = true;
 }
 
 static void usb_bam_ipa_delete_resources(enum usb_ctrl cur_bam)
 {
+	struct usb_bam_ctx_type *ctx = &msm_usb_bam[cur_bam];
 	int ret;
+
+	if (!ctx->ipa_resources_created)
+		return;
+
+	ctx->ipa_resources_created = false;
 
 	ret = ipa_rm_delete_resource(ipa_rm_resource_prod[cur_bam]);
 	if (ret)
@@ -3293,8 +3302,8 @@ static int usb_bam_probe(struct platform_device *pdev)
 	pm_runtime_enable(&pdev->dev);
 
 	spin_lock_init(&usb_bam_ipa_handshake_info_lock);
-	if (ipa_get_transport_type() == IPA_TRANSPORT_TYPE_SPS &&
-			ipa_is_ready())
+	if (ipa_is_ready() &&
+	    ipa_get_transport_type() == IPA_TRANSPORT_TYPE_SPS)
 		usb_bam_ipa_create_resources(bam_type);
 	spin_lock_init(&ctx->usb_bam_lock);
 
