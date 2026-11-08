@@ -8524,17 +8524,13 @@ static struct dentry *fg_dfs_create_fs(void)
 	pr_debug("Creating FG_MEM debugfs file-system\n");
 	root = debugfs_create_dir(DFS_ROOT_NAME, NULL);
 	if (IS_ERR_OR_NULL(root)) {
-		pr_err("Error creating top level directory err:%ld",
-			(long)root);
-		if (PTR_ERR(root) == -ENODEV)
-			pr_err("debugfs is not enabled in the kernel");
 		return NULL;
 	}
 
 	dbgfs_data.help_msg.size = strlen(dbgfs_data.help_msg.data);
 
 	file = debugfs_create_blob("help", 0444, root, &dbgfs_data.help_msg);
-	if (!file) {
+	if (IS_ERR_OR_NULL(file)) {
 		pr_err("error creating help entry\n");
 		goto err_remove_fs;
 	}
@@ -8583,21 +8579,21 @@ int fg_dfs_create(struct fg_chip *chip)
 	dbgfs_data.chip = chip;
 
 	file = debugfs_create_u32("count", DFS_MODE, root, &(dbgfs_data.cnt));
-	if (!file) {
+	if (IS_ERR_OR_NULL(file)) {
 		pr_err("error creating 'count' entry\n");
 		goto err_remove_fs;
 	}
 
 	file = debugfs_create_x32("address", DFS_MODE,
 			root, &(dbgfs_data.addr));
-	if (!file) {
+	if (IS_ERR_OR_NULL(file)) {
 		pr_err("error creating 'address' entry\n");
 		goto err_remove_fs;
 	}
 
 	file = debugfs_create_file("data", DFS_MODE, root, &dbgfs_data,
 							&fg_memif_dfs_reg_fops);
-	if (!file) {
+	if (IS_ERR_OR_NULL(file)) {
 		pr_err("error creating 'data' entry\n");
 		goto err_remove_fs;
 	}
@@ -8606,6 +8602,8 @@ int fg_dfs_create(struct fg_chip *chip)
 
 err_remove_fs:
 	debugfs_remove_recursive(root);
+	dbgfs_data.root = NULL;
+	dbgfs_data.chip = NULL;
 	return -ENOMEM;
 }
 
@@ -9639,10 +9637,8 @@ static int fg_probe(struct platform_device *pdev)
 
 	if (chip->mem_base) {
 		rc = fg_dfs_create(chip);
-		if (rc < 0) {
-			pr_err("failed to create debugfs rc = %d\n", rc);
-			goto power_supply_unregister;
-		}
+		if (rc < 0)
+			dev_dbg(chip->dev, "debugfs unavailable: %d\n", rc);
 	}
 
 	/* Fake temperature till the actual temperature is read */
@@ -9668,10 +9664,8 @@ static int fg_probe(struct platform_device *pdev)
 		chip->revision[ANA_MAJOR], chip->revision[ANA_MINOR],
 		chip->pmic_subtype);
 
-	return rc;
+	return 0;
 
-power_supply_unregister:
-	power_supply_unregister(chip->bms_psy);
 cancel_work:
 #ifdef CONFIG_QPNP_FG_EXTENSION
 	somc_fg_unregister(chip);
