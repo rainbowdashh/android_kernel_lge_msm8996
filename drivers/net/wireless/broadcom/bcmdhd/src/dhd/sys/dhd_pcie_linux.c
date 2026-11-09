@@ -732,15 +732,21 @@ int
 dhdpcie_request_irq(dhdpcie_info_t *dhdpcie_info)
 {
 	dhd_bus_t *bus = dhdpcie_info->bus;
+	int ret;
 	struct pci_dev *pdev = dhdpcie_info->bus->dev;
+
+	if (bus->irq_registered)
+		return 0;
 
 	snprintf(dhdpcie_info->pciname, sizeof(dhdpcie_info->pciname),
 	    "dhdpcie:%s", pci_name(pdev));
-	if (request_irq(pdev->irq, dhdpcie_isr, IRQF_SHARED,
-	                dhdpcie_info->pciname, bus) < 0) {
-			DHD_ERROR(("%s: request_irq() failed\n", __FUNCTION__));
-			return -1;
+	ret = request_irq(pdev->irq, dhdpcie_isr, IRQF_SHARED,
+			  dhdpcie_info->pciname, bus);
+	if (ret) {
+		DHD_ERROR(("%s: request_irq() failed: %d\n", __FUNCTION__, ret));
+		return ret;
 	}
+	bus->irq_registered = TRUE;
 
 	DHD_TRACE(("%s %s\n", __FUNCTION__, dhdpcie_info->pciname));
 
@@ -1071,9 +1077,10 @@ dhdpcie_free_irq(dhd_bus_t *bus)
 	struct pci_dev *pdev = NULL;
 
 	DHD_TRACE(("%s: freeing up the IRQ\n", __FUNCTION__));
-	if (bus) {
+	if (bus && bus->irq_registered) {
 		pdev = bus->dev;
 		free_irq(pdev->irq, bus);
+		bus->irq_registered = FALSE;
 	}
 	DHD_TRACE(("%s: Exit\n", __FUNCTION__));
 	return;
@@ -1206,7 +1213,8 @@ dhdpcie_disable_device(dhd_bus_t *bus)
 		return BCME_ERROR;
 	}
 
-	pci_disable_device(bus->dev);
+	if (pci_is_enabled(bus->dev))
+		pci_disable_device(bus->dev);
 
 	return 0;
 }
