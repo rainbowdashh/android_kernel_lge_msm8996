@@ -732,7 +732,8 @@ int q6core_get_avcs_api_version_per_service(uint32_t service_id)
 
 	ret = q6core_get_avcs_fwk_version();
 	if (ret < 0) {
-		pr_err("%s: failure in getting AVCS version\n", __func__);
+		if (ret != -EOPNOTSUPP)
+			pr_err("%s: failure in getting AVCS version\n", __func__);
 		return ret;
 	}
 
