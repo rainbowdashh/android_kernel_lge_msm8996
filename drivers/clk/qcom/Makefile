@@ -89,3 +89,4 @@ obj-$(CONFIG_SM_NPUCC_LITO) += npucc-lito.o
 obj-$(CONFIG_SM_VIDEOCC_LITO) += videocc-lito.o
 obj-$(CONFIG_SPMI_PMIC_CLKDIV) += clk-spmi-pmic-div.o
 obj-y += mdss/
+obj-$(CONFIG_MSM_CPU_8996) += cpu-msm8996.o
