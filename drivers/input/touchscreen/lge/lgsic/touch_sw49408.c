@@ -3420,13 +3420,7 @@ static int __init touch_device_init(void)
 {
 	TOUCH_TRACE();
 
-	if (touch_get_device_type() != TYPE_SW49408) {
-		TOUCH_I("%s, sw49408 returned\n", __func__);
-		return 0;
-	}
-
-	TOUCH_I("%s, sw49408 start\n", __func__);
-
+	/* The SPI device's compatible selects the controller. */
 	return touch_bus_device_init(&hwif, &touch_driver);
 }
 
