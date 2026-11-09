@@ -97,3 +97,5 @@ obj-$(CONFIG_SERIAL_MCTRL_GPIO)	+= serial_mctrl_gpio.o
 
 obj-$(CONFIG_SERIAL_KGDB_NMI) += kgdb_nmi.o
 obj-$(CONFIG_KGDB_SERIAL_CONSOLE) += kgdboc.o
+
+obj-$(CONFIG_SERIAL_MSM_HS_BRCMBT) += msm_serial_hs_brcmbt.o
