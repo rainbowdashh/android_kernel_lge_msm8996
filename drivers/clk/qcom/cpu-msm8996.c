@@ -516,6 +516,58 @@ static int cpu_register_hw(struct device *dev, struct clk_hw *hw, const char *na
 	return devm_clk_hw_register(dev, hw);
 }
 
+static int cpu_park_domains(struct msm8996_cpu_cc *cc)
+{
+	unsigned int i;
+	int ret;
+
+	/* CPR is shared: park both clusters and CBF before changing any rail. */
+	for (i = 0; i < ARRAY_SIZE(cc->domain); i++) {
+		struct msm8996_cpu_domain *d = &cc->domain[i];
+
+		ret = cpu_mux_write(d, i == 2 ? 3 : 0xf, i == 2 ? 3 : 0xc);
+		if (ret)
+			return ret;
+		/* Use the same safe source for automatic clock selection. */
+		ret = regmap_update_bits(d->mux, d->mux_reg, GENMASK(5, 4), 3 << 4);
+		if (ret)
+			return ret;
+	}
+	mb();
+	udelay(5);
+	return 0;
+}
+
+static int cpu_alt_pll_disable(struct msm8996_cpu_domain *d)
+{
+	struct regmap *map = d->pll.clkr.regmap;
+	u32 mode;
+	int ret;
+
+	ret = regmap_read(map, 0x100, &mode);
+	if (ret)
+		return ret;
+	if (mode & BIT(20)) {
+		/* The bootloader may leave the alternate PLL running in FSM mode. */
+		ret = regmap_update_bits(map, 0x100, BIT(7), BIT(7));
+		if (ret)
+			return ret;
+		ret = readl_poll_timeout_atomic(d->base + 0x100, mode,
+					       mode & BIT(28), 1, 500);
+		if (ret)
+			return ret;
+		ret = regmap_update_bits(map, 0x100,
+					BIT(20) | (d->v3 ? 0 : BIT(7)), 0);
+	} else {
+		ret = regmap_write(map, 0x100, 0);
+	}
+	if (ret)
+		return ret;
+	mb();
+	return readl_poll_timeout_atomic(d->base + 0x100, mode,
+					!(mode & BIT(30)), 1, 500);
+}
+
 static int cpu_domain_init(struct platform_device *pdev,
 			   struct msm8996_cpu_domain *d, const char *name)
 {
@@ -538,19 +590,22 @@ static int cpu_domain_init(struct platform_device *pdev,
 			break;
 	if (level == d->count || boot_rate % CPU_REF_RATE)
 		return -EINVAL;
-	/* Keep every consumer on the always-on source during PLL setup. */
-	ret = cpu_mux_write(d, d->index == 2 ? 3 : 0xf,
-			    d->index == 2 ? 3 : 0xc);
-	if (ret)
-		return ret;
+	/* All domains are already parked on the always-on source. */
 	ret = cpu_set_vdd(&d->vdd, level);
 	if (ret)
 		return ret;
 	d->vdd.cur_level = level;
 
+	if (d->index < 2) {
+		ret = cpu_alt_pll_disable(d);
+		if (ret)
+			return ret;
+	}
 	ret = regmap_write(map, 0, 0);
 	if (ret)
 		return ret;
+	/* Complete PLL shutdown before rewriting its configuration. */
+	mb();
 	ret = regmap_update_bits(map, user, BIT(12) | GENMASK(9, 8) | BIT(24) | 9,
 				((d->postdiv - 1) << 8) | 9);
 	if (ret)
@@ -594,14 +649,25 @@ static int cpu_domain_init(struct platform_device *pdev,
 		struct alpha_pll_config alt_config = {
 			.l = 16, .vco_val = 3 << 20, .vco_mask = 3 << 20,
 			.config_ctl_val = 0x4001051b,
-			.post_div_mask = GENMASK(9, 8), .post_div_val = BIT(8),
+			.post_div_mask = GENMASK(11, 8), .post_div_val = BIT(8),
 			.main_output_mask = BIT(0), .early_output_mask = BIT(3),
+			.alpha_en_mask = BIT(24),
 		};
 
 		d->alt.offset = 0x100;
 		d->alt.regs = cpu_alt_pll_regs;
 		clk_alpha_pll_configure(&d->alt, map, &alt_config);
+		ret = regmap_write(map, 0x108, 0);
+		if (ret)
+			return ret;
+		ret = regmap_write(map, 0x10c, 0);
+		if (ret)
+			return ret;
 		ret = regmap_write(map, 0x100, 0x00118000);
+		if (ret)
+			return ret;
+		ret = readl_poll_timeout_atomic(d->base + 0x100, status,
+					       status & BIT(30), 1, 500);
 		if (ret)
 			return ret;
 		ret = regmap_update_bits(d->mux, 0x44, BIT(8), BIT(8));
@@ -620,9 +686,6 @@ static int cpu_domain_init(struct platform_device *pdev,
 		if (ret)
 			return ret;
 	}
-	ret = regmap_update_bits(d->mux, d->mux_reg, GENMASK(5, 4), 3 << 4);
-	if (ret)
-		return ret;
 	return cpu_mux_write(d, d->index == 2 ? 3 : 0xf, d->index == 2 ? 1 : 0xd);
 }
 
@@ -707,7 +770,7 @@ static int cpu_register_domain(struct platform_device *pdev, struct msm8996_cpu_
 		d->alt.regs = cpu_alt_pll_regs;
 		d->alt.vco_table = alt_vcos;
 		d->alt.num_vco = ARRAY_SIZE(alt_vcos);
-		d->alt.flags = SUPPORTS_FSM_MODE | (d->v3 ? SUPPORTS_OFFLINE_REQ : 0);
+		d->alt.flags = SUPPORTS_FSM_MODE | SUPPORTS_OFFLINE_REQ;
 		d->alt.clkr.regmap = pll->clkr.regmap;
 		parents[0] = xo;
 		ret = cpu_register_hw(dev, &d->alt.clkr.hw, alt_name, parents, 1,
@@ -943,6 +1006,9 @@ static int cpu_msm8996_probe(struct platform_device *pdev)
 			wmb();
 		}
 	}
+	ret = cpu_park_domains(cc);
+	if (ret)
+		return ret;
 	for (i = 0; i < 3; i++) {
 		ret = cpu_register_domain(pdev, &cc->domain[i],
 				 i == 0 ? "pwrcl" : i == 1 ? "perfcl" : "cbf",
