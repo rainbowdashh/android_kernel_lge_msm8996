@@ -1214,6 +1214,60 @@ const struct clk_ops clk_pixel_ops = {
 };
 EXPORT_SYMBOL_GPL(clk_pixel_ops);
 
+/* MSM8996 uses M/N alone for pixel rates; its HID divider stays bypassed. */
+static int msm8996_pixel_set_rate(struct clk_hw *hw, unsigned long rate,
+				unsigned long parent_rate, u8 index)
+{
+	static const struct frac_entry fractions[] = {
+		{ 1, 1 }, { 2, 3 }, { 4, 9 }, { 3, 8 }, { 2, 9 },
+	};
+	struct clk_rcg2 *rcg = to_clk_rcg2(hw);
+	struct freq_tbl f = {};
+	unsigned long request;
+	unsigned int i;
+
+	if (index >= clk_hw_get_num_parents(hw))
+		return -EINVAL;
+	f.src = rcg->parent_map[index].src;
+
+	/* A shared PLL rate change also visits unrequested pixel siblings. */
+	if (index == clk_rcg2_get_parent(hw) &&
+	    clk_rcg2_recalc_rate(hw, parent_rate) == rate)
+		return 0;
+
+	for (i = 0; i < ARRAY_SIZE(fractions); i++) {
+		request = mult_frac(rate, fractions[i].den, fractions[i].num);
+		if (abs((long)parent_rate - (long)request) > 100000)
+			continue;
+		if (fractions[i].num != fractions[i].den) {
+			f.m = fractions[i].num;
+			f.n = fractions[i].den;
+		}
+		return clk_rcg2_configure(rcg, &f);
+	}
+	return -EINVAL;
+}
+
+static int clk_msm8996_pixel_set_rate(struct clk_hw *hw, unsigned long rate,
+				    unsigned long parent_rate)
+{
+	return msm8996_pixel_set_rate(hw, rate, parent_rate,
+				     clk_rcg2_get_parent(hw));
+}
+
+const struct clk_ops clk_msm8996_pixel_ops = {
+	.is_enabled = clk_rcg2_is_enabled,
+	.get_parent = clk_rcg2_get_parent,
+	.set_parent = clk_rcg2_set_parent,
+	.recalc_rate = clk_rcg2_recalc_rate,
+	.set_rate = clk_msm8996_pixel_set_rate,
+	.set_rate_and_parent = msm8996_pixel_set_rate,
+	.determine_rate = clk_pixel_determine_rate,
+	.list_registers = clk_rcg2_list_registers,
+	.bus_vote = clk_debug_bus_vote,
+};
+EXPORT_SYMBOL_GPL(clk_msm8996_pixel_ops);
+
 static int clk_dp_set_rate(struct clk_hw *hw, unsigned long rate,
 			unsigned long parent_rate)
 {

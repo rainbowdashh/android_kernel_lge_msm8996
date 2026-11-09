@@ -121,6 +121,9 @@ static int clk_branch_toggle(struct clk_hw *hw, bool en,
 	 */
 	mb();
 
+	if (en && br->enable_delay)
+		udelay(br->enable_delay);
+
 	return clk_branch_wait(br, en, check_halt);
 }
 
