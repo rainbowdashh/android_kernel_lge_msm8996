@@ -3357,6 +3357,9 @@ static int afe_port_topology_deregister(u16 port_id)
 	ret = q6core_get_avcs_avs_build_version_info(
 			&build_major_version, &build_minor_version,
 			&build_branch_version);
+	/* Older firmware predates the topology deregistration workaround. */
+	if (ret == -EOPNOTSUPP)
+		return 0;
 	if (ret < 0)
 		goto done;
 
