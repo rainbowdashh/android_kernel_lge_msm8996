@@ -959,6 +959,11 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 	if (ctrl->ds_registered)
 		mdss_dba_utils_video_on(pinfo->dba_data, pinfo);
 
+	/* LG in-cell panels leave Sleep Out and Display On until after PPS. */
+	if (ctrl->display_on_cmds.cmd_cnt)
+		mdss_dsi_panel_cmds_send(ctrl, &ctrl->display_on_cmds,
+					 CMD_REQ_COMMIT);
+
 	/* Ensure low persistence mode is set as before */
 	mdss_dsi_panel_apply_display_setting(pdata, pinfo->persist_mode);
 
@@ -2509,6 +2514,7 @@ int mdss_dsi_panel_timing_switch(struct mdss_dsi_ctrl_pdata *ctrl,
 		pinfo->mipi.dsi_phy_db.timing_12nm[i] = pt->phy_timing_12nm[i];
 
 	ctrl->on_cmds = pt->on_cmds;
+	ctrl->display_on_cmds = pt->display_on_cmds;
 	ctrl->post_panel_on_cmds = pt->post_panel_on_cmds;
 
 	ctrl->panel_data.current_timing = timing;
@@ -2663,6 +2669,10 @@ static int  mdss_dsi_panel_config_res_properties(struct device_node *np,
 
 	mdss_dsi_parse_dcs_cmds(np, &pt->on_cmds,
 		"qcom,mdss-dsi-on-command",
+		"qcom,mdss-dsi-on-command-state");
+
+	mdss_dsi_parse_dcs_cmds(np, &pt->display_on_cmds,
+		"qcom,mdss-display-on-command",
 		"qcom,mdss-dsi-on-command-state");
 
 	mdss_dsi_parse_dcs_cmds(np, &pt->post_panel_on_cmds,
