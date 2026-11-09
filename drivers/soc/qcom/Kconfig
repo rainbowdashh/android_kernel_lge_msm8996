@@ -275,6 +275,12 @@ config QCOM_SMD_RPM
 	  Say M here if you want to include support for the Qualcomm RPM as a
 	  module. This will build a module called "qcom-smd-rpm".
 
+config MSM_APM
+	bool "MSM memory array power mux"
+	depends on ARCH_QCOM && ARM64 && OF
+	help
+	  Switch CPU memory arrays between APCC and MX supplies on MSM8996.
+
 config MSM_SPM
         bool "Driver support for SPM and AVS wrapper hardware"
         help
