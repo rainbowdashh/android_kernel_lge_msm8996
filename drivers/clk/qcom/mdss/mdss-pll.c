@@ -116,8 +116,19 @@ static int mdss_pll_resource_parse(struct platform_device *pdev,
 		goto err;
 	}
 
-	if (!strcmp(compatible_stream, "qcom,mdss_dsi_pll_8996"))
+	if (!strcmp(compatible_stream, "qcom,mdss_dsi_pll_8996") ||
+	    !strcmp(compatible_stream, "qcom,mdss_dsi_pll_8996_v2")) {
 		pll_res->pll_interface_type = MDSS_DSI_PLL_8996;
+		pll_res->revision = !strcmp(compatible_stream,
+			"qcom,mdss_dsi_pll_8996_v2") ? 2 : 1;
+	} else if (!strcmp(compatible_stream, "qcom,mdss_hdmi_pll_8996"))
+		pll_res->pll_interface_type = MDSS_HDMI_PLL_8996;
+	else if (!strcmp(compatible_stream, "qcom,mdss_hdmi_pll_8996_v2"))
+		pll_res->pll_interface_type = MDSS_HDMI_PLL_8996_V2;
+	else if (!strcmp(compatible_stream, "qcom,mdss_hdmi_pll_8996_v3"))
+		pll_res->pll_interface_type = MDSS_HDMI_PLL_8996_V3;
+	else if (!strcmp(compatible_stream, "qcom,mdss_hdmi_pll_8996_v3_1p8"))
+		pll_res->pll_interface_type = MDSS_HDMI_PLL_8996_V3_1_8;
 	else if (!strcmp(compatible_stream, "qcom,mdss_dsi_pll_14nm"))
 		pll_res->pll_interface_type = MDSS_DSI_PLL_14NM;
 	else if (!strcmp(compatible_stream, "qcom,mdss_dp_pll_14nm"))
@@ -158,6 +169,18 @@ static int mdss_pll_clock_register(struct platform_device *pdev,
 	switch (pll_res->pll_interface_type) {
 	case MDSS_DSI_PLL_8996:
 		rc = dsi_pll_clock_register_8996(pdev, pll_res);
+		break;
+	case MDSS_HDMI_PLL_8996:
+		rc = hdmi_8996_v1_pll_clock_register(pdev, pll_res);
+		break;
+	case MDSS_HDMI_PLL_8996_V2:
+		rc = hdmi_8996_v2_pll_clock_register(pdev, pll_res);
+		break;
+	case MDSS_HDMI_PLL_8996_V3:
+		rc = hdmi_8996_v3_pll_clock_register(pdev, pll_res);
+		break;
+	case MDSS_HDMI_PLL_8996_V3_1_8:
+		rc = hdmi_8996_v3_1p8_pll_clock_register(pdev, pll_res);
 		break;
 	case MDSS_DSI_PLL_14NM:
 		rc = dsi_pll_clock_register_14nm(pdev, pll_res);
@@ -398,6 +421,11 @@ static int mdss_pll_remove(struct platform_device *pdev)
 
 static const struct of_device_id mdss_pll_dt_match[] = {
 	{.compatible = "qcom,mdss_dsi_pll_8996"},
+	{.compatible = "qcom,mdss_dsi_pll_8996_v2"},
+	{.compatible = "qcom,mdss_hdmi_pll_8996"},
+	{.compatible = "qcom,mdss_hdmi_pll_8996_v2"},
+	{.compatible = "qcom,mdss_hdmi_pll_8996_v3"},
+	{.compatible = "qcom,mdss_hdmi_pll_8996_v3_1p8"},
 	{.compatible = "qcom,mdss_dsi_pll_14nm"},
 	{.compatible = "qcom,mdss_dp_pll_14nm"},
 	{.compatible = "qcom,mdss_dsi_pll_sdm660"},
