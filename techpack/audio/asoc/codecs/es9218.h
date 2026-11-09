@@ -98,13 +98,13 @@ enum {
 };
 
 struct es9218_priv {
-	struct snd_soc_codec *codec;
+	struct snd_soc_component *codec;
 	struct i2c_client *i2c_client;
 	struct es9218_data *es9218_data;
 	struct delayed_work sleep_work;
 	struct mutex power_lock;
-	struct wake_lock sleep_lock;
-	struct wake_lock shutdown_lock;
+	struct wakeup_source *sleep_lock;
+	struct wakeup_source *shutdown_lock;
 } es9218_priv;
 
 

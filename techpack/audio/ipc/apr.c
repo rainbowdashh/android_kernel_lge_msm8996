@@ -1195,6 +1195,10 @@ static int apr_probe(struct platform_device *pdev)
 		subsys_notif_register("apr_adsp",
 				       AUDIO_NOTIFIER_ADSP_DOMAIN,
 				       &adsp_service_nb);
+		if (IS_ENABLED(CONFIG_SND_SOC_MSM8996))
+			subsys_notif_register("apr_modem",
+					     AUDIO_NOTIFIER_MODEM_DOMAIN,
+					     &modem_service_nb);
 	} else if (!strcmp(subsys_name, "apr_modem")) {
 		subsys_notif_register("apr_modem",
 				       AUDIO_NOTIFIER_MODEM_DOMAIN,

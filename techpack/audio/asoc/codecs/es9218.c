@@ -13,7 +13,7 @@
 #include <linux/delay.h>
 #include <linux/pm.h>
 #include <linux/platform_device.h>
-#include <linux/wakelock.h>
+#include <linux/pm_wakeup.h>
 //#include <linux/regulator/consumer.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
@@ -1700,7 +1700,7 @@ int es9218_get_power_state(void) {
 }
 
 static void es9218_sabre_sleep_work (struct work_struct *work) {
-	wake_lock_timeout(&g_es9218_priv->sleep_lock, msecs_to_jiffies( 2000 ));
+	__pm_wakeup_event(g_es9218_priv->sleep_lock, 2000);
 	mutex_lock(&g_es9218_priv->power_lock);
 	if (es9218_power_state == ESS_PS_IDLE) {
 		pr_info("%s(): sleep_work state is %s running \n", __func__, power_state[es9218_power_state]);
@@ -2483,19 +2483,19 @@ err:
 	return -1;
 }
 
-static unsigned int es9218_codec_read(struct snd_soc_codec *codec,
+static unsigned int es9218_codec_read(struct snd_soc_component *codec,
 		unsigned int reg) {
-	//struct es9218_priv *priv = codec->control_data;
+	//struct es9218_priv *priv = snd_soc_component_get_drvdata(codec);
 	return 0;
 }
 
-static int es9218_codec_write(struct snd_soc_codec *codec, unsigned int reg,
+static int es9218_codec_write(struct snd_soc_component *codec, unsigned int reg,
 		unsigned int value) {
-	//struct es9218_priv *priv = codec->control_data;
+	//struct es9218_priv *priv = snd_soc_component_get_drvdata(codec);
 	return 0;
 }
 
-static int es9218_set_bias_level(struct snd_soc_codec *codec,
+static int es9218_set_bias_level(struct snd_soc_component *codec,
 		enum snd_soc_bias_level level) {
 	int ret = 0;
 
@@ -2514,7 +2514,7 @@ static int es9218_set_bias_level(struct snd_soc_codec *codec,
 		case SND_SOC_BIAS_OFF:
 			break;
 	}
-	snd_soc_codec_force_bias_level(codec, level);
+	snd_soc_component_force_bias_level(codec, level);
 
 	/* dev_dbg(codec->dev, "%s(): exit\n", __func__); */
 	return ret;
@@ -2523,8 +2523,8 @@ static int es9218_set_bias_level(struct snd_soc_codec *codec,
 static int es9218_pcm_hw_params(struct snd_pcm_substream *substream,
 		struct snd_pcm_hw_params *params,
 		struct snd_soc_dai *codec_dai) {
-	struct snd_soc_codec *codec = codec_dai->codec;
-	struct es9218_priv *priv = codec->control_data;
+	struct snd_soc_component *codec = codec_dai->component;
+	struct es9218_priv *priv = snd_soc_component_get_drvdata(codec);
 
 	int ret = -1;
 	u8 i2c_len_reg = 0;
@@ -2662,8 +2662,8 @@ static int es9218_pcm_hw_params(struct snd_pcm_substream *substream,
 }
 
 static int es9218_mute(struct snd_soc_dai *dai, int mute) {
-	//struct snd_soc_codec *codec = dai->codec;
-	//struct es9218_priv *priv = codec->control_data;
+	//struct snd_soc_component *codec = dai->component;
+	//struct es9218_priv *priv = snd_soc_component_get_drvdata(codec);
 
 	//pr_info("%s(): entry\n", __func__);
 	return 0;
@@ -2672,8 +2672,8 @@ static int es9218_mute(struct snd_soc_dai *dai, int mute) {
 
 static int es9218_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 		int clk_id, unsigned int freq, int dir) {
-	//struct snd_soc_codec *codec = codec_dai->codec;
-	//struct es9218_priv *priv = codec->control_data;
+	//struct snd_soc_component *codec = codec_dai->component;
+	//struct es9218_priv *priv = snd_soc_component_get_drvdata(codec);
 	//pr_info("%s(): entry\n", __func__);
 
 	return 0;
@@ -2681,8 +2681,8 @@ static int es9218_set_dai_sysclk(struct snd_soc_dai *codec_dai,
 
 
 static int es9218_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt) {
-	//struct snd_soc_codec *codec = codec_dai->codec;
-	//struct es9218_priv *priv = codec->control_data;
+	//struct snd_soc_component *codec = codec_dai->component;
+	//struct es9218_priv *priv = snd_soc_component_get_drvdata(codec);
 	//pr_info("%s(): entry\n", __func__);
 
 	return 0;
@@ -2690,7 +2690,7 @@ static int es9218_set_dai_fmt(struct snd_soc_dai *codec_dai, unsigned int fmt) {
 
 static int es9218_startup(struct snd_pcm_substream *substream,
 			   struct snd_soc_dai *dai) {
-//	struct snd_soc_codec *codec = dai->codec;
+//	struct snd_soc_component *codec = dai->component;
 	mutex_lock(&g_es9218_priv->power_lock);
 
 	pr_info("%s(): entry\n", __func__);
@@ -2715,12 +2715,12 @@ static int es9218_startup(struct snd_pcm_substream *substream,
 
 static void es9218_shutdown(struct snd_pcm_substream *substream,
 			   struct snd_soc_dai *dai) {
-	struct snd_soc_codec *codec = dai->codec;
+	struct snd_soc_component *codec = dai->component;
 	mutex_lock(&g_es9218_priv->power_lock);
 	dev_info(codec->dev, "%s(): entry\n", __func__);
 	es9218_sabre_audio_idle();
 
-	wake_lock_timeout(&g_es9218_priv->shutdown_lock, msecs_to_jiffies( 5000 ));
+	__pm_wakeup_event(g_es9218_priv->shutdown_lock, 5000);
 	//schedule_delayed_work(&g_es9218_priv->sleep_work, msecs_to_jiffies(100));	//	100msec
 	//schedule_delayed_work(&g_es9218_priv->sleep_work, msecs_to_jiffies(450));		//	450 msec
 	//schedule_delayed_work(&g_es9218_priv->sleep_work, msecs_to_jiffies(500));		//	500 msec
@@ -2733,7 +2733,7 @@ static void es9218_shutdown(struct snd_pcm_substream *substream,
 
 static int es9218_hw_free(struct snd_pcm_substream *substream,
 			   struct snd_soc_dai *dai) {
-	struct snd_soc_codec *codec = dai->codec;
+	struct snd_soc_component *codec = dai->component;
 
 	dev_info(codec->dev, "%s(): entry\n", __func__);
 
@@ -2772,8 +2772,8 @@ static struct snd_soc_dai_driver es9218_dai[] = {
 	},
 };
 
-static  int es9218_codec_probe(struct snd_soc_codec *codec) {
-	struct es9218_priv *priv = snd_soc_codec_get_drvdata(codec);
+static  int es9218_codec_probe(struct snd_soc_component *codec) {
+	struct es9218_priv *priv = snd_soc_component_get_drvdata(codec);
 
 	pr_info("%s(): entry\n", __func__);
 
@@ -2781,20 +2781,19 @@ static  int es9218_codec_probe(struct snd_soc_codec *codec) {
 		priv->codec = codec;
 	else
         pr_info("%s(): fail !!!!!!!!!!\n", __func__);
-	codec->control_data = snd_soc_codec_get_drvdata(codec);
 
-	es9218_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+
+	/* ASoC owns the initial bias transition during card registration. */
 	pr_info("%s(): exit \n", __func__);
 
 	return 0;
 }
 
-static int  es9218_codec_remove(struct snd_soc_codec *codec) {
+static void es9218_codec_remove(struct snd_soc_component *codec) {
 	es9218_set_bias_level(codec, SND_SOC_BIAS_OFF);
-	return 0;
 }
 
-static struct snd_soc_codec_driver soc_codec_dev_es9218 = {
+static struct snd_soc_component_driver soc_codec_dev_es9218 = {
 	.probe 			= es9218_codec_probe,
 	.remove 		= es9218_codec_remove,
 	.read 			= es9218_codec_read,
@@ -2802,6 +2801,11 @@ static struct snd_soc_codec_driver soc_codec_dev_es9218 = {
 	.controls 		= es9218_digital_ext_snd_controls,
 	.num_controls 	= ARRAY_SIZE(es9218_digital_ext_snd_controls),
 };
+
+static void es9218_unregister_wakeup(void *data)
+{
+	wakeup_source_unregister(data);
+}
 
 static int es9218_probe(struct i2c_client *client,const struct i2c_device_id *id) {
 	struct es9218_priv *priv;
@@ -2828,7 +2832,7 @@ static int es9218_probe(struct i2c_client *client,const struct i2c_device_id *id
 			defined(CONFIG_MACH_MSM8996_ANNA_GLOBAL_COM) || defined(CONFIG_MACH_MSM8996_ANNA_KR)
 		pdata->hw_rev = HW_REV_B; //[Temporary] For ANNA JP Board Rev.0 + ESS Rev.b
 #else
-		pdata->hw_rev = lge_get_board_revno();
+		pdata->hw_rev = lge_get_board_rev_no();
 		pr_info("%s() lg board1 rev_(%d)\n", __func__, pdata->hw_rev);
 #endif
 		ret = es9218_populate_get_pdata(&client->dev, pdata);
@@ -2858,8 +2862,20 @@ static int es9218_probe(struct i2c_client *client,const struct i2c_device_id *id
 
 	mutex_init(&g_es9218_priv->power_lock);
 
-	wake_lock_init(&g_es9218_priv->sleep_lock, WAKE_LOCK_SUSPEND, "sleep_lock");
-	wake_lock_init(&g_es9218_priv->shutdown_lock, WAKE_LOCK_SUSPEND, "shutdown_lock");
+	priv->sleep_lock = wakeup_source_register(&client->dev, "es9218_sleep");
+	if (!priv->sleep_lock)
+		return -ENOMEM;
+	ret = devm_add_action_or_reset(&client->dev, es9218_unregister_wakeup,
+				     priv->sleep_lock);
+	if (ret)
+		return ret;
+	priv->shutdown_lock = wakeup_source_register(&client->dev, "es9218_shutdown");
+	if (!priv->shutdown_lock)
+		return -ENOMEM;
+	ret = devm_add_action_or_reset(&client->dev, es9218_unregister_wakeup,
+				     priv->shutdown_lock);
+	if (ret)
+		return ret;
 
     if(pdata->hw_rev == HW_REV_B) {
         ret = gpio_request_one(pdata->ear_dbg, GPIOF_IN,"gpio_earjack_debugger");
@@ -2948,7 +2964,7 @@ static int es9218_probe(struct i2c_client *client,const struct i2c_device_id *id
     pr_info("%s() g_ess_rev:%d\n", __func__, g_ess_rev);
 
 
-	ret = snd_soc_register_codec(&client->dev,
+	ret = snd_soc_register_component(&client->dev,
 				      &soc_codec_dev_es9218,
 				      es9218_dai, ARRAY_SIZE(es9218_dai));
 #ifdef ES9218_SYSFS
@@ -2966,7 +2982,7 @@ static int es9218_probe(struct i2c_client *client,const struct i2c_device_id *id
 
 	printk("ESS DAC sysfs nodes are ready!\n");
 #endif
-	printk("snd_soc_register_codec ret = %d\n",ret);
+	printk("snd_soc_register_component ret = %d\n",ret);
 	return ret;
 
 switch_gpio_request_error:
@@ -2984,7 +3000,7 @@ ear_dbg_gpio_request_error:
 }
 
 static int es9218_remove(struct i2c_client *client) {
-	snd_soc_unregister_codec(&client->dev);
+	snd_soc_unregister_component(&client->dev);
 	mutex_destroy(&g_es9218_priv->power_lock);
 	return 0;
 }

@@ -240,9 +240,18 @@ static inline void q6asm_update_token(u32 *token, u8 session_id, u8 stream_id,
 	*token = asm_token.token;
 }
 
+/* MSM8996 AVS firmware supports PCM v3, but not the v4/v5 extensions. */
+static bool q6asm_uses_pcm_v3(void)
+{
+	return IS_ENABLED(CONFIG_SND_SOC_MSM8996);
+}
+
 static inline uint32_t q6asm_get_pcm_format_id(uint32_t media_format_block_ver)
 {
 	uint32_t pcm_format_id;
+
+	if (q6asm_uses_pcm_v3() && media_format_block_ver > PCM_MEDIA_FORMAT_V3)
+		media_format_block_ver = PCM_MEDIA_FORMAT_V3;
 
 	switch (media_format_block_ver) {
 	case PCM_MEDIA_FORMAT_V5:
@@ -5145,6 +5154,14 @@ static int q6asm_enc_cfg_blk_pcm_v5(struct audio_client *ac,
 	u32 frames_per_buf = 0;
 	int rc;
 
+	if (q6asm_uses_pcm_v3()) {
+		if (endianness != ASM_LITTLE_ENDIAN || mode != DEFAULT_QF)
+			return -EINVAL;
+		return q6asm_enc_cfg_blk_pcm_v3(ac, rate, channels,
+				bits_per_sample, use_default_chmap, use_back_flavor,
+				channel_map, sample_word_size);
+	}
+
 	if (!use_default_chmap && (channel_map == NULL)) {
 		pr_err("%s: No valid chan map and can't use default\n",
 				__func__);
@@ -5252,6 +5269,14 @@ int q6asm_enc_cfg_blk_pcm_v4(struct audio_client *ac,
 	u8 *channel_mapping;
 	u32 frames_per_buf = 0;
 	int rc;
+
+	if (q6asm_uses_pcm_v3()) {
+		if (endianness != ASM_LITTLE_ENDIAN || mode != DEFAULT_QF)
+			return -EINVAL;
+		return q6asm_enc_cfg_blk_pcm_v3(ac, rate, channels,
+				bits_per_sample, use_default_chmap, use_back_flavor,
+				channel_map, sample_word_size);
+	}
 
 	if (!use_default_chmap && (channel_map == NULL)) {
 		pr_err("%s: No valid chan map and can't use default\n",
@@ -6549,6 +6574,14 @@ static int __q6asm_media_format_block_pcm_v4(struct audio_client *ac,
 	u8 *channel_mapping;
 	int rc;
 
+	if (q6asm_uses_pcm_v3()) {
+		if (endianness != ASM_LITTLE_ENDIAN || mode != DEFAULT_QF)
+			return -EINVAL;
+		return __q6asm_media_format_block_pcm_v3(ac, rate, channels,
+				bits_per_sample, stream_id, use_default_chmap,
+				channel_map, sample_word_size);
+	}
+
 	if (channels > PCM_FORMAT_MAX_NUM_CHANNEL) {
 		pr_err("%s: Invalid channel count %d\n", __func__, channels);
 		return -EINVAL;
@@ -6640,6 +6673,14 @@ static int __q6asm_media_format_block_pcm_v5(struct audio_client *ac,
 	struct asm_multi_channel_pcm_fmt_blk_param_v5 fmt;
 	u8 *channel_mapping;
 	int rc;
+
+	if (q6asm_uses_pcm_v3()) {
+		if (endianness != ASM_LITTLE_ENDIAN || mode != DEFAULT_QF)
+			return -EINVAL;
+		return __q6asm_media_format_block_pcm_v3(ac, rate, channels,
+				bits_per_sample, stream_id, use_default_chmap,
+				channel_map, sample_word_size);
+	}
 
 	if (channels > PCM_FORMAT_MAX_NUM_CHANNEL_V8) {
 		pr_err("%s: Invalid channel count %d\n", __func__, channels);
@@ -7048,6 +7089,14 @@ static int __q6asm_media_format_block_multi_ch_pcm_v4(struct audio_client *ac,
 	u8 *channel_mapping;
 	int rc;
 
+	if (q6asm_uses_pcm_v3()) {
+		if (endianness != ASM_LITTLE_ENDIAN || mode != DEFAULT_QF)
+			return -EINVAL;
+		return __q6asm_media_format_block_multi_ch_pcm_v3(ac, rate,
+				channels, use_default_chmap, channel_map,
+				bits_per_sample, sample_word_size);
+	}
+
 	if (channels > PCM_FORMAT_MAX_NUM_CHANNEL) {
 		pr_err("%s: Invalid channel count %d\n", __func__, channels);
 		return -EINVAL;
@@ -7126,6 +7175,14 @@ static int __q6asm_media_format_block_multi_ch_pcm_v5(struct audio_client *ac,
 	struct asm_multi_channel_pcm_fmt_blk_param_v5 fmt;
 	u8 *channel_mapping;
 	int rc;
+
+	if (q6asm_uses_pcm_v3()) {
+		if (endianness != ASM_LITTLE_ENDIAN || mode != DEFAULT_QF)
+			return -EINVAL;
+		return __q6asm_media_format_block_multi_ch_pcm_v3(ac, rate,
+				channels, use_default_chmap, channel_map,
+				bits_per_sample, sample_word_size);
+	}
 
 	if (channels > PCM_FORMAT_MAX_NUM_CHANNEL_V8) {
 		pr_err("%s: Invalid channel count %d\n", __func__, channels);
