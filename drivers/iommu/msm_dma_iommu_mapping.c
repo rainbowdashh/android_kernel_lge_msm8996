@@ -150,7 +150,9 @@ static struct scatterlist *clone_sgl(struct scatterlist *sg, int nents)
 		return NULL;
 	next = table.sgl;
 	for_each_sg(sg, s, nents, i) {
-		*next = *s;
+		sg_set_page(next, sg_page(s), s->length, s->offset);
+		sg_dma_address(next) = sg_dma_address(s);
+		sg_dma_len(next) = sg_dma_len(s);
 		next = sg_next(next);
 	}
 	return table.sgl;
@@ -206,6 +208,7 @@ static inline int __msm_dma_map_sg(struct device *dev, struct scatterlist *sg,
 
 		iommu_map->sgl = clone_sgl(sg, nents);
 		if (!iommu_map->sgl) {
+			dma_unmap_sg_attrs(dev, sg, nents, dir, attrs);
 			kfree(iommu_map);
 			ret = -ENOMEM;
 			goto out_unlock;
