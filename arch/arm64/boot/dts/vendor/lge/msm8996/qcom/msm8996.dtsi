@@ -4187,7 +4187,10 @@
 	};
 
 	qcom,msm_fastrpc {
-		compatible = "qcom,msm-fastrpc-adsp";
+		compatible = "qcom,msm-fastrpc-compute", "qcom,msm-fastrpc-adsp";
+		/* ADSP uses the legacy non-secure userspace device. */
+		qcom,secure-domains = <0x6>;
+		qcom,fastrpc-legacy-remote-heap;
 
 		qcom,msm_fastrpc_compute_cb1 {
 			compatible = "qcom,msm-fastrpc-compute-cb";
