@@ -928,6 +928,15 @@
 		#clock-cells = <1>;
 	};
 
+	clock_debug: clock-controller-debug {
+		compatible = "qcom,msm8996-debugcc";
+		qcom,gcc = <&clock_gcc>;
+		qcom,mmcc = <&clock_mmss>;
+		clocks = <&rpmcc RPM_SMD_XO_CLK_SRC>;
+		clock-names = "xo";
+		#clock-cells = <1>;
+	};
+
 	clock_gcc: qcom,gcc@300000 {
 		compatible = "qcom,gcc-msm8996";
 		clock-names = "xo";
