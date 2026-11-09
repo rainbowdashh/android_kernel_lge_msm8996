@@ -2077,6 +2077,7 @@
 		dwc3@6a00000 {
 			compatible = "snps,dwc3";
 			dr_mode = "otg";
+			maximum-speed = "super-speed";
 			reg = <0x06a00000 0xc8d0>;
 			interrupt-parent = <&intc>;
 			interrupts = <GIC_SPI 131 IRQ_TYPE_LEVEL_HIGH>;
