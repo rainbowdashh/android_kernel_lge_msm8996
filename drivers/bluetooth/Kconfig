@@ -451,3 +451,16 @@ config BT_SLIM_QCA6390
 	  chip initialization process and control.
 
 endmenu
+
+config BT_BCM43XX
+	tristate "Broadcom BCM43xx power control"
+	depends on SERIAL_MSM_HS_BRCMBT && RFKILL
+	select BT_MSM_SLEEP
+	help
+	  GPIO power control for LG MSM8996 Broadcom Bluetooth controllers.
+
+config BT_MSM_SLEEP
+	tristate "Broadcom Bluetooth sleep control"
+	depends on SERIAL_MSM_HS_BRCMBT
+	help
+	  Host wake and device wake signalling for the LG Broadcom UART.
