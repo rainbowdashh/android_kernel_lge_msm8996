@@ -1911,7 +1911,6 @@ static int adreno_init(struct kgsl_device *device)
 			return ret;
 	}
 
-	dev_dbg(device->dev, "startup: GPU aware, initializing counters\n");
 	adreno_iommu_init(adreno_dev);
 
 	adreno_perfcounter_init(adreno_dev);
@@ -1928,7 +1927,6 @@ static int adreno_init(struct kgsl_device *device)
 		gpudev->init(adreno_dev);
 
 	set_bit(ADRENO_DEVICE_INITIALIZED, &adreno_dev->priv);
-	dev_dbg(device->dev, "startup: GPU initialization complete\n");
 
 	/*
 	 * Allocate a small chunk of memory for precise drawobj profiling for
@@ -2117,9 +2115,7 @@ static int _adreno_start(struct adreno_device *adreno_dev)
 
 	/* Soft reset the GPU if a regulator is stuck on*/
 	if (regulator_left_on) {
-		dev_dbg(device->dev, "startup: soft-resetting GPU\n");
 		_soft_reset(adreno_dev);
-		dev_dbg(device->dev, "startup: GPU soft reset complete\n");
 	}
 
 	/*
@@ -2144,9 +2140,7 @@ static int _adreno_start(struct adreno_device *adreno_dev)
 
 	adreno_ringbuffer_set_global(adreno_dev, 0);
 
-	dev_dbg(device->dev, "startup: starting GPU MMU\n");
 	status = kgsl_mmu_start(device);
-	dev_dbg(device->dev, "startup: GPU MMU returned %d\n", status);
 	if (status)
 		goto error_boot_oob_clear;
 
@@ -2163,9 +2157,7 @@ static int _adreno_start(struct adreno_device *adreno_dev)
 		goto error_oob_clear;
 	}
 
-	dev_dbg(device->dev, "startup: programming GPU secure range\n");
 	_set_secvid(device);
-	dev_dbg(device->dev, "startup: GPU secure range ready\n");
 
 	/* Enable 64 bit gpu addr if feature is set */
 	if (gpudev->enable_64bit &&

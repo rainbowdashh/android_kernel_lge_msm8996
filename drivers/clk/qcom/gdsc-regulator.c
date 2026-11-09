@@ -244,7 +244,6 @@ static int gdsc_enable(struct regulator_dev *rdev)
 		root_enabled = true;
 	}
 
-	dev_dbg(&rdev->dev, "startup: root clock ready, powering domain\n");
 	regmap_read(sc->regmap, REG_OFFSET, &regval);
 	if (regval & HW_CONTROL_MASK) {
 		dev_warn(&rdev->dev, "Invalid enable while %s is under HW control\n",
@@ -379,7 +378,6 @@ static int gdsc_enable(struct regulator_dev *rdev)
 	/* Delay to account for staggered memory powerup. */
 	udelay(1);
 
-	dev_dbg(&rdev->dev, "startup: domain powered, releasing root vote\n");
 	sc->is_gdsc_enabled = true;
 end:
 	if (root_enabled && (ret || sc->force_root_en))

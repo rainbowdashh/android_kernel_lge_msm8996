@@ -255,8 +255,6 @@ int kgsl_clk_set_rate(struct kgsl_device *device,
 	struct kgsl_pwrlevel *pl = &pwr->pwrlevels[pwrlevel];
 	int ret = 0;
 
-	dev_dbg(device->dev, "startup: setting GPU rate %u\n",
-		pl->gpu_freq);
 	/* GMU scales GPU freq */
 	if (gmu_core_gpmu_isenabled(device))
 		ret = gmu_core_dcvs_set(device, pwrlevel, INVALID_DCVS_IDX);
@@ -264,8 +262,6 @@ int kgsl_clk_set_rate(struct kgsl_device *device,
 		/* Linux clock driver scales GPU freq */
 		ret = kgsl_pwrctrl_clk_set_rate(pwr->grp_clks[0],
 			pl->gpu_freq, clocks[0]);
-
-	dev_dbg(device->dev, "startup: GPU rate returned %d\n", ret);
 
 	if (ret)
 		dev_err(device->dev, "GPU clk freq set failure: %d\n",
@@ -1860,11 +1856,7 @@ static int _regulator_enable(struct kgsl_device *device,
 	if (IS_ERR_OR_NULL(regulator->reg))
 		return 0;
 
-	dev_dbg(device->dev, "startup: enabling regulator %s\n",
-		regulator->name);
 	ret = regulator_enable(regulator->reg);
-	dev_dbg(device->dev, "startup: regulator %s returned %d\n",
-		regulator->name, ret);
 	if (ret)
 		dev_err(device->dev,
 			     "Failed to enable regulator '%s': %d\n",
@@ -2147,12 +2139,7 @@ static void _gpu_clk_prepare_enable(struct kgsl_device *device,
 		return;
 	}
 
-	if (clk)
-		dev_dbg(device->dev, "startup: enabling clock %s\n", name);
 	ret = clk_prepare_enable(clk);
-	if (clk)
-		dev_dbg(device->dev, "startup: clock %s returned %d\n",
-			name, ret);
 	if (!ret)
 		return;
 err:
@@ -2655,12 +2642,8 @@ static int kgsl_pwrctrl_enable(struct kgsl_device *device)
 	if (status)
 		return status;
 	kgsl_pwrctrl_clk(device, KGSL_PWRFLAGS_ON, KGSL_STATE_ACTIVE);
-	dev_dbg(device->dev, "startup: GPU clocks enabled\n");
 	kgsl_pwrctrl_axi(device, KGSL_PWRFLAGS_ON);
-	dev_dbg(device->dev, "startup: GPU bus enabled\n");
 	status = device->ftbl->regulator_enable(device);
-	dev_dbg(device->dev, "startup: GPU internal power returned %d\n",
-		status);
 	return status;
 }
 
