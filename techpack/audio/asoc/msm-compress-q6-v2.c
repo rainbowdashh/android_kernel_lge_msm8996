@@ -6134,6 +6134,12 @@ static int msm_compr_new(struct snd_soc_pcm_runtime *rtd)
 {
 	int rc;
 
+	if (!rtd->compr) {
+		dev_err(rtd->dev, "%s: %s has no compressed stream\n",
+			__func__, rtd->dai_link->name);
+		return -EINVAL;
+	}
+
 	rc = msm_compr_add_volume_control(rtd);
 	if (rc)
 		pr_err("%s: Could not add Compr Volume Control\n", __func__);
