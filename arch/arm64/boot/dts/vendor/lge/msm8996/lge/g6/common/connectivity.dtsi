@@ -75,6 +75,11 @@
 	};
 };
 
+/* The Broadcom board driver owns WLAN_REG_ON. */
+&wlan_en_vreg {
+	status = "disabled";
+};
+
 &tlmm {
 //[H1_BT_BRINGUP_S]
 	/* gpio pin mux for bluetooth enable pin */
