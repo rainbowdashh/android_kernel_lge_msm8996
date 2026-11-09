@@ -8,6 +8,7 @@
 #define pr_fmt(fmt) "%s: " fmt, KBUILD_MODNAME
 
 #include <linux/module.h>
+#include <linux/arm-smccc.h>
 #include <linux/kernel.h>
 #include <linux/init.h>
 #include <linux/slab.h>
@@ -1399,7 +1400,15 @@ static bool psci_enter_sleep(struct lpm_cpu *cpu, int idx, bool from_idle)
 			0xdeaffeed, 0xdeaffeed, from_idle);
 	stop_critical_timings();
 
-	success = !arm_cpuidle_suspend(state_id);
+	if (IS_ENABLED(CONFIG_ARM64) && cpu->levels[idx].hyp_psci) {
+		struct arm_smccc_res res;
+
+		/* MSM8996 deferred collapse is coordinated by the hypervisor. */
+		arm_smccc_smc(0xc4000021, 0, 0, 0, 0, 0, 0, 0, &res);
+		success = !res.a0;
+	} else {
+		success = !arm_cpuidle_suspend(state_id);
+	}
 
 	start_critical_timings();
 	update_debug_pc_event(CPU_EXIT, state_id,
