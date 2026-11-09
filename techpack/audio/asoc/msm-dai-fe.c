@@ -2406,6 +2406,7 @@ static struct snd_soc_dai_driver msm_fe_dais[] = {
 			.rate_min =	8000,
 			.rate_max = 384000,
 		},
+#if !IS_ENABLED(CONFIG_SND_SOC_MSM8996)
 		.capture = {
 			.stream_name = "MultiMedia10 Capture",
 			.aif_name = "MM_UL10",
@@ -2419,6 +2420,7 @@ static struct snd_soc_dai_driver msm_fe_dais[] = {
 			.rate_min = 8000,
 			.rate_max = 48000,
 		},
+#endif
 		.ops = &msm_fe_Multimedia_dai_ops,
 #if IS_ENABLED(CONFIG_SND_SOC_MSM8996)
 		.compress_new = snd_soc_new_compress,
