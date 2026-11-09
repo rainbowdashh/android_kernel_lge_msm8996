@@ -2420,6 +2420,9 @@ static struct snd_soc_dai_driver msm_fe_dais[] = {
 			.rate_max = 48000,
 		},
 		.ops = &msm_fe_Multimedia_dai_ops,
+#if IS_ENABLED(CONFIG_SND_SOC_MSM8996)
+		.compress_new = snd_soc_new_compress,
+#endif
 		.name = "MultiMedia10",
 		.probe = fe_dai_probe,
 	},
