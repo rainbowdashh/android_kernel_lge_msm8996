@@ -400,6 +400,51 @@ static struct cpufreq_frequency_table *cpufreq_parse_dt(struct device *dev,
 	return ftbl;
 }
 
+/* Hotplug callbacks are registered without calls for CPUs already online. */
+static int msm_cpufreq_get_clocks(void)
+{
+	cpumask_t acquired;
+	int cpu, ret = 0;
+
+	cpumask_clear(&acquired);
+	get_online_cpus();
+	for_each_online_cpu(cpu) {
+		ret = clk_prepare_enable(l2_clk);
+		if (ret)
+			goto unwind;
+		ret = clk_prepare_enable(cpu_clk[cpu]);
+		if (ret) {
+			clk_disable_unprepare(l2_clk);
+			goto unwind;
+		}
+		cpumask_set_cpu(cpu, &acquired);
+	}
+	hotplug_ready = true;
+	goto out;
+
+unwind:
+	for_each_cpu(cpu, &acquired) {
+		clk_disable_unprepare(cpu_clk[cpu]);
+		clk_disable_unprepare(l2_clk);
+	}
+out:
+	put_online_cpus();
+	return ret;
+}
+
+static void msm_cpufreq_put_clocks(void)
+{
+	int cpu;
+
+	get_online_cpus();
+	hotplug_ready = false;
+	for_each_online_cpu(cpu) {
+		clk_disable_unprepare(cpu_clk[cpu]);
+		clk_disable_unprepare(l2_clk);
+	}
+	put_online_cpus();
+}
+
 static int msm_cpufreq_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
@@ -422,7 +467,6 @@ static int msm_cpufreq_probe(struct platform_device *pdev)
 			c = cpu_clk[cpu-1];
 		cpu_clk[cpu] = c;
 	}
-	hotplug_ready = true;
 
 	/* Use per-policy governor tunable for some targets */
 	if (of_property_read_bool(dev->of_node, "qcom,governor-per-policy"))
@@ -474,14 +518,21 @@ static int msm_cpufreq_probe(struct platform_device *pdev)
 	}
 
 out_register:
-	ret = register_pm_notifier(&msm_cpufreq_pm_notifier);
+	ret = msm_cpufreq_get_clocks();
 	if (ret)
 		return ret;
 
-	ret = cpufreq_register_driver(&msm_cpufreq_driver);
+	ret = register_pm_notifier(&msm_cpufreq_pm_notifier);
 	if (ret)
-		unregister_pm_notifier(&msm_cpufreq_pm_notifier);
+		goto put_clocks;
 
+	ret = cpufreq_register_driver(&msm_cpufreq_driver);
+	if (!ret)
+		return 0;
+
+	unregister_pm_notifier(&msm_cpufreq_pm_notifier);
+put_clocks:
+	msm_cpufreq_put_clocks();
 	return ret;
 }
 
