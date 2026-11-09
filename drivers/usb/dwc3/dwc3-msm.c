@@ -3055,7 +3055,6 @@ static void dwc3_resume_work(struct work_struct *w)
 		}
 #endif
 		dwc->maximum_speed = dwc->max_hw_supp_speed;
-		dwc->gadget.max_speed = dwc->maximum_speed;
 
 		ret = extcon_get_property(edev, extcon_id,
 				EXTCON_PROP_USB_SS, &val);
@@ -3092,8 +3091,8 @@ skip_update:
 	if (mdwc->override_usb_speed &&
 			mdwc->override_usb_speed <= dwc->maximum_speed) {
 		dwc->maximum_speed = mdwc->override_usb_speed;
-		dwc->gadget.max_speed = dwc->maximum_speed;
 	}
+	dwc->gadget.max_speed = dwc->maximum_speed;
 
 	dbg_event(0xFF, "speed", dwc->maximum_speed);
 
