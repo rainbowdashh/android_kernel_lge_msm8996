@@ -116,7 +116,9 @@ static int mdss_pll_resource_parse(struct platform_device *pdev,
 		goto err;
 	}
 
-	if (!strcmp(compatible_stream, "qcom,mdss_dsi_pll_14nm"))
+	if (!strcmp(compatible_stream, "qcom,mdss_dsi_pll_8996"))
+		pll_res->pll_interface_type = MDSS_DSI_PLL_8996;
+	else if (!strcmp(compatible_stream, "qcom,mdss_dsi_pll_14nm"))
 		pll_res->pll_interface_type = MDSS_DSI_PLL_14NM;
 	else if (!strcmp(compatible_stream, "qcom,mdss_dp_pll_14nm"))
 		pll_res->pll_interface_type = MDSS_DP_PLL_14NM;
@@ -154,6 +156,9 @@ static int mdss_pll_clock_register(struct platform_device *pdev,
 	}
 
 	switch (pll_res->pll_interface_type) {
+	case MDSS_DSI_PLL_8996:
+		rc = dsi_pll_clock_register_8996(pdev, pll_res);
+		break;
 	case MDSS_DSI_PLL_14NM:
 		rc = dsi_pll_clock_register_14nm(pdev, pll_res);
 		break;
@@ -392,6 +397,7 @@ static int mdss_pll_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id mdss_pll_dt_match[] = {
+	{.compatible = "qcom,mdss_dsi_pll_8996"},
 	{.compatible = "qcom,mdss_dsi_pll_14nm"},
 	{.compatible = "qcom,mdss_dp_pll_14nm"},
 	{.compatible = "qcom,mdss_dsi_pll_sdm660"},
