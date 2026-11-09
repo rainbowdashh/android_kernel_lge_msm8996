@@ -12,6 +12,7 @@
 
 &mdss_mdp {
     dsi_sw49408_dsc_1440_2880_cmd: qcom,mdss_dsi_sw49408_dsc_1440_2880_cmd {
+		compatible = "lge,sw49408-panel";
         qcom,mdss-dsi-panel-name = "SW49408 1440 2880 cmd mode dsc dsi panel";
 		qcom,mdss-dsi-panel-type = "dsi_cmd_mode";
 		qcom,mdss-dsi-panel-framerate = <60>;

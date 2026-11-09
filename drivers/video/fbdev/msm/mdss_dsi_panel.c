@@ -16,6 +16,7 @@
 #include <linux/pwm.h>
 #include <linux/err.h>
 #include <linux/string.h>
+#include <linux/input/lge_touch_notify.h>
 
 #include "mdss_dsi.h"
 #include "mdss_dba_utils.h"
@@ -28,6 +29,23 @@
 #ifndef CONFIG_BACKLIGHT_QCOM_SPMI_WLED
 DEFINE_LED_TRIGGER(bl_led_trigger);
 #endif
+
+/* SW49408 shares reset and LCD operating modes with its touch controller. */
+static void mdss_dsi_touch_notify(struct mdss_dsi_ctrl_pdata *ctrl,
+				unsigned long event, void *data)
+{
+	if (IS_REACHABLE(CONFIG_LGE_TOUCH_CORE) && ctrl->sw49408_panel &&
+	    ctrl->ndx == DSI_CTRL_LEFT)
+		touch_notifier_call_chain(event, data);
+}
+
+static void mdss_dsi_touch_lcd_mode(struct mdss_dsi_ctrl_pdata *ctrl, bool on)
+{
+	/* Match LG's U0 (off) and U3 (interactive) LCD mode protocol. */
+	u32 mode = on ? 3 : 0;
+
+	mdss_dsi_touch_notify(ctrl, LCD_EVENT_LCD_MODE, &mode);
+}
 
 void mdss_dsi_panel_pwm_cfg(struct mdss_dsi_ctrl_pdata *ctrl)
 {
@@ -424,6 +442,7 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 			}
 
 			if (pdata->panel_info.rst_seq_len) {
+				mdss_dsi_touch_notify(ctrl_pdata, NOTIFY_TOUCH_RESET, NULL);
 				rc = gpio_direction_output(ctrl_pdata->rst_gpio,
 					pdata->panel_info.rst_seq[0]);
 				if (rc) {
@@ -495,6 +514,7 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 			gpio_set_value((ctrl_pdata->disp_en_gpio), 0);
 			gpio_free(ctrl_pdata->disp_en_gpio);
 		}
+		mdss_dsi_touch_notify(ctrl_pdata, NOTIFY_TOUCH_RESET, NULL);
 		gpio_set_value((ctrl_pdata->rst_gpio), 0);
 		gpio_free(ctrl_pdata->rst_gpio);
 		if (gpio_is_valid(ctrl_pdata->lcd_mode_sel_gpio)) {
@@ -964,6 +984,8 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 		mdss_dsi_panel_cmds_send(ctrl, &ctrl->display_on_cmds,
 					 CMD_REQ_COMMIT);
 
+	mdss_dsi_touch_lcd_mode(ctrl, true);
+
 	/* Ensure low persistence mode is set as before */
 	mdss_dsi_panel_apply_display_setting(pdata, pinfo->persist_mode);
 
@@ -1039,6 +1061,8 @@ static int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
 		mdss_dba_utils_video_off(pinfo->dba_data);
 		mdss_dba_utils_hdcp_enable(pinfo->dba_data, false);
 	}
+
+	mdss_dsi_touch_lcd_mode(ctrl, false);
 
 end:
 	pr_debug("%s:-\n", __func__);
@@ -3045,6 +3069,8 @@ int mdss_dsi_panel_init(struct device_node *node,
 		return -ENODEV;
 	}
 
+	ctrl_pdata->sw49408_panel =
+		of_device_is_compatible(node, "lge,sw49408-panel");
 	pinfo = &ctrl_pdata->panel_data.panel_info;
 
 	pr_debug("%s:%d\n", __func__, __LINE__);
