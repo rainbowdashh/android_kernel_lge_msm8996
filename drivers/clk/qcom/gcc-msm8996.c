@@ -191,7 +191,12 @@ static struct clk_fixed_factor xo = {
 	},
 };
 
+static u32 gpll0_soft_vote;
+
 static struct clk_alpha_pll gpll0_early = {
+	.flags = SUPPORTS_FSM_VOTE,
+	.soft_vote = &gpll0_soft_vote,
+	.soft_vote_mask = PLL_SOFT_VOTE_PRIMARY,
 	.offset = 0x00000,
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.clkr = {
@@ -200,6 +205,24 @@ static struct clk_alpha_pll gpll0_early = {
 		.hw.init = &(struct clk_init_data){
 			.name = "gpll0_early",
 			.parent_names = (const char *[]){ "xo" },
+			.num_parents = 1,
+			.ops = &clk_alpha_pll_ops,
+		},
+	},
+};
+
+static struct clk_alpha_pll gpll0_ao = {
+	.flags = SUPPORTS_FSM_VOTE,
+	.soft_vote = &gpll0_soft_vote,
+	.soft_vote_mask = PLL_SOFT_VOTE_CPU,
+	.offset = 0x00000,
+	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
+	.clkr = {
+		.enable_reg = 0x52000,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gpll0_ao",
+			.parent_names = (const char *[]){ "cxo_clk_src_ao" },
 			.num_parents = 1,
 			.ops = &clk_alpha_pll_ops,
 		},
@@ -1409,6 +1432,7 @@ static struct clk_branch gcc_mmss_noc_cfg_ahb_clk = {
 };
 
 static struct clk_branch gcc_mmss_bimc_gfx_clk = {
+	.enable_delay = 5,
 	.halt_reg = 0x9010,
 	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
@@ -2416,7 +2440,7 @@ static struct clk_branch gcc_bimc_gfx_clk = {
 		.enable_mask = BIT(0),
 		.hw.init = &(struct clk_init_data){
 			.name = "gcc_bimc_gfx_clk",
-			.flags = CLK_SET_RATE_PARENT,
+			.flags = CLK_SET_RATE_PARENT | CLK_IS_CRITICAL,
 			.ops = &clk_branch2_ops,
 		},
 	},
@@ -2810,6 +2834,7 @@ static struct clk_fixed_factor ufs_rx_cfg_clk_src = {
 };
 
 static struct clk_branch gcc_hlos1_vote_lpass_core_smmu_clk = {
+	.enable_delay = 5,
 	.halt_reg = 0x7d010,
 	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
@@ -2823,6 +2848,7 @@ static struct clk_branch gcc_hlos1_vote_lpass_core_smmu_clk = {
 };
 
 static struct clk_branch gcc_hlos1_vote_lpass_adsp_smmu_clk = {
+	.enable_delay = 5,
 	.halt_reg = 0x7d014,
 	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
@@ -2995,6 +3021,7 @@ static struct clk_branch gcc_aggre0_cnoc_ahb_clk = {
 };
 
 static struct clk_branch gcc_smmu_aggre0_axi_clk = {
+	.enable_delay = 5,
 	.halt_reg = 0x81014,
 	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
@@ -3011,6 +3038,7 @@ static struct clk_branch gcc_smmu_aggre0_axi_clk = {
 };
 
 static struct clk_branch gcc_smmu_aggre0_ahb_clk = {
+	.enable_delay = 5,
 	.halt_reg = 0x81018,
 	.halt_check = BRANCH_HALT_VOTED,
 	.clkr = {
@@ -3276,6 +3304,31 @@ static struct clk_branch gpll0_out_msscc = {
 	},
 };
 
+static struct clk_branch gcc_aggre0_noc_qosgen_extref_clk = {
+	.halt_check = BRANCH_HALT_SKIP,
+	.enable_delay = 500,
+	.clkr = {
+		.enable_reg = 0x8101c,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_aggre0_noc_qosgen_extref_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
+static struct clk_branch gcc_edp_clkref_clk = {
+	.halt_reg = 0x88004,
+	.clkr = {
+		.enable_reg = 0x88004,
+		.enable_mask = BIT(0),
+		.hw.init = &(struct clk_init_data){
+			.name = "gcc_edp_clkref_clk",
+			.ops = &clk_branch2_ops,
+		},
+	},
+};
+
 static struct clk_hw *gcc_msm8996_hws[] = {
 	&xo.hw,
 	&gpll0_early_div.hw,
@@ -3285,6 +3338,9 @@ static struct clk_hw *gcc_msm8996_hws[] = {
 };
 
 static struct clk_regmap *gcc_msm8996_clocks[] = {
+	[GPLL0_AO] = &gpll0_ao.clkr,
+	[GCC_AGGRE0_NOC_QOSGEN_EXTREF_CLK] = &gcc_aggre0_noc_qosgen_extref_clk.clkr,
+	[GCC_EDP_CLKREF_CLK] = &gcc_edp_clkref_clk.clkr,
 	[GCC_MSS_CFG_AHB_CLK] = &gcc_mss_cfg_ahb_clk.clkr,
 	[GCC_MSS_Q6_BIMC_AXI_CLK] = &gcc_mss_q6_bimc_axi_clk.clkr,
 	[GCC_MSS_SNOC_AXI_CLK] = &gcc_mss_snoc_axi_clk.clkr,
@@ -3643,7 +3699,8 @@ static int gcc_msm8996_probe(struct platform_device *pdev)
 			return ret;
 	}
 
-	if (of_device_is_compatible(dev->of_node, "qcom,gcc-msm8996-v3")) {
+	if (of_device_is_compatible(dev->of_node, "qcom,gcc-msm8996-v2") ||
+	    of_device_is_compatible(dev->of_node, "qcom,gcc-msm8996-v3")) {
 		unsigned long *rates = pcie_aux_clk_src.clkr.hw.init->rate_max;
 
 		rates[VDD_DIG_LOWER] = 9600000;
@@ -3663,6 +3720,12 @@ static int gcc_msm8996_probe(struct platform_device *pdev)
 
 	/* Keep the HMSS AHB register clock enabled, as in the vendor driver. */
 	regmap_update_bits(regmap, 0x52004, BIT(21), BIT(21));
+
+	/* Keep the graphics memory retention setting across GDS transitions. */
+	ret = regmap_update_bits(regmap, gcc_mmss_bimc_gfx_clk.clkr.enable_reg,
+				 BIT(14), BIT(14));
+	if (ret)
+		return ret;
 
 	return qcom_cc_really_probe(pdev, &gcc_msm8996_desc, regmap);
 }

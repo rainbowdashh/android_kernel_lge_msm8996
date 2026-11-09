@@ -924,7 +924,7 @@
 			< 1036800000 10 >;
 		clock-names = "xo_ao", "aux_clk";
 		clocks = <&rpmcc RPM_SMD_XO_A_CLK_SRC>,
-			 <&clock_gcc GPLL0>;
+			 <&clock_gcc GPLL0_AO>;
 		#clock-cells = <1>;
 	};
 

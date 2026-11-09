@@ -16,6 +16,7 @@
  * @halt_reg: halt register
  * @halt_bit: ANDed with @halt_reg to test for clock halted
  * @halt_check: type of halt checking to perform
+ * @enable_delay: delay in microseconds before checking the enabled status
  * @aggr_sibling_rates: set if the branch clock's parent needs to be scaled
  *			based on an aggregation of its siblings votes.
  * @clkr: handle between common and hardware-specific interfaces
@@ -28,6 +29,7 @@ struct clk_branch {
 	u8	hwcg_bit;
 	u8	halt_bit;
 	u8	halt_check;
+	u16	enable_delay;
 	bool	aggr_sibling_rates;
 	unsigned long rate;
 #define BRANCH_VOTED			BIT(7) /* Delay on disable */
