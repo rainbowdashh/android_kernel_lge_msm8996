@@ -983,7 +983,8 @@ unsigned long pll_vco_recalc_rate_8996(struct clk_hw *hw,
 	int rc;
 	struct mdss_pll_resources *pll = vco->priv;
 
-	if (is_gdsc_disabled(pll))
+	/* Read the bootloader rate once; set_rate owns the rate thereafter. */
+	if (pll->vco_current_rate || is_gdsc_disabled(pll))
 		return pll->vco_current_rate;
 
 	rc = mdss_pll_resource_enable(pll, true);
