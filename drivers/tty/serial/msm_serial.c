@@ -17,6 +17,7 @@
 #include <linux/dmaengine.h>
 #include <linux/module.h>
 #include <linux/io.h>
+#include <linux/iopoll.h>
 #include <linux/ioport.h>
 #include <linux/interrupt.h>
 #include <linux/init.h>
@@ -1621,6 +1622,14 @@ static void __msm_console_write(struct uart_port *port, const char *s,
 	else
 		spin_lock(&port->lock);
 
+	/* Boot firmware may leave the UART disabled without a debug cable. */
+	{
+		u32 status;
+
+		if (readl_poll_timeout_atomic(port->membase + UART_SR, status,
+					      status & UART_SR_TX_READY, 1, 1000))
+			goto out;
+	}
 	if (is_uartdm)
 		msm_reset_dm_count(port, count);
 
@@ -1650,13 +1659,19 @@ static void __msm_console_write(struct uart_port *port, const char *s,
 			}
 		}
 
-		while (!(msm_read(port, UART_SR) & UART_SR_TX_READY))
-			cpu_relax();
+		{
+			u32 status;
+
+			if (readl_poll_timeout_atomic(port->membase + UART_SR, status,
+						status & UART_SR_TX_READY, 1, 1000))
+				goto out;
+		}
 
 		iowrite32_rep(tf, buf, 1);
 		i += num_chars;
 	}
 
+out:
 	if (locked)
 		spin_unlock(&port->lock);
 
