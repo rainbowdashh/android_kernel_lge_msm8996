@@ -4191,6 +4191,7 @@
 		/* ADSP uses the legacy non-secure userspace device. */
 		qcom,secure-domains = <0x6>;
 		qcom,fastrpc-legacy-remote-heap;
+		qcom,fastrpc-legacy-static-pd;
 
 		qcom,msm_fastrpc_compute_cb1 {
 			compatible = "qcom,msm-fastrpc-compute-cb";
