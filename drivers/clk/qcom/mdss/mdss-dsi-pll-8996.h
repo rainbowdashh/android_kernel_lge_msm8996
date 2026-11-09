@@ -198,6 +198,7 @@ enum {
 };
 
 struct dsi8996_divider {
+	bool configured;
 	struct clk_hw hw;
 	struct mdss_pll_resources *priv;
 	unsigned int div;

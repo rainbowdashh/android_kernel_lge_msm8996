@@ -43,8 +43,10 @@ static int dsi_div_write(struct dsi8996_divider *div, unsigned int value)
 		ret = msm8996_n2_div_set_div(div, value);
 	else
 		ret = msm8996_post_n1_div_set_div(div, value);
-	if (!ret)
+	if (!ret) {
 		div->div = value;
+		div->configured = true;
+	}
 	return ret;
 }
 
@@ -62,11 +64,14 @@ static unsigned long dsi_div_recalc(struct clk_hw *hw,
 	struct dsi8996_divider *div = to_dsi_div(hw);
 	int value;
 
-	if (!div->shadow) {
+	/* Read the bootloader divider once; PHY resets must not replace it. */
+	if (!div->shadow && !div->configured) {
 		value = div->pixel ? msm8996_n2_div_get_div(div) :
 				     msm8996_post_n1_div_get_div(div);
-		if (value > 0 && value <= 15)
+		if (value > 0 && value <= 15) {
 			div->div = value;
+			div->configured = true;
+		}
 	}
 	return parent_rate / div->div;
 }
