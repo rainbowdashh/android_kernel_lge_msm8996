@@ -382,6 +382,16 @@ config INPUT_ATI_REMOTE2
 	  To compile this driver as a module, choose M here: the module will be
 	  called ati_remote2.
 
+config INPUT_KEYCHORD
+	tristate "Key chord input driver support"
+	help
+	  Receive notifications through /dev/keychord when user-defined key
+	  combinations are pressed. Android init uses this interface to start
+	  services associated with key combinations.
+
+	  To compile this driver as a module, choose M here. The module will
+	  be called keychord.
+
 config INPUT_KEYSPAN_REMOTE
 	tristate "Keyspan DMR USB remote control"
 	depends on USB_ARCH_HAS_HCD
