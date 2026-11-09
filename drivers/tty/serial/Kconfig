@@ -1571,3 +1571,11 @@ config SERIAL_MCTRL_GPIO
 	tristate
 
 endif # TTY
+
+config SERIAL_MSM_HS_BRCMBT
+	bool "MSM high speed UART for LG Broadcom Bluetooth"
+	depends on ARCH_QCOM && SPS
+	select SERIAL_CORE
+	help
+	  Support the Broadcom-specific UART binding and sleep interface used
+	  by LG MSM8996 devices.
