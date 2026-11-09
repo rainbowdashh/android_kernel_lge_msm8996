@@ -1350,6 +1350,8 @@ static void wsa881x_remove(struct snd_soc_component *component)
 {
 	struct wsa881x_priv *wsa881x = snd_soc_component_get_drvdata(component);
 
+	cancel_delayed_work_sync(&wsa881x->ocp_ctl_work);
+
 	if (wsa881x->tz_pdata.tz_dev)
 		wsa881x_deinit_thermal(wsa881x->tz_pdata.tz_dev);
 	mutex_destroy(&wsa881x->bg_lock);
@@ -1621,9 +1623,9 @@ static int wsa881x_swr_remove(struct swr_device *pdev)
 					   &wsa881x->bolero_nblock, false);
 	debugfs_remove_recursive(wsa881x->debugfs_dent);
 	wsa881x->debugfs_dent = NULL;
+	snd_soc_unregister_component(&pdev->dev);
 	mutex_destroy(&wsa881x->res_lock);
 	mutex_destroy(&wsa881x->temp_lock);
-	snd_soc_unregister_component(&pdev->dev);
 	if (wsa881x->pd_gpio)
 		gpio_free(wsa881x->pd_gpio);
 	swr_set_dev_data(pdev, NULL);
