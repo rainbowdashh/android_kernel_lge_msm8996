@@ -121,8 +121,10 @@ int post_n1_div_get_div(void *context, unsigned int reg, unsigned int *div)
 	pdb = (struct dsi_pll_db *)pll->priv;
 	pout = &pdb->out;
 
-	if (is_gdsc_disabled(pll))
+	if (is_gdsc_disabled(pll)) {
+		*div = pout->pll_n1div ? pout->pll_n1div - 1 : 1;
 		return 0;
+	}
 
 	rc = mdss_pll_resource_enable(pll, true);
 	if (rc) {
@@ -238,11 +240,13 @@ int n2_div_get_div(void *context, unsigned int reg, unsigned int *div)
 	struct dsi_pll_db *pdb;
 	struct dsi_pll_output *pout;
 
-	if (is_gdsc_disabled(pll))
-		return 0;
-
 	pdb = (struct dsi_pll_db *)pll->priv;
 	pout = &pdb->out;
+
+	if (is_gdsc_disabled(pll)) {
+		*div = pout->pll_n2div ? pout->pll_n2div - 1 : 1;
+		return 0;
+	}
 
 	rc = mdss_pll_resource_enable(pll, true);
 	if (rc) {
