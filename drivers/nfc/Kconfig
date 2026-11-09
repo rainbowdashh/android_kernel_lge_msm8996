@@ -59,6 +59,7 @@ config NFC_PORT100
 #source "drivers/nfc/nxp-nci/Kconfig"
 #source "drivers/nfc/s3fwrn5/Kconfig"
 #source "drivers/nfc/st95hf/Kconfig"
+source "drivers/nfc/pn548/Kconfig"
 source "drivers/nfc/pn553/Kconfig"
 source "drivers/nfc/sn100x/Kconfig"
 source "drivers/nfc/p73-spi/Kconfig"

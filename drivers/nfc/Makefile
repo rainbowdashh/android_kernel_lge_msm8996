@@ -24,3 +24,4 @@ obj-$(CONFIG_LGE_NFC_SN100X)	+= p73-spi/
 obj-$(CONFIG_NFC_SELECTIVE_DRIVER)	+= lge/
 
 ccflags-$(CONFIG_NFC_DEBUG) := -DDEBUG
+obj-$(CONFIG_NFC_PN548) += pn548/
