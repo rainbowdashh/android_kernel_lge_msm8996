@@ -2283,12 +2283,43 @@ static void i2c_msm_xfer_scan(struct i2c_msm_ctrl *ctrl)
 	xfer->cur_buf = (struct i2c_msm_xfer_buf){0};
 }
 
+static void i2c_msm_put_dma_msgs(struct i2c_msg *dma_msgs,
+				 struct i2c_msg *msgs, int num, bool xferred)
+{
+	int i;
+
+	for (i = 0; i < num; i++)
+		i2c_put_dma_safe_msg_buf(dma_msgs[i].buf, &msgs[i], xferred);
+	kfree(dma_msgs);
+}
+
+static struct i2c_msg *i2c_msm_get_dma_msgs(struct i2c_msg *msgs, int num)
+{
+	struct i2c_msg *dma_msgs;
+	int i;
+
+	dma_msgs = kcalloc(num, sizeof(*dma_msgs), GFP_KERNEL);
+	if (!dma_msgs)
+		return ERR_PTR(-ENOMEM);
+
+	for (i = 0; i < num; i++) {
+		dma_msgs[i] = msgs[i];
+		dma_msgs[i].buf = i2c_get_dma_safe_msg_buf(&msgs[i], 1);
+		if (!dma_msgs[i].buf && msgs[i].len) {
+			i2c_msm_put_dma_msgs(dma_msgs, msgs, i, false);
+			return ERR_PTR(-ENOMEM);
+		}
+	}
+	return dma_msgs;
+}
+
 static int
 i2c_msm_frmwrk_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
 {
 	int ret = 0;
 	struct i2c_msm_ctrl      *ctrl = i2c_get_adapdata(adap);
 	struct i2c_msm_xfer      *xfer = &ctrl->xfer;
+	struct i2c_msg *dma_msgs = NULL;
 
 	if (IS_ERR_OR_NULL(msgs)) {
 		dev_err(ctrl->dev, " error on msgs Accessing invalid  pointer location\n");
@@ -2341,6 +2372,14 @@ i2c_msm_frmwrk_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
 		ret = i2c_msm_blk_xfer(ctrl);
 		break;
 	case I2C_MSM_XFER_MODE_DMA:
+		/* Client buffers may live on a virtually mapped kernel stack. */
+		dma_msgs = i2c_msm_get_dma_msgs(msgs, num);
+		if (IS_ERR(dma_msgs)) {
+			ret = PTR_ERR(dma_msgs);
+			dma_msgs = NULL;
+			break;
+		}
+		xfer->msgs = dma_msgs;
 		ret = i2c_msm_dma_xfer(ctrl);
 		break;
 	default:
@@ -2363,6 +2402,10 @@ i2c_msm_frmwrk_xfer(struct i2c_adapter *adap, struct i2c_msg msgs[], int num)
 	if (xfer->err || (ctrl->dbgfs.dbg_lvl >= MSM_PROF))
 		i2c_msm_prof_evnt_dump(ctrl);
 
+	if (dma_msgs) {
+		xfer->msgs = msgs;
+		i2c_msm_put_dma_msgs(dma_msgs, msgs, num, ret == num);
+	}
 	i2c_msm_pm_xfer_end(ctrl);
 	return ret;
 }
