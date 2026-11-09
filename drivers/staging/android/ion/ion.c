@@ -579,10 +579,12 @@ static int ion_sgl_sync_range(struct device *dev, struct scatterlist *sgl,
 			break;
 
 		if (i > 0) {
-			pr_warn_ratelimited("Partial cmo only supported with 1 segment\n"
-				"is dma_set_max_seg_size being set on dev:%s\n",
-				dev_name(dev));
-			return -EINVAL;
+			/* A segmented mapping cannot use the contiguous range path. */
+			if (for_cpu)
+				dma_sync_sg_for_cpu(dev, sgl, nents, dir);
+			else
+				dma_sync_sg_for_device(dev, sgl, nents, dir);
+			return 0;
 		}
 	}
 
