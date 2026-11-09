@@ -9,7 +9,7 @@ endif
 ifeq ($(KERNEL_BUILD), 1)
 	# These are configurable via Kconfig for kernel-based builds
 	# Need to explicitly configure for Android-based builds
-	AUDIO_BLD_DIR := $(shell pwd)/kernel/msm-4.19
+	AUDIO_BLD_DIR := $(srctree)
 	AUDIO_ROOT := $(AUDIO_BLD_DIR)/techpack/audio
 endif
 
@@ -149,7 +149,7 @@ ifdef CONFIG_SOUNDWIRE_MSTR_CTRL
 	SWR_CTRL_OBJS += swr-mstr-ctrl.o
 endif
 
-ifdef CONFIG_SOUNDWIRE
+ifneq ($(filter y m,$(CONFIG_SOUNDWIRE) $(CONFIG_SOUNDWIRE_QCOM)),)
 	SWR_OBJS += regmap-swr.o
 	SWR_OBJS += soundwire.o
 endif
@@ -215,6 +215,7 @@ obj-$(CONFIG_PINCTRL_LPI_LEGACY) += pinctrl_lpi_dlkm.o
 pinctrl_lpi_dlkm-y := $(PINCTRL_LPI_OBJS)
 
 obj-$(CONFIG_SOUNDWIRE) += swr_dlkm.o
+obj-$(CONFIG_SOUNDWIRE_QCOM) += swr_dlkm.o
 swr_dlkm-y := $(SWR_OBJS)
 
 obj-$(CONFIG_SND_EVENT) += snd_event_dlkm.o

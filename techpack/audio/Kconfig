@@ -1,0 +1,104 @@
+# SPDX-License-Identifier: GPL-2.0-only
+config SND_SOC_MSM8996
+	bool "MSM8996 downstream audio"
+	depends on ARCH_MSM8996 && SND_SOC && RPMSG_QCOM_SMD
+	select SLIMBUS
+	select SLIMBUS_MSM_NGD
+	select SND_SOC_COMPRESS
+	select SND_HWDEP
+	select SND_DYNAMIC_MINORS
+	select REGMAP
+	select REGMAP_I2C
+	help
+	  Audio support for MSM8996 devices using the downstream APR firmware
+	  interface and WCD9335 codec.
+
+if SND_SOC_MSM8996
+
+config SOUNDWIRE_QCOM
+	def_bool y
+
+config SND_SOC_WSA881X
+	def_bool y
+
+config SND_SOC_WCD9XXX_V2
+	def_bool y
+
+config SND_SOC_WCD_MBHC
+	def_bool y
+
+config SND_SOC_WCD_CPE
+	def_bool y
+
+config SND_SOC_CPE
+	def_bool y
+
+config SND_SOC_WCD9335
+	def_bool y
+
+config MSM_ADSP_LOADER
+	def_bool y
+
+config MSM_QDSP6_SSR
+	def_bool y
+
+config MSM_QDSP6_NOTIFIER
+	def_bool y
+
+config SND_SOC_MSM_HOSTLESS_PCM
+	def_bool y
+
+config SND_SOC_MSM_QDSP6V2_INTF
+	def_bool y
+
+config SOUNDWIRE_WCD_CTRL
+	def_bool y
+
+config SND_SOC_QDSP6V2
+	def_bool y
+
+config WCD9XXX_CODEC_CORE
+	def_bool y
+
+config MSM_CDC_PINCTRL
+	def_bool y
+
+config SND_SOC_WCD_MBHC_LEGACY
+	def_bool y
+
+config QTI_PP
+	def_bool y
+
+config SND_HWDEP_ROUTING
+	def_bool y
+
+config DOLBY_DS2
+	def_bool y
+
+config DTS_SRS_TM
+	def_bool y
+
+config SND_SOC_MSM_STUB
+	def_bool y
+
+config SND_SOC_MSM_HDMI_CODEC_RX
+	def_bool y
+
+config SND_EVENT
+	def_bool y
+
+config SND_SOC_ES9218P
+	bool "ESS ES9218P headphone DAC"
+	select SND_USE_SEC_MI2S
+	depends on I2C
+
+config SND_USE_SEC_MI2S
+	bool
+
+config SND_USE_TERT_MI2S
+	bool "Use tertiary MI2S for Bluetooth audio"
+
+config MSM_QDSP6_APRV2_RPMSG
+	def_bool y
+
+endif
