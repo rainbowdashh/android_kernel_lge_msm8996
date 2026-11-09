@@ -14701,6 +14701,7 @@ static int tasha_probe(struct platform_device *pdev)
 	/* Register for Clock */
 	wcd_ext_clk = clk_get(tasha->wcd9xxx->dev, "wcd_clk");
 	if (IS_ERR(wcd_ext_clk)) {
+		ret = PTR_ERR(wcd_ext_clk);
 		dev_err(tasha->wcd9xxx->dev, "%s: clk get %s failed\n",
 			__func__, "wcd_ext_clk");
 		goto err_clk;
@@ -14757,9 +14758,12 @@ err_cdc_reg:
 err_clk:
 	wcd_resmgr_remove(tasha->resmgr);
 err_resmgr:
+	mutex_destroy(&tasha->codec_mutex);
+	tasha->wcd9xxx->wcd9xxx_pwr[WCD9XXX_DIG_CORE_REGION_1] = NULL;
 	devm_kfree(&pdev->dev, cdc_pwr);
 err_cdc_pwr:
 	mutex_destroy(&tasha->mclk_lock);
+	platform_set_drvdata(pdev, NULL);
 	devm_kfree(&pdev->dev, tasha);
 	return ret;
 }
