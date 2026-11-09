@@ -389,6 +389,7 @@ struct fastrpc_apps {
 	unsigned int latency;
 	int rpmsg_register;
 	bool legacy_remote_heap;
+	bool legacy_static_pd;
 	/* Unique job id for each message */
 	uint64_t jobid[NUM_CHANNELS];
 	struct device *secure_dev;
@@ -2626,7 +2627,9 @@ static int fastrpc_init_process(struct fastrpc_file *fl,
 		remote_arg_t ra[1];
 		int tgid = fl->tgid;
 
-		if (fl->dev_minor == MINOR_NUM_DEV) {
+		if (fl->dev_minor == MINOR_NUM_DEV &&
+		    !(me->legacy_static_pd && cid == ADSP_DOMAIN_ID &&
+		      !chan->secure)) {
 			err = -ECONNREFUSED;
 			pr_err("adsprpc: %s: untrusted app trying to attach to privileged DSP PD\n",
 				__func__);
@@ -2772,7 +2775,9 @@ static int fastrpc_init_process(struct fastrpc_file *fl,
 			unsigned int pageslen;
 		} inbuf;
 
-		if (fl->dev_minor == MINOR_NUM_DEV) {
+		if (fl->dev_minor == MINOR_NUM_DEV &&
+		    !(me->legacy_static_pd && cid == ADSP_DOMAIN_ID &&
+		      !chan->secure)) {
 			err = -ECONNREFUSED;
 			pr_err("adsprpc: %s: untrusted app trying to attach to audio PD\n",
 				__func__);
@@ -3692,7 +3697,8 @@ static inline int get_cid_from_rpdev(struct rpmsg_device *rpdev)
 		cid = CDSP_DOMAIN_ID;
 	else if (!strcmp(rpdev->dev.parent->of_node->name, "adsp"))
 		cid = ADSP_DOMAIN_ID;
-	else if (!strcmp(rpdev->dev.parent->of_node->name, "dsps"))
+	else if (!strcmp(rpdev->dev.parent->of_node->name, "dsps") ||
+		 !strcmp(rpdev->dev.parent->of_node->name, "slpi"))
 		cid = SDSP_DOMAIN_ID;
 	else if (!strcmp(rpdev->dev.parent->of_node->name, "mdsp"))
 		cid = MDSP_DOMAIN_ID;
@@ -5342,6 +5348,9 @@ static int fastrpc_probe(struct platform_device *pdev)
 	}
 	me->legacy_remote_heap = of_property_read_bool(dev->of_node,
 					"qcom,fastrpc-legacy-remote-heap");
+	/* Older ADSP clients attach static PDs through the normal device. */
+	me->legacy_static_pd = of_property_read_bool(dev->of_node,
+					"qcom,fastrpc-legacy-static-pd");
 	if (of_property_read_bool(dev->of_node,
 					"qcom,fastrpc-adsp-audio-pdr")) {
 		err = fastrpc_get_spd_session(
@@ -5481,6 +5490,7 @@ static int __init fastrpc_device_init(void)
 	fastrpc_init(me);
 	me->dev = NULL;
 	me->legacy_remote_heap = 0;
+	me->legacy_static_pd = false;
 	VERIFY(err, 0 == platform_driver_register(&fastrpc_driver));
 	if (err)
 		goto register_bail;
