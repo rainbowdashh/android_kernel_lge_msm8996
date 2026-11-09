@@ -2406,6 +2406,7 @@ static struct snd_soc_dai_driver msm_fe_dais[] = {
 			.rate_min =	8000,
 			.rate_max = 384000,
 		},
+#if !IS_ENABLED(CONFIG_SND_SOC_MSM8996)
 		.capture = {
 			.stream_name = "MultiMedia10 Capture",
 			.aif_name = "MM_UL10",
@@ -2419,7 +2420,11 @@ static struct snd_soc_dai_driver msm_fe_dais[] = {
 			.rate_min = 8000,
 			.rate_max = 48000,
 		},
+#endif
 		.ops = &msm_fe_Multimedia_dai_ops,
+#if IS_ENABLED(CONFIG_SND_SOC_MSM8996)
+		.compress_new = snd_soc_new_compress,
+#endif
 		.name = "MultiMedia10",
 		.probe = fe_dai_probe,
 	},
@@ -2957,6 +2962,110 @@ static struct snd_soc_dai_driver msm_fe_dais[] = {
 		.name = "MultiMedia30",
 		.probe = fe_dai_probe,
 	},
+	{
+		.playback = {
+			.stream_name = "CS-VOICE Playback",
+			.aif_name = "CS-VOICE_DL1",
+			.rates = SNDRV_PCM_RATE_8000_48000,
+			.formats = SNDRV_PCM_FMTBIT_S16_LE,
+			.channels_min = 1,
+			.channels_max = 2,
+			.rate_min =     8000,
+			.rate_max =     48000,
+		},
+		.capture = {
+			.stream_name = "CS-VOICE Capture",
+			.aif_name = "CS-VOICE_UL1",
+			.rates = SNDRV_PCM_RATE_8000_48000,
+			.formats = SNDRV_PCM_FMTBIT_S16_LE,
+			.channels_min = 1,
+			.channels_max = 2,
+			.rate_min =     8000,
+			.rate_max =     48000,
+		},
+		.ops = &msm_fe_dai_ops,
+		.name = "CS-VOICE",
+		.probe = fe_dai_probe,
+	},
+
+	{
+		.playback = {
+			.stream_name = "VoLTE Playback",
+			.aif_name = "VoLTE_DL",
+			.rates = SNDRV_PCM_RATE_8000_48000,
+			.formats = SNDRV_PCM_FMTBIT_S16_LE,
+			.channels_min = 1,
+			.channels_max = 2,
+			.rate_min =     8000,
+			.rate_max =     48000,
+		},
+		.capture = {
+			.stream_name = "VoLTE Capture",
+			.aif_name = "VoLTE_UL",
+			.rates = SNDRV_PCM_RATE_8000_48000,
+			.formats = SNDRV_PCM_FMTBIT_S16_LE,
+			.channels_min = 1,
+			.channels_max = 2,
+			.rate_min =     8000,
+			.rate_max =     48000,
+		},
+		.ops = &msm_fe_dai_ops,
+		.name = "VoLTE",
+		.probe = fe_dai_probe,
+	},
+
+	{
+		.playback = {
+			.stream_name = "Voice2 Playback",
+			.aif_name = "VOICE2_DL",
+			.rates = SNDRV_PCM_RATE_8000_48000,
+			.formats = SNDRV_PCM_FMTBIT_S16_LE,
+			.channels_min = 1,
+			.channels_max = 2,
+			.rate_min =     8000,
+			.rate_max =     48000,
+		},
+		.capture = {
+			.stream_name = "Voice2 Capture",
+			.aif_name = "VOICE2_UL",
+			.rates = SNDRV_PCM_RATE_8000_48000,
+			.formats = SNDRV_PCM_FMTBIT_S16_LE,
+			.channels_min = 1,
+			.channels_max = 2,
+			.rate_min =     8000,
+			.rate_max =     48000,
+		},
+		.ops = &msm_fe_dai_ops,
+		.name = "Voice2",
+		.probe = fe_dai_probe,
+	},
+
+	{
+		.playback = {
+			.stream_name = "VoWLAN Playback",
+			.aif_name = "VoWLAN_DL",
+			.rates = SNDRV_PCM_RATE_8000_48000,
+			.formats = SNDRV_PCM_FMTBIT_S16_LE,
+			.channels_min = 1,
+			.channels_max = 2,
+			.rate_min = 8000,
+			.rate_max = 48000,
+		},
+		.capture = {
+			.stream_name = "VoWLAN Capture",
+			.aif_name = "VoWLAN_UL",
+			.rates = SNDRV_PCM_RATE_8000_48000,
+			.formats = SNDRV_PCM_FMTBIT_S16_LE,
+			.channels_min = 1,
+			.channels_max = 2,
+			.rate_min = 8000,
+			.rate_max = 48000,
+		},
+		.ops = &msm_fe_dai_ops,
+		.name = "VoWLAN",
+		.probe = fe_dai_probe,
+	},
+
 };
 
 static int msm_fe_dai_dev_probe(struct platform_device *pdev)
