@@ -462,6 +462,7 @@ static struct regmap *cpu_map(struct platform_device *pdev, const char *name,
 			     void __iomem **base)
 {
 	const struct regmap_config config = {
+		.name = name,
 		.reg_bits = 32, .val_bits = 32, .reg_stride = 4,
 		.max_register = 0xffc, .fast_io = true,
 	};
@@ -880,6 +881,25 @@ static int cpu_msm8996_probe(struct platform_device *pdev)
 	if (!efuse)
 		return -ENOMEM;
 	bin = (readl_relaxed(efuse) >> 29) & 7;
+	/* Resolve deferred supplies before registering critical clocks. */
+	for (i = 0; i < 3; i++) {
+		struct msm8996_cpu_domain *d = &cc->domain[i];
+
+		d->index = i;
+		d->v3 = cc->v3;
+		d->pro = cc->pro;
+		d->postdiv = i == 2 && cc->pro ? 4 : 2;
+		d->mux_reg = i == 2 ? CBF_MUX_REG : CPU_MUX_REG;
+		d->has_acd = i < 2 && cc->v3;
+		d->cfa_workaround = !cc->v3 || i == 2;
+		for_each_possible_cpu(cpu)
+			if (MPIDR_AFFINITY_LEVEL(cpu_logical_map(cpu), 1) == i)
+				cpumask_set_cpu(cpu, &d->cpus);
+		ret = cpu_domain_resources(pdev, d,
+				 i == 0 ? "pwrcl" : i == 1 ? "perfcl" : "cbf", bin);
+		if (ret)
+			return ret;
+	}
 	cc->aux.mult = 1;
 	cc->aux.div = 2;
 	parent = __clk_get_name(aux);
@@ -909,24 +929,6 @@ static int cpu_msm8996_probe(struct platform_device *pdev)
 			/* Program settling delays before ACD can be enabled. */
 			wmb();
 		}
-	}
-	for (i = 0; i < 3; i++) {
-		struct msm8996_cpu_domain *d = &cc->domain[i];
-
-		d->index = i;
-		d->v3 = cc->v3;
-		d->pro = cc->pro;
-		d->postdiv = i == 2 && cc->pro ? 4 : 2;
-		d->mux_reg = i == 2 ? CBF_MUX_REG : CPU_MUX_REG;
-		d->has_acd = i < 2 && cc->v3;
-		d->cfa_workaround = !cc->v3 || i == 2;
-		for_each_possible_cpu(cpu)
-			if (MPIDR_AFFINITY_LEVEL(cpu_logical_map(cpu), 1) == i)
-				cpumask_set_cpu(cpu, &d->cpus);
-		ret = cpu_domain_resources(pdev, d,
-				 i == 0 ? "pwrcl" : i == 1 ? "perfcl" : "cbf", bin);
-		if (ret)
-			return ret;
 	}
 	for (i = 0; i < 3; i++) {
 		ret = cpu_register_domain(pdev, &cc->domain[i],
