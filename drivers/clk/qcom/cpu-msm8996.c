@@ -87,6 +87,19 @@ static const u8 cpu_pll_regs[PLL_OFF_MAX_REGS] = {
 	[PLL_OFF_STATUS] = 0x28,
 };
 
+/* The alternate PLL has 40-bit alpha and no upper configuration register. */
+static const u8 cpu_alt_pll_regs[PLL_OFF_MAX_REGS] = {
+	[PLL_OFF_L_VAL] = 0x04,
+	[PLL_OFF_ALPHA_VAL] = 0x08,
+	[PLL_OFF_ALPHA_VAL_U] = 0x0c,
+	[PLL_OFF_USER_CTL] = 0x10,
+	[PLL_OFF_USER_CTL_U] = 0x14,
+	[PLL_OFF_CONFIG_CTL] = 0x18,
+	[PLL_OFF_TEST_CTL] = 0x20,
+	[PLL_OFF_TEST_CTL_U] = 0x24,
+	[PLL_OFF_STATUS] = 0x28,
+};
+
 static const u8 cbf_pll_regs[PLL_OFF_MAX_REGS] = {
 	[PLL_OFF_L_VAL] = 0x08,
 	[PLL_OFF_ALPHA_VAL] = 0x10,
@@ -586,7 +599,7 @@ static int cpu_domain_init(struct platform_device *pdev,
 		};
 
 		d->alt.offset = 0x100;
-		d->alt.regs = cpu_pll_regs;
+		d->alt.regs = cpu_alt_pll_regs;
 		clk_alpha_pll_configure(&d->alt, map, &alt_config);
 		ret = regmap_write(map, 0x100, 0x00118000);
 		if (ret)
@@ -691,7 +704,7 @@ static int cpu_register_domain(struct platform_device *pdev, struct msm8996_cpu_
 		return ret;
 	if (d->index < 2) {
 		d->alt.offset = 0x100;
-		d->alt.regs = cpu_pll_regs;
+		d->alt.regs = cpu_alt_pll_regs;
 		d->alt.vco_table = alt_vcos;
 		d->alt.num_vco = ARRAY_SIZE(alt_vcos);
 		d->alt.flags = SUPPORTS_FSM_MODE | (d->v3 ? SUPPORTS_OFFLINE_REQ : 0);
