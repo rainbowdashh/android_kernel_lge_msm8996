@@ -90,3 +90,4 @@ obj-$(CONFIG_SM_VIDEOCC_LITO) += videocc-lito.o
 obj-$(CONFIG_SPMI_PMIC_CLKDIV) += clk-spmi-pmic-div.o
 obj-y += mdss/
 obj-$(CONFIG_MSM_CPU_8996) += cpu-msm8996.o
+obj-$(CONFIG_MSM_DEBUGCC_8996) += debugcc-msm8996.o

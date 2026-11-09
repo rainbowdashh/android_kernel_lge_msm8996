@@ -3652,10 +3652,32 @@ static const struct regmap_config gcc_msm8996_regmap_config = {
 	.fast_io	= true,
 };
 
+/* These branches are controlled by RPM; APSS consumers only vote on CE1. */
+static struct clk_dummy gcc_ce1_axi_m_clk = {
+	.hw.init = &(struct clk_init_data){
+		.name = "gcc_ce1_axi_m_clk",
+		.ops = &clk_dummy_ops,
+	},
+};
+
+static struct clk_dummy gcc_ce1_ahb_m_clk = {
+	.hw.init = &(struct clk_init_data){
+		.name = "gcc_ce1_ahb_m_clk",
+		.ops = &clk_dummy_ops,
+	},
+};
+
+static struct clk_hw *gcc_msm8996_hw_clocks[] = {
+	[GCC_CE1_AXI_CLK] = &gcc_ce1_axi_m_clk.hw,
+	[GCC_CE1_AHB_CLK] = &gcc_ce1_ahb_m_clk.hw,
+};
+
 static const struct qcom_cc_desc gcc_msm8996_desc = {
 	.config = &gcc_msm8996_regmap_config,
 	.clks = gcc_msm8996_clocks,
 	.num_clks = ARRAY_SIZE(gcc_msm8996_clocks),
+	.hwclks = gcc_msm8996_hw_clocks,
+	.num_hwclks = ARRAY_SIZE(gcc_msm8996_hw_clocks),
 	.resets = gcc_msm8996_resets,
 	.num_resets = ARRAY_SIZE(gcc_msm8996_resets),
 };

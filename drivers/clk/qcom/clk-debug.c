@@ -133,7 +133,7 @@ static int clk_find_and_set_parent(struct clk_hw *mux, struct clk_hw *clk)
 {
 	int i;
 
-	if (!clk || !mux || !(mux->init->flags & CLK_IS_MEASURE))
+	if (!clk || !mux || !(clk_hw_get_flags(mux) & CLK_IS_MEASURE))
 		return -EINVAL;
 
 	if (!clk_set_parent(mux->clk, clk->clk))
@@ -199,11 +199,13 @@ static void enable_debug_clks(struct clk_hw *mux)
 	struct clk_debug_mux *meas = to_clk_measure(mux);
 	struct clk_hw *parent;
 
-	if (!mux || !(mux->init->flags & CLK_IS_MEASURE))
+	if (!mux || !(clk_hw_get_flags(mux) & CLK_IS_MEASURE))
 		return;
 
 	parent = clk_hw_get_parent(mux);
 	enable_debug_clks(parent);
+	if (meas->enable_debug)
+		meas->enable_debug(meas);
 
 	meas->en_mask = meas->en_mask ? meas->en_mask : CBCR_ENA;
 
@@ -218,7 +220,7 @@ static void disable_debug_clks(struct clk_hw *mux)
 	struct clk_debug_mux *meas = to_clk_measure(mux);
 	struct clk_hw *parent;
 
-	if (!mux || !(mux->init->flags & CLK_IS_MEASURE))
+	if (!mux || !(clk_hw_get_flags(mux) & CLK_IS_MEASURE))
 		return;
 
 	meas->en_mask = meas->en_mask ? meas->en_mask : CBCR_ENA;
@@ -227,6 +229,8 @@ static void disable_debug_clks(struct clk_hw *mux)
 		regmap_update_bits(meas->regmap, meas->cbcr_offset,
 					meas->en_mask, 0);
 
+	if (meas->disable_debug)
+		meas->disable_debug(meas);
 	parent = clk_hw_get_parent(mux);
 	disable_debug_clks(parent);
 }
@@ -237,7 +241,7 @@ static u32 get_mux_divs(struct clk_hw *mux)
 	struct clk_hw *parent;
 	u32 div_val;
 
-	if (!mux || !(mux->init->flags & CLK_IS_MEASURE))
+	if (!mux || !(clk_hw_get_flags(mux) & CLK_IS_MEASURE))
 		return 1;
 
 	WARN_ON(!meas->post_div_val);
@@ -356,7 +360,7 @@ void clk_debug_measure_add(struct clk_hw *hw, struct dentry *dentry)
 		return;
 	meas_parent = to_clk_measure(parent);
 
-	if (parent->init->flags & CLK_IS_MEASURE && !meas_parent->mux_sels) {
+	if (clk_hw_get_flags(parent) & CLK_IS_MEASURE && !meas_parent->mux_sels) {
 		debugfs_create_file("clk_measure", 0444, dentry, hw,
 				&clk_read_period_fops);
 	}
@@ -372,7 +376,7 @@ EXPORT_SYMBOL(clk_debug_measure_add);
 int clk_debug_measure_register(struct clk_hw *hw)
 {
 	if (IS_ERR_OR_NULL(measure)) {
-		if (hw->init->flags & CLK_IS_MEASURE) {
+		if (clk_hw_get_flags(hw) & CLK_IS_MEASURE) {
 			measure = hw;
 			return 0;
 		}
@@ -385,7 +389,7 @@ EXPORT_SYMBOL(clk_debug_measure_register);
 
 void clk_debug_bus_vote(struct clk_hw *hw, bool enable)
 {
-	if (hw->init->bus_cl_id)
+	if (hw->init && hw->init->bus_cl_id)
 		msm_bus_scale_client_update_request(hw->init->bus_cl_id,
 								enable);
 }

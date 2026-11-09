@@ -39,6 +39,8 @@ struct measure_clk_data {
 /**
  * struct clk_debug_mux - Structure of clock debug mux
  *
+ * @enable_debug: optional setup for debug gates outside the mux register
+ * @disable_debug: optional teardown for those gates
  * @mux_sels:		indicates the debug mux index at recursive debug mux.
  * @pre_div_val:	optional divider values for clocks that were pre-divided
 			before feeding into the debug muxes
@@ -63,6 +65,8 @@ struct measure_clk_data {
  * @hw:			handle between common and hardware-specific interfaces.
  */
 struct clk_debug_mux {
+	void (*enable_debug)(struct clk_debug_mux *mux);
+	void (*disable_debug)(struct clk_debug_mux *mux);
 	int *mux_sels;
 	int *pre_div_vals;
 	int num_parents;

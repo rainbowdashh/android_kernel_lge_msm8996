@@ -226,6 +226,12 @@ config MSM_CPU_8996
 	  CPU cluster and cache clock providers for MSM8996 and MSM8996 Pro,
 	  including speed-bin voltage plans and adaptive clock distribution.
 
+config MSM_DEBUGCC_8996
+	bool "MSM8996 clock measurement controller"
+	depends on MSM_CPU_8996 && MSM_MMCC_8996=y
+	help
+	  Hardware frequency measurement for GCC, MMSS, GPU and CPU clocks.
+
 config MSM_MMCC_8996
 	tristate "MSM8996 Multimedia Clock Controller"
 	select MSM_GCC_8996

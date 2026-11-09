@@ -23,6 +23,7 @@
 #include <dt-bindings/clock/msm-clocks-8996.h>
 
 #include "clk-alpha-pll.h"
+#include "clk-debug.h"
 #include "clk-regmap-mux.h"
 #include "vdd-level-8996.h"
 
@@ -65,6 +66,7 @@ struct msm8996_cpu_domain {
 struct msm8996_cpu_cc {
 	struct msm8996_cpu_domain domain[3];
 	struct clk_fixed_factor aux;
+	struct clk_debug_mux debug;
 	bool v3;
 	bool pro;
 	int hp_state;
@@ -165,6 +167,7 @@ static int cpu_determine_rate(struct clk_hw *hw, struct clk_rate_request *req)
 }
 
 static const struct clk_ops cpu_ops = {
+	.debug_init = clk_debug_measure_add,
 	.get_parent = cpu_get_parent,
 	.set_parent = cpu_set_parent,
 	.determine_rate = cpu_determine_rate,
@@ -783,6 +786,46 @@ static int cpu_add_opps(struct msm8996_cpu_domain *d, struct device *dev)
 	return 0;
 }
 
+static void cpu_debug_enable(struct clk_debug_mux *mux)
+{
+	struct msm8996_cpu_cc *cc = container_of(mux, struct msm8996_cpu_cc, debug);
+	unsigned int i;
+
+	for (i = 0; i < 2; i++)
+		regmap_update_bits(cc->domain[i].mux, 0x48, GENMASK(11, 8), GENMASK(11, 8));
+	/* Both cluster diagnostic gates must be enabled before measurement. */
+	mb();
+	udelay(5);
+}
+
+static void cpu_debug_disable(struct clk_debug_mux *mux)
+{
+	struct msm8996_cpu_cc *cc = container_of(mux, struct msm8996_cpu_cc, debug);
+	unsigned int i;
+
+	for (i = 0; i < 2; i++)
+		regmap_update_bits(cc->domain[i].mux, 0x48, GENMASK(11, 8), 0);
+}
+
+static int cpu_register_debug(struct device *dev, struct msm8996_cpu_cc *cc)
+{
+	static const char *parents[] = { "cbf_clk", "pwrcl_clk", "perfcl_clk" };
+	static int selectors[] = { 0x01, 0x11, 0x21 };
+	static int dividers[] = { 1, 16, 16 };
+
+	cc->debug.enable_debug = cpu_debug_enable;
+	cc->debug.disable_debug = cpu_debug_disable;
+	cc->debug.debug_offset = 0x78;
+	cc->debug.cbcr_offset = U32_MAX;
+	cc->debug.src_sel_mask = 0xff00;
+	cc->debug.src_sel_shift = 8;
+	cc->debug.post_div_val = 1;
+	cc->debug.mux_sels = selectors;
+	cc->debug.pre_div_vals = dividers;
+	return cpu_register_hw(dev, &cc->debug.hw, "cpu_debug_mux", parents,
+		ARRAY_SIZE(parents), &clk_debug_mux_ops, CLK_IS_MEASURE, NULL, NULL, 0);
+}
+
 static int cpu_pm_notify(struct notifier_block *nb, unsigned long event, void *arg)
 {
 	if (event == CPU_PM_EXIT || event == CPU_PM_ENTER_FAILED)
@@ -850,6 +893,7 @@ static int cpu_msm8996_probe(struct platform_device *pdev)
 
 		if (IS_ERR(debug))
 			return PTR_ERR(debug);
+		cc->debug.regmap = debug;
 		ret = regmap_update_bits(debug, 0x50, GENMASK(17, 16), BIT(16));
 		if (ret)
 			return ret;
@@ -891,6 +935,9 @@ static int cpu_msm8996_probe(struct platform_device *pdev)
 		if (ret)
 			return ret;
 	}
+	ret = cpu_register_debug(dev, cc);
+	if (ret)
+		return ret;
 #define CPU_CLK(_id, _hw) do { \
 	data->clocks[data->count++] = (struct cpu_clk_id){ _id, _hw }; \
 } while (0)
@@ -910,6 +957,7 @@ static int cpu_msm8996_probe(struct platform_device *pdev)
 	CPU_CLK(clk_cbf_clk, &cc->domain[2].hw);
 	CPU_CLK(clk_xo_ao, __clk_get_hw(xo));
 	CPU_CLK(clk_sys_apcsaux_clk, &cc->aux.hw);
+	CPU_CLK(clk_cpu_debug_mux, &cc->debug.hw);
 #undef CPU_CLUSTER
 #undef CPU_CLK
 	cpu_cc = cc;
