@@ -1943,13 +1943,15 @@ static int smbchg_set_usb_current_max(struct smbchg_chip *chip,
 	switch (chip->usb_supply_type) {
 	case POWER_SUPPLY_TYPE_USB:
 #ifdef CONFIG_LGE_USB_TYPE_C
-		/*
-		 * Don't change c_ma for USB-PD.
-		 * PM8996 doesn't understand PD protocol,
-		 * so POWER_SUPPLY_TYPE_USB is selected.
-		 */
-		if (is_usb_pd_present(chip)) {
-			pr_smb(PR_MISC, "USB-PD, skipping current change\n");
+		/* BC1.2 reports SDP even when Type-C advertises more current. */
+		if (is_usb_pd_present(chip) ||
+		    (chip->typec_current_ma > CURRENT_500_MA &&
+		     current_ma > CURRENT_500_MA)) {
+			rc = smbchg_masked_write(chip,
+					chip->usb_chgpth_base + CMD_IL,
+					ICL_OVERRIDE_BIT, ICL_OVERRIDE_BIT);
+			if (rc < 0)
+				goto out;
 			rc = smbchg_set_high_usb_chg_current(chip, current_ma);
 			if (rc < 0)
 				pr_err("Couldn't set %dmA rc = %d\n", current_ma, rc);
