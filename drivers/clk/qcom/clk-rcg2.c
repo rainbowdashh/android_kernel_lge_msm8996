@@ -733,10 +733,7 @@ static int clk_rcg2_enable(struct clk_hw *hw)
 	int ret;
 
 	if (rcg->flags & FORCE_ENABLE_RCG) {
-		pr_debug("startup: %s enabling root\n", clk_hw_get_name(hw));
 		ret = clk_rcg2_set_force_enable(hw);
-		pr_debug("startup: %s root enable returned %d\n",
-			clk_hw_get_name(hw), ret);
 		if (ret) {
 			clk_rcg2_clear_force_enable(hw);
 			return ret;
@@ -1412,9 +1409,6 @@ static int clk_gfx3d_set_rate_and_parent(struct clk_hw *hw, unsigned long rate,
 	u32 cfg, old_cfg;
 	int ret;
 
-	pr_debug("startup: %s switching to parent %u at %lu\n",
-		clk_hw_get_name(hw), index, rate);
-
 	/* Read back the old configuration */
 	regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG, &old_cfg);
 
@@ -1424,10 +1418,7 @@ static int clk_gfx3d_set_rate_and_parent(struct clk_hw *hw, unsigned long rate,
 	if (ret)
 		return ret;
 
-	ret = update_config(rcg, old_cfg);
-	pr_debug("startup: %s mux update returned %d\n",
-		clk_hw_get_name(hw), ret);
-	return ret;
+	return update_config(rcg, old_cfg);
 }
 
 static int clk_gfx3d_set_rate(struct clk_hw *hw, unsigned long rate,

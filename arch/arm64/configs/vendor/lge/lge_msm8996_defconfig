@@ -575,7 +575,7 @@ CONFIG_PANIC_TIMEOUT=5
 CONFIG_IPC_LOGGING=y
 
 # UART bring-up
-CONFIG_CMDLINE="earlycon keep_bootcon console=ttyMSM0,115200n8 loglevel=8 ignore_loglevel androidboot.selinux=permissive dyndbg=\"file drivers/gpu/msm/* format startup: +p\" "
+CONFIG_CMDLINE="earlycon keep_bootcon console=ttyMSM0,115200n8 loglevel=8 androidboot.selinux=permissive "
 CONFIG_CMDLINE_EXTEND=y
 CONFIG_SERIAL_MSM=y
 CONFIG_SERIAL_MSM_CONSOLE=y

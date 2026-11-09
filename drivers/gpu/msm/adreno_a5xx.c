@@ -493,7 +493,6 @@ static int a5xx_regulator_enable(struct adreno_device *adreno_dev)
 	 * Turn on smaller power domain first to reduce voltage droop.
 	 * Set the default register values; set SW_COLLAPSE to 0.
 	 */
-	dev_dbg(device->dev, "startup: enabling RBCCU domain\n");
 	kgsl_regwrite(device, A5XX_GPMU_RBCCU_POWER_CNTL, 0x778000);
 	/* Insert a delay between RAC and SPTP GDSC to reduce voltage droop */
 	udelay(3);
@@ -503,7 +502,6 @@ static int a5xx_regulator_enable(struct adreno_device *adreno_dev)
 		return ret;
 	}
 
-	dev_dbg(device->dev, "startup: RBCCU ready, enabling SPTP domain\n");
 	kgsl_regwrite(device, A5XX_GPMU_SP_POWER_CNTL, 0x778000);
 	ret = _poll_gdsc_status(adreno_dev, A5XX_GPMU_SP_PWR_CLK_STATUS, 1);
 	if (ret) {
@@ -511,7 +509,6 @@ static int a5xx_regulator_enable(struct adreno_device *adreno_dev)
 		return ret;
 	}
 
-	dev_dbg(device->dev, "startup: SPTP ready, configuring clock gating\n");
 	/* Disable SP clock */
 	kgsl_regrmw(device, A5XX_GPMU_GPMU_SP_CLOCK_CONTROL,
 		CNTL_IP_CLK_ENABLE, 0);
@@ -522,7 +519,6 @@ static int a5xx_regulator_enable(struct adreno_device *adreno_dev)
 		CNTL_IP_CLK_ENABLE, 1);
 
 	a5xx_restore_isense_regs(adreno_dev);
-	dev_dbg(device->dev, "startup: A5xx internal power ready\n");
 	return 0;
 }
 

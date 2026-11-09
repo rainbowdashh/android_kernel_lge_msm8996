@@ -1662,19 +1662,13 @@ static int kgsl_iommu_start(struct kgsl_mmu *mmu)
 
 	kgsl_iommu_enable_clk(mmu);
 
-	dev_dbg(device->dev, "startup: attaching GPU user context\n");
 	status = _setup_user_context(mmu);
-	dev_dbg(device->dev, "startup: GPU user context returned %d\n",
-		status);
 	if (status) {
 		kgsl_iommu_disable_clk(mmu);
 		return status;
 	}
 
-	dev_dbg(device->dev, "startup: attaching GPU secure context\n");
 	status = _setup_secure_context(mmu);
-	dev_dbg(device->dev, "startup: GPU secure context returned %d\n",
-		status);
 	if (status) {
 		_detach_context(&iommu->ctx[KGSL_IOMMU_CONTEXT_USER]);
 		kgsl_iommu_disable_clk(mmu);
@@ -1694,7 +1688,6 @@ static int kgsl_iommu_start(struct kgsl_mmu *mmu)
 		wmb();
 	}
 
-	dev_dbg(device->dev, "startup: GPU SMMU configuration ready\n");
 	if (mmu->defaultpagetable != NULL && !mmu->globalpt_mapped) {
 		status = kgsl_iommu_map_globals(mmu->defaultpagetable);
 		if (status)
@@ -1704,9 +1697,7 @@ static int kgsl_iommu_start(struct kgsl_mmu *mmu)
 	}
 
 	/* Make sure the hardware is programmed to the default pagetable */
-	dev_dbg(device->dev, "startup: programming GPU pagetable\n");
 	status = kgsl_iommu_set_pt(mmu, mmu->defaultpagetable);
-	dev_dbg(device->dev, "startup: GPU pagetable returned %d\n", status);
 	if (!status)
 		set_bit(KGSL_MMU_STARTED, &mmu->flags);
 disable_clocks:
