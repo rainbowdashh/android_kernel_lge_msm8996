@@ -388,16 +388,6 @@ static int kryo_regulator_set_bypass(struct regulator_dev *rdev,
 	return rc;
 }
 
-static int kryo_regulator_get_bypass(struct regulator_dev *rdev,
-				  bool *enable)
-{
-	struct kryo_regulator *kvreg = rdev_get_drvdata(rdev);
-
-	*enable = kvreg->mode;
-
-	return 0;
-}
-
 static int kryo_regulator_list_voltage(struct regulator_dev *rdev,
 				       unsigned int selector)
 {
@@ -487,16 +477,6 @@ done:
 	return rc;
 }
 
-static int kryo_regulator_retention_get_bypass(struct regulator_dev *rdev,
-				  bool *enable)
-{
-	struct kryo_regulator *kvreg = rdev_get_drvdata(rdev);
-
-	*enable = kvreg->retention_mode;
-
-	return 0;
-}
-
 static int kryo_regulator_retention_list_voltage(struct regulator_dev *rdev,
 				       unsigned int selector)
 {
@@ -508,6 +488,12 @@ static int kryo_regulator_retention_list_voltage(struct regulator_dev *rdev,
 		return 0;
 }
 
+/*
+ * The legacy CPR interface uses bypass votes as permission to enter LDO mode,
+ * with true meaning LDO rather than electrical bypass. Do not expose these
+ * votes through get_bypass: the regulator core would substitute the upstream
+ * supply voltage for the programmed LDO reference that CPR needs to read.
+ */
 static struct regulator_ops kryo_regulator_ops = {
 	.enable			= kryo_regulator_enable,
 	.disable		= kryo_regulator_disable,
@@ -515,7 +501,6 @@ static struct regulator_ops kryo_regulator_ops = {
 	.set_voltage		= kryo_regulator_set_voltage,
 	.get_voltage		= kryo_regulator_get_voltage,
 	.set_bypass		= kryo_regulator_set_bypass,
-	.get_bypass		= kryo_regulator_get_bypass,
 	.list_voltage		= kryo_regulator_list_voltage,
 };
 
@@ -523,7 +508,6 @@ static struct regulator_ops kryo_regulator_retention_ops = {
 	.set_voltage		= kryo_regulator_retention_set_voltage,
 	.get_voltage		= kryo_regulator_retention_get_voltage,
 	.set_bypass		= kryo_regulator_retention_set_bypass,
-	.get_bypass		= kryo_regulator_retention_get_bypass,
 	.list_voltage		= kryo_regulator_retention_list_voltage,
 };
 
