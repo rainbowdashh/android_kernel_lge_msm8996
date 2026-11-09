@@ -206,47 +206,38 @@ static int apr_tal_rpmsg_callback(struct rpmsg_device *rpdev,
 
 static int apr_tal_rpmsg_probe(struct rpmsg_device *rpdev)
 {
-	struct apr_svc_ch_dev *apr_ch = NULL;
-	int ret = 0;
-	const char* dest;
+	struct apr_svc_ch_dev *apr_ch;
+	struct device_node *node = rpdev->dev.parent->of_node;
+	const char *dest;
+	unsigned int client, domain;
+	int ret;
 
-	ret = of_property_read_string(rpdev->dev.parent->of_node,
-				   "mbox-names", &dest);
+	ret = of_property_read_string(node, "mbox-names", &dest);
+	if (ret)
+		ret = of_property_read_string(node, "label", &dest);
+	if (ret)
+		return ret;
 
-	if(ret < 0){
-		pr_err("%s no parent source pid found\n", __func__);
+	if (!strcmp(rpdev->id.name, "apr_audio_svc"))
+		client = APR_CLIENT_AUDIO;
+	else if (!strcmp(rpdev->id.name, "apr_voice_svc"))
+		client = APR_CLIENT_VOICE;
+	else
 		return -EINVAL;
-	}
 
-	if (!strcmp(rpdev->id.name, "apr_audio_svc")) {
-		dev_info(&rpdev->dev, "%s: Channel[%s] state[Up]\n",
-			 __func__, rpdev->id.name);
-	} else {
-		dev_err(&rpdev->dev, "%s, Invalid Channel [%s]\n",
-			__func__, rpdev->id.name);
+	if (strstr(dest, "adsp"))
+		domain = APR_DEST_QDSP6;
+	else if (strstr(dest, "mpss") || !strcmp(dest, "modem"))
+		domain = APR_DEST_MODEM;
+	else
 		return -EINVAL;
-	}
-	if(strstr(dest, "adsp")) {
-		apr_ch =
-		&apr_svc_ch[APR_DL_SMD][APR_DEST_QDSP6][APR_CLIENT_AUDIO];
-		apr_ch->handle = rpdev;
-		apr_ch->channel_state = APR_CH_CONNECTED;
-		dev_set_drvdata(&rpdev->dev, apr_ch);
-		wake_up(&apr_ch->wait);
-	} else if(strstr(dest, "mpss")) {
-		apr_ch =
-		&apr_svc_ch[APR_DL_SMD][APR_DEST_MODEM][APR_CLIENT_AUDIO];
-		apr_ch->handle = rpdev;
-		apr_ch->channel_state = APR_CH_CONNECTED;
-		dev_set_drvdata(&rpdev->dev, apr_ch);
-		wake_up(&apr_ch->wait);
-	} else {
-		dev_err(&rpdev->dev, "%s, unsupported dest %s\n",
-			__func__, dest);
-		return -EINVAL;
-	}
 
-	return ret;
+	apr_ch = &apr_svc_ch[APR_DL_SMD][domain][client];
+	apr_ch->handle = rpdev;
+	apr_ch->channel_state = APR_CH_CONNECTED;
+	dev_set_drvdata(&rpdev->dev, apr_ch);
+	wake_up(&apr_ch->wait);
+	return 0;
 }
 
 static void apr_tal_rpmsg_remove(struct rpmsg_device *rpdev)
@@ -267,6 +258,7 @@ static void apr_tal_rpmsg_remove(struct rpmsg_device *rpdev)
 
 static const struct rpmsg_device_id apr_tal_rpmsg_match[] = {
 	{ "apr_audio_svc" },
+	{ "apr_voice_svc" },
 	{}
 };
 
