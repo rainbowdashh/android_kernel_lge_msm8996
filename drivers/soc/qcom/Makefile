@@ -112,3 +112,4 @@ hwkm_qti-y += hwkm.o
 obj-$(CONFIG_MSM_BAM_DMUX) += bam_dmux.o
 obj-$(CONFIG_MACH_LGE) += lge/
 obj-$(CONFIG_DIRTYSANTA_FIXUP_G6) += dirtysanta_fixup_g6.o
+obj-$(CONFIG_MSM_APM) += msm-apm.o

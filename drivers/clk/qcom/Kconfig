@@ -220,8 +220,9 @@ config MSM_GCC_8996
 
 config MSM_CPU_8996
 	bool "MSM8996 CPU and CBF clock controller"
-	depends on COMMON_CLK_QCOM && ARM64
+	depends on COMMON_CLK_QCOM && ARCH_QCOM && ARM64
 	select MSM_GCC_8996
+	select REGULATOR_CPR3_HMSS
 	help
 	  CPU cluster and cache clock providers for MSM8996 and MSM8996 Pro,
 	  including speed-bin voltage plans and adaptive clock distribution.
