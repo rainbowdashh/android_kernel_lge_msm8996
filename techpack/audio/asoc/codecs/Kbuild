@@ -149,7 +149,11 @@ endif
 	WCD9XXX_OBJS += wcd9xxx-soc-init.o
 	WCD9XXX_OBJS += wcd-dsp-utils.o
 	WCD9XXX_OBJS += wcd-dsp-mgr.o
+ifeq ($(CONFIG_SND_SOC_MSM8996),y)
+	WCD9XXX_OBJS += audio-ext-clk-msm8996.o
+else
 	WCD9XXX_OBJS += audio-ext-clk-up.o
+endif
 endif
 
 ifdef CONFIG_SND_SOC_WCD9335
