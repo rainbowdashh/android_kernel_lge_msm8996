@@ -352,6 +352,7 @@ static struct clk_alpha_pll mmpll2_early = {
 	.clkr.hw.init = &(struct clk_init_data){
 		VDD_DIG_FMAX_MAP1(LOWER, 410000000),
 		.name = "mmpll2_early",
+		.flags = CLK_SET_RATE_GATE,
 		.parent_names = (const char *[]){ "xo" },
 		.num_parents = 1,
 		.ops = &clk_alpha_pll_ops,
@@ -361,7 +362,7 @@ static struct clk_alpha_pll mmpll2_early = {
 static struct clk_alpha_pll_postdiv mmpll2 = {
 	.offset = 0x4100,
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
-	.width = 4,
+	.width = 2,
 	.clkr.hw.init = &(struct clk_init_data){
 		.name = "mmpll2",
 		.parent_names = (const char *[]){ "mmpll2_early" },
@@ -460,6 +461,7 @@ static struct clk_alpha_pll mmpll8_early = {
 	.clkr.hw.init = &(struct clk_init_data){
 		VDD_DIG_FMAX_MAP1(LOWER, 360000000),
 		.name = "mmpll8_early",
+		.flags = CLK_SET_RATE_GATE,
 		.parent_names = (const char *[]){ "xo" },
 		.num_parents = 1,
 		.ops = &clk_alpha_pll_ops,
@@ -469,7 +471,7 @@ static struct clk_alpha_pll mmpll8_early = {
 static struct clk_alpha_pll_postdiv mmpll8 = {
 	.offset = 0x4130,
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
-	.width = 4,
+	.width = 2,
 	.clkr.hw.init = &(struct clk_init_data){
 		.name = "mmpll8",
 		.parent_names = (const char *[]){ "mmpll8_early" },
@@ -480,6 +482,7 @@ static struct clk_alpha_pll_postdiv mmpll8 = {
 };
 
 static struct clk_alpha_pll mmpll9_early = {
+	.flags = SUPPORTS_DYNAMIC_UPDATE,
 	.offset = 0x4200,
 	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
 	.vco_table = mmpll_t_vco,
@@ -493,17 +496,17 @@ static struct clk_alpha_pll mmpll9_early = {
 	},
 };
 
-static struct clk_alpha_pll_postdiv mmpll9 = {
-	.offset = 0x4200,
-	.regs = clk_alpha_pll_regs[CLK_ALPHA_PLL_TYPE_DEFAULT],
-	.width = 2,
-	.clkr.hw.init = &(struct clk_init_data){
-		.name = "mmpll9",
-		.parent_names = (const char *[]){ "mmpll9_early" },
-		.num_parents = 1,
-		.ops = &clk_alpha_pll_postdiv_ops,
-		.flags = CLK_SET_RATE_PARENT,
-	},
+static struct clk_init_data mmpll9_init = {
+	.name = "mmpll9",
+	.parent_names = (const char *[]){ "mmpll9_early" },
+	.num_parents = 1,
+	.ops = &clk_fixed_factor_ops,
+};
+
+static struct clk_fixed_factor mmpll9 = {
+	.mult = 1,
+	.div = 2,
+	.hw.init = &mmpll9_init,
 };
 
 /* Frequency plans from the LG MSM8996 provider, shared across identical roots. */
@@ -801,6 +804,16 @@ static struct clk_rcg2 maxi_clk_src = {
 		.num_parents = 5,
 		.ops = &clk_rcg2_ops,
 	},
+};
+
+static const struct freq_tbl ftbl_gfx3d_clk_src_v1[] = {
+	F(19200000, P_XO, 1, 0, 0),
+	F(60000000, P_MMPLL8, 6, 0, 0),
+	F(120000000, P_MMPLL8, 3, 0, 0),
+	F(205000000, P_MMPLL2, 2, 0, 0),
+	F(360000000, P_MMPLL8, 1, 0, 0),
+	F(480000000, P_MMPLL9, 1, 0, 0),
+	{ }
 };
 
 static struct clk_init_data gfx3d_clk_init = {
@@ -3148,6 +3161,7 @@ static DEFINE_CLK_VOTER(mdss_mdp_vote_clk, mdss_mdp_clk, 0);
 static DEFINE_CLK_VOTER(mdss_rotator_vote_clk, mdss_rotator_clk, 0);
 
 static struct clk_hw *mmcc_msm8996_hws[] = {
+	[MMPLL9_PLL] = &mmpll9.hw,
 	[MDSS_MDP_VOTE_CLK] = &mdss_mdp_vote_clk.hw,
 	[MDSS_ROTATOR_VOTE_CLK] = &mdss_rotator_vote_clk.hw,
 };
@@ -3168,7 +3182,6 @@ static struct clk_regmap *mmcc_msm8996_clocks[] = {
 	[MMPLL8_EARLY] = &mmpll8_early.clkr,
 	[MMPLL8_PLL] = &mmpll8.clkr,
 	[MMPLL9_EARLY] = &mmpll9_early.clkr,
-	[MMPLL9_PLL] = &mmpll9.clkr,
 	[AHB_CLK_SRC] = &ahb_clk_src.clkr,
 	[AXI_CLK_SRC] = &axi_clk_src.clkr,
 	[MAXI_CLK_SRC] = &maxi_clk_src.clkr,
@@ -3493,13 +3506,23 @@ static int msm8996_gpu_voltage_init(struct platform_device *pdev,
 	init->rate_max = fmax;
 	init->num_rate_max = rows;
 	if (of_device_is_compatible(dev->parent->of_node,
-				    "qcom,mmcc-msm8996-pro") && !bin)
+				    "qcom,mmcc-msm8996-pro") && !bin) {
+		unsigned long *rates = mmpll9_early.clkr.hw.init->rate_max;
+
+		rates[VDD_DIG_LOWER] = 652800000;
+		rates[VDD_DIG_LOW] = 652800000;
+		rates[VDD_DIG_NOMINAL] = 1305600000;
+		rates[VDD_DIG_HIGH] = 1305600000;
+		mmpll9_early.min_supported_freq = 1248000000;
 		rate = 1305600000;
-	else if (of_device_is_compatible(dev->parent->of_node,
+	} else if (of_device_is_compatible(dev->parent->of_node,
 					 "qcom,mmcc-msm8996-v3") ||
 		 of_device_is_compatible(dev->parent->of_node,
 					 "qcom,mmcc-msm8996-pro"))
 		rate = 1248000000;
+	else if (of_device_is_compatible(dev->parent->of_node,
+					 "qcom,mmcc-msm8996-v2"))
+		rate = 1209600000;
 	else
 		rate = 960000000;
 	ret = clk_set_rate(mmpll9_early.clkr.hw.clk, rate);
@@ -3771,11 +3794,11 @@ static int mmcc_msm8996_probe(struct platform_device *pdev)
 	} plls[] = {
 		{ &mmpll0_early, 800000000 },
 		{ &mmpll1_early, (v3 || v2) ? 810000000 : 740000000 },
-		{ &mmpll2_early, 0 },
+		{ &mmpll2_early, (v2 || v3) ? 0 : 410000000 },
 		{ &mmpll3_early, v3 ? 1040000000 : (v2 ? 980000000 : 900000000) },
 		{ &mmpll4_early, 960000000 },
 		{ &mmpll5_early, (v3 || v2) ? 825000000 : 720000000 },
-		{ &mmpll8_early, 0 },
+		{ &mmpll8_early, (v2 || v3) ? 0 : 360000000 },
 		{ &mmpll9_early, 0 },
 	};
 	int i, ret;
@@ -3804,10 +3827,17 @@ static int mmcc_msm8996_probe(struct platform_device *pdev)
 		mmcc_msm8996_v2_fixup();
 
 	if (of_device_is_compatible(dev->of_node, "qcom,mmcc-msm8996-pro")) {
-		mmpll9_early.clkr.hw.init->rate_max[VDD_DIG_LOWER] = 652800000;
-		mmpll9_early.clkr.hw.init->rate_max[VDD_DIG_LOW] = 652800000;
-		mmpll9_early.clkr.hw.init->rate_max[VDD_DIG_NOMINAL] = 1305600000;
-		mmpll9_early.clkr.hw.init->rate_max[VDD_DIG_HIGH] = 1305600000;
+		mmpll9_init.flags = CLK_SET_RATE_PARENT;
+		mmpll9_early.min_supported_freq = 1248000000;
+	}
+	if (!v2 && !v3) {
+		mmpll2_early.vco_table = mmpll_p_vco;
+		mmpll2_early.num_vco = ARRAY_SIZE(mmpll_p_vco);
+		mmpll8_early.vco_table = mmpll_p_vco;
+		mmpll8_early.num_vco = ARRAY_SIZE(mmpll_p_vco);
+		gfx3d_clk_src.freq_tbl = ftbl_gfx3d_clk_src_v1;
+		gfx3d_clk_init.ops = &clk_rcg2_ops;
+		gfx3d_clk_init.flags = 0;
 	}
 
 	/* Disable the AHB DCD */
