@@ -622,6 +622,13 @@ DEFINE_CLK_SMD_RPM_XO_BUFFER_PINCTRL(msm8996, bb_clk2_pin, bb_clk2_a_pin, 2);
 DEFINE_CLK_SMD_RPM_XO_BUFFER_PINCTRL(msm8996, rf_clk1_pin, rf_clk1_a_pin, 4);
 DEFINE_CLK_SMD_RPM_XO_BUFFER_PINCTRL(msm8996, rf_clk2_pin, rf_clk2_a_pin, 5);
 
+DEFINE_CLK_SMD_RPM_XO_BUFFER_PINCTRL(msm8996, ln_bb_clk_pin, ln_bb_a_clk_pin, 8);
+static DEFINE_CLK_VOTER(msm8996_pnoc_pm_clk, pcnoc_clk, LONG_MAX);
+static DEFINE_CLK_VOTER(msm8996_pnoc_sps_clk, pcnoc_clk, 0);
+static DEFINE_CLK_VOTER(msm8996_mcd_ce1_clk, ce1_clk, 85710000);
+static DEFINE_CLK_VOTER(msm8996_scm_ce1_clk, ce1_clk, 85710000);
+static DEFINE_CLK_BRANCH_VOTER(msm8996_cxo_otg_clk, cxo_clk_src);
+
 static DEFINE_CLK_VOTER(msm8996_pnoc_msmbus_clk, pcnoc_clk, LONG_MAX);
 static DEFINE_CLK_VOTER(msm8996_pnoc_msmbus_a_clk, pcnoc_a_clk, LONG_MAX);
 static DEFINE_CLK_VOTER(msm8996_snoc_msmbus_clk, snoc_clk, LONG_MAX);
@@ -644,6 +651,13 @@ static DEFINE_CLK_BRANCH_VOTER(msm8996_cxo_pil_ssc_clk, cxo_clk_src);
 static DEFINE_CLK_VOTER(msm8996_pnoc_keepalive_a_clk, pcnoc_a_clk, 19200000);
 
 static struct clk_hw *msm8996_clks[] = {
+	[PNOC_PM_CLK] = &msm8996_pnoc_pm_clk.hw,
+	[PNOC_SPS_CLK] = &msm8996_pnoc_sps_clk.hw,
+	[MCD_CE1_CLK] = &msm8996_mcd_ce1_clk.hw,
+	[SCM_CE1_CLK] = &msm8996_scm_ce1_clk.hw,
+	[CXO_SMD_OTG_CLK] = &msm8996_cxo_otg_clk.hw,
+	[RPM_SMD_LN_BB_CLK_PIN] = &msm8996_ln_bb_clk_pin.hw,
+	[RPM_SMD_LN_BB_CLK_A_PIN] = &msm8996_ln_bb_a_clk_pin.hw,
 	[PNOC_KEEPALIVE_A_CLK] = &msm8996_pnoc_keepalive_a_clk.hw,
 	[PNOC_MSMBUS_CLK] = &msm8996_pnoc_msmbus_clk.hw,
 	[PNOC_MSMBUS_A_CLK] = &msm8996_pnoc_msmbus_a_clk.hw,

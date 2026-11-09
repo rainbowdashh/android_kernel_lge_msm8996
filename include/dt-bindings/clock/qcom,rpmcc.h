@@ -241,4 +241,7 @@
 #define MMSSNOC_AXI_VOTE_CLK                 188
 #define MMSSNOC_AXI_A_VOTE_CLK               189
 
+#define PNOC_PM_CLK                          190
+#define PNOC_SPS_CLK                         191
+
 #endif
