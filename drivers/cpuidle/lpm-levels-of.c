@@ -519,6 +519,7 @@ static int parse_cpu(struct device_node *node, struct lpm_cpu *cpu)
 
 		l->use_bc_timer = of_property_read_bool(n,
 					"qcom,use-broadcast-timer");
+		l->hyp_psci = of_property_read_bool(n, "qcom,hyp-psci");
 
 		l->is_reset = of_property_read_bool(n, "qcom,is-reset");
 

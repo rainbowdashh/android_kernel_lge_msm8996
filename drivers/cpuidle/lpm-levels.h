@@ -31,6 +31,7 @@ struct power_params {
 struct lpm_cpu_level {
 	const char *name;
 	bool use_bc_timer;
+	bool hyp_psci;
 	struct power_params pwr;
 	unsigned int psci_id;
 	bool is_reset;
