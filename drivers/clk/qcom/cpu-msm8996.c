@@ -792,7 +792,8 @@ static int cpu_register_domain(struct platform_device *pdev, struct msm8996_cpu_
 		parents[1] = main_name;
 		parents[2] = aux;
 		ret = cpu_register_hw(dev, &d->low.clkr.hw, low_name, parents, 3,
-			&clk_regmap_mux_closest_ops, CLK_SET_RATE_PARENT | CLK_GET_RATE_NOCACHE,
+			&clk_regmap_mux_closest_ops, CLK_SET_RATE_PARENT |
+			CLK_SET_RATE_NO_REPARENT | CLK_GET_RATE_NOCACHE,
 			NULL, NULL, 0);
 		if (ret)
 			return ret;
