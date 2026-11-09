@@ -1159,6 +1159,10 @@ static int clk_pixel_set_rate(struct clk_hw *hw, unsigned long rate,
 	u32 hid_div, cfg;
 	int i, num_parents = clk_hw_get_num_parents(hw);
 
+	/* Parent changes also visit siblings with their existing M/N ratio. */
+	if (clk_rcg2_recalc_rate(hw, parent_rate) == rate)
+		return 0;
+
 	regmap_read(rcg->clkr.regmap, rcg->cmd_rcgr + CFG_REG, &cfg);
 	cfg &= CFG_SRC_SEL_MASK;
 	cfg >>= CFG_SRC_SEL_SHIFT;
