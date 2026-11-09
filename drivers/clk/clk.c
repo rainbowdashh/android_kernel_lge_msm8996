@@ -2341,6 +2341,8 @@ static int clk_change_rate(struct clk_core *core)
 		rc = core->ops->set_rate(core->hw, core->new_rate,
 						best_parent_rate);
 		if (rc) {
+			pr_err("%s: setting rate %lu with parent rate %lu failed: %d\n",
+				core->name, core->new_rate, best_parent_rate, rc);
 			trace_clk_set_rate_complete(core, core->new_rate);
 			goto err_set_rate;
 		}
