@@ -432,6 +432,21 @@ int msm_sd_register(struct msm_sd_subdev *msm_subdev)
 	if (!smp_load_acquire(&msm_v4l2_dev))
 		return -EPROBE_DEFER;
 
+	if (IS_ENABLED(CONFIG_ARCH_MSM8996)) {
+		struct media_entity *entity = &msm_subdev->sd.entity;
+		u32 group = entity->legacy_type ? entity->legacy_group_id :
+			entity->function;
+
+		entity->function = group;
+		entity->legacy_type = MEDIA_ENT_F_V4L2_SUBDEV_UNKNOWN;
+		if (group == MSM_CAMERA_SUBDEV_CSID)
+			entity->legacy_group_id = 1;
+		else if (group == MSM_CAMERA_SUBDEV_BUF_MNGR)
+			entity->legacy_group_id = 13;
+		else
+			entity->legacy_group_id = group - MSM_CAMERA_SUBDEV_BASE;
+	}
+
 	rc = __msm_sd_register_subdev(&msm_subdev->sd);
 	if (rc)
 		return rc;
@@ -1379,6 +1394,7 @@ static int msm_probe(struct platform_device *pdev)
 		goto mdev_fail;
 	}
 	media_device_init(v4l2_dev->mdev);
+	v4l2_dev->mdev->legacy_entity_ids = IS_ENABLED(CONFIG_ARCH_MSM8996);
 	strlcpy(v4l2_dev->mdev->model, MSM_CONFIGURATION_NAME,
 			sizeof(v4l2_dev->mdev->model));
 	v4l2_dev->mdev->dev = &(pdev->dev);
@@ -1392,6 +1408,10 @@ static int msm_probe(struct platform_device *pdev)
 		goto entity_fail;
 
 	pvdev->vdev->entity.function = QCAMERA_VNODE_GROUP_ID;
+	if (IS_ENABLED(CONFIG_ARCH_MSM8996)) {
+		pvdev->vdev->entity.legacy_type = MEDIA_ENT_F_IO_V4L;
+		pvdev->vdev->entity.legacy_group_id = 2;
+	}
 #endif
 
 	v4l2_dev->notify = msm_sd_notify;
