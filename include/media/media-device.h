@@ -71,6 +71,7 @@ struct media_device_ops {
  * @topology_version: Monotonic counter for storing the version of the graph
  *		topology. Should be incremented each time the topology changes.
  * @id:		Unique ID used on the last registered graph object
+ * @legacy_entity_ids: Use entity-only IDs for the original enumeration ioctl.
  * @entity_internal_idx: Unique internal entity ID used by the graph traversal
  *		algorithms
  * @entity_internal_idx_max: Allocated internal entity indices
@@ -137,6 +138,7 @@ struct media_device {
 	u64 topology_version;
 
 	u32 id;
+	bool legacy_entity_ids;
 	struct ida entity_internal_idx;
 	int entity_internal_idx_max;
 

@@ -85,6 +85,13 @@ static long media_device_get_info(struct media_device *dev, void *arg)
 	return 0;
 }
 
+static u32 media_device_enum_entity_id(struct media_entity *entity)
+{
+	if (entity->graph_obj.mdev->legacy_entity_ids)
+		return entity->internal_idx;
+	return media_entity_id(entity);
+}
+
 static struct media_entity *find_entity(struct media_device *mdev, u32 id)
 {
 	struct media_entity *entity;
@@ -93,8 +100,8 @@ static struct media_entity *find_entity(struct media_device *mdev, u32 id)
 	id &= ~MEDIA_ENT_ID_FLAG_NEXT;
 
 	media_device_for_each_entity(entity, mdev) {
-		if (((media_entity_id(entity) == id) && !next) ||
-		    ((media_entity_id(entity) > id) && next)) {
+		if (((media_device_enum_entity_id(entity) == id) && !next) ||
+		    ((media_device_enum_entity_id(entity) > id) && next)) {
 			return entity;
 		}
 	}
@@ -113,7 +120,7 @@ static long media_device_enum_entities(struct media_device *mdev, void *arg)
 
 	memset(entd, 0, sizeof(*entd));
 
-	entd->id = media_entity_id(ent);
+	entd->id = media_device_enum_entity_id(ent);
 	if (ent->name)
 		strlcpy(entd->name, ent->name, sizeof(entd->name));
 	entd->type = ent->function;
@@ -142,6 +149,11 @@ static long media_device_enum_entities(struct media_device *mdev, void *arg)
 			entd->type = MEDIA_ENT_T_DEVNODE_UNKNOWN;
 	}
 
+	if (ent->legacy_type) {
+		entd->type = ent->legacy_type;
+		entd->group_id = ent->legacy_group_id;
+	}
+
 	memcpy(&entd->raw, &ent->info, sizeof(ent->info));
 
 	return 0;
@@ -150,7 +162,7 @@ static long media_device_enum_entities(struct media_device *mdev, void *arg)
 static void media_device_kpad_to_upad(const struct media_pad *kpad,
 				      struct media_pad_desc *upad)
 {
-	upad->entity = media_entity_id(kpad->entity);
+	upad->entity = media_device_enum_entity_id(kpad->entity);
 	upad->index = kpad->index;
 	upad->flags = kpad->flags;
 }
