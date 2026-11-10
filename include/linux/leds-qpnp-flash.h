@@ -18,7 +18,8 @@
 int qpnp_flash_register_led_prepare(struct device *dev, void *data);
 void qpnp_flash_unregister_led_prepare(struct device *dev);
 
-#if (defined CONFIG_LEDS_QTI_FLASH || defined CONFIG_LEDS_QPNP_FLASH_V2)
+#if IS_ENABLED(CONFIG_LEDS_QTI_FLASH) || IS_ENABLED(CONFIG_LEDS_QPNP_FLASH_V2) || \
+	IS_ENABLED(CONFIG_LEDS_QPNP_FLASH)
 int qpnp_flash_led_prepare(struct led_trigger *trig, int options,
 					int *max_current);
 #else
