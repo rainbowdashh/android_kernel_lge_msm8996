@@ -443,6 +443,9 @@ int msm_sd_register(struct msm_sd_subdev *msm_subdev)
 			entity->legacy_group_id = 1;
 		else if (group == MSM_CAMERA_SUBDEV_BUF_MNGR)
 			entity->legacy_group_id = 13;
+		else if (group >= MSM_CAMERA_SUBDEV_PROXY &&
+			 group <= MSM_CAMERA_SUBDEV_IRIS)
+			entity->legacy_group_id = group - MSM_CAMERA_SUBDEV_PROXY + 20;
 		else
 			entity->legacy_group_id = group - MSM_CAMERA_SUBDEV_BASE;
 	}

@@ -1,10 +1,17 @@
-# SPDX-License-Identifier: GPL-2.0-only
-ccflags-y += -I $(srctree)/drivers/media/platform/msm/camera_v2
-ccflags-y += -I $(srctree)/drivers/media/platform/msm/camera_v2/common
-ccflags-y += -I $(srctree)/drivers/media/platform/msm/camera_v2/msm_vb2
-ccflags-y += -I $(srctree)/drivers/media/platform/msm/camera_v2/camera
-ccflags-y += -I $(srctree)/drivers/media/platform/msm/camera_v2/sensor/io
-ccflags-y += -I $(srctree)/drivers/media/platform/msm/camera_v2/sensor/cci
+ccflags-y += -I$(srctree)/drivers/media/platform/msm/camera_v2
+ccflags-y += -I$(srctree)/drivers/media/platform/msm/camera_v2/common
+ccflags-y += -I$(srctree)/drivers/media/platform/msm/camera_v2/msm_vb2
+ccflags-y += -I$(srctree)/drivers/media/platform/msm/camera_v2/camera
+ccflags-y += -I$(srctree)/drivers/media/platform/msm/camera_v2/sensor/io
+ccflags-y += -I$(srctree)/drivers/media/platform/msm/camera_v2/sensor/cci
+ifdef CONFIG_MACH_LGE
+ccflags-y += -I$(srctree)/drivers/media/platform/msm/camera_v2/sensor/tcs
+ccflags-y += -I$(srctree)/drivers/media/platform/msm/camera_v2/sensor/ois
+ccflags-y += -I$(srctree)/drivers/media/platform/msm/camera_v2/sensor/proxy
+ccflags-y += -I$(srctree)/drivers/media/platform/msm/camera_v2/sensor/iris
+obj-$(CONFIG_MSMB_CAMERA) += cci/ io/ csiphy/ csid/ actuator/ eeprom/ ois/ proxy/ flash/ iris/
+obj-$(CONFIG_LG_TCS) += tcs/
+else
 obj-$(CONFIG_MSMB_CAMERA) += cci/ io/ csiphy/ csid/ actuator/ eeprom/ ois/ flash/ ir_led/ ir_cut/
-obj-$(CONFIG_MSMB_CAMERA) += laser_led/
+endif
 obj-$(CONFIG_MSM_CAMERA_SENSOR) += msm_sensor_init.o msm_sensor_driver.o msm_sensor.o
