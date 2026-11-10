@@ -152,6 +152,7 @@ static long media_device_enum_entities(struct media_device *mdev, void *arg)
 	if (ent->legacy_type) {
 		entd->type = ent->legacy_type;
 		entd->group_id = ent->legacy_group_id;
+		entd->revision = ent->legacy_revision;
 	}
 
 	memcpy(&entd->raw, &ent->info, sizeof(ent->info));
