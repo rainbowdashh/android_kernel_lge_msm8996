@@ -3158,7 +3158,7 @@ static struct clk_branch fd_ahb_clk = {
 };
 
 static DEFINE_CLK_VOTER(mdss_mdp_vote_clk, mdss_mdp_clk, 0);
-static DEFINE_CLK_VOTER(mdss_rotator_vote_clk, mdss_rotator_clk, 0);
+static DEFINE_CLK_VOTER(mdss_rotator_vote_clk, mdss_mdp_clk, 0);
 
 static struct clk_hw *mmcc_msm8996_hws[] = {
 	[MMPLL9_PLL] = &mmpll9.hw,
