@@ -99,3 +99,4 @@ obj-$(CONFIG_LEDS_TRIGGERS)		+= trigger/
 obj-$(CONFIG_LEDS_QPNP_WLED)		+= leds-qpnp-wled.o
 
 obj-$(CONFIG_LEDS_QPNP_HAPTICS) += leds-qpnp-haptics.o
+obj-$(CONFIG_LEDS_QPNP_FLASH) += leds-qpnp-flash.o leds-qpnp-flash-common.o

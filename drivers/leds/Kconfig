@@ -787,6 +787,13 @@ config LEDS_QTI_TRI_LED
 	  at max and each is controlled by a PWM channel used for dimming
 	  or blinking.
 
+config LEDS_QPNP_FLASH
+	bool "Support for QPNP flash LEDs on PMI8994"
+	depends on LEDS_CLASS && MFD_SPMI_PMIC
+	select LEDS_TRIGGERS
+	help
+	  Support the flash and torch channels on PMICs up to PMI8994.
+
 config LEDS_QPNP_FLASH_V2
         tristate "Support for QPNP V2 Flash LEDs"
         depends on LEDS_CLASS && MFD_SPMI_PMIC
