@@ -949,6 +949,17 @@ static irqreturn_t msm_cpp_irq(int irq_num, void *data)
 
 	irq_status = msm_camera_io_r(cpp_dev->base + MSM_CPP_MICRO_IRQGEN_STAT);
 
+	/* A halted microcontroller can keep asserting an error after ACK. */
+	if (irq_status & 0x7C0) {
+		u32 mask = msm_camera_io_r(cpp_dev->base +
+					MSM_CPP_MICRO_IRQGEN_MASK);
+
+		msm_camera_io_w_mb(mask & ~(irq_status & 0x7C0),
+			cpp_dev->base + MSM_CPP_MICRO_IRQGEN_MASK);
+		pr_err_ratelimited("microcontroller fault: status %#x pc %#x\n",
+			irq_status, msm_camera_io_r(cpp_dev->base + 0x50));
+	}
+
 	if (irq_status & 0x8) {
 		tx_level = msm_camera_io_r(cpp_dev->base +
 			MSM_CPP_MICRO_FIFO_TX_STAT) >> 2;
