@@ -975,6 +975,9 @@ static long msm_isp_ioctl_unlocked(struct v4l2_subdev *sd,
 		rc = msm_isp_cfg_input(vfe_dev, arg);
 		mutex_unlock(&vfe_dev->core_mutex);
 		break;
+#ifdef CONFIG_ARCH_MSM8996
+	case VIDIOC_MSM_ISP_AHB_CFG:
+#endif
 	case VIDIOC_MSM_ISP_AHB_CLK_CFG:
 		mutex_lock(&vfe_dev->core_mutex);
 		if (vfe_dev->hw_info->vfe_ops.core_ops.ahb_clk_cfg)

@@ -235,6 +235,7 @@ enum media_entity_type {
  *		(seek for ``MEDIA_ENT_F_*``)
  * @legacy_type: Optional type returned by legacy entity enumeration.
  * @legacy_group_id: Optional group returned with @legacy_type.
+ * @legacy_revision: Optional revision returned with @legacy_type.
  * @flags:	Entity flags, as defined in
  *		:ref:`include/uapi/linux/media.h <media_header>`
  *		(seek for ``MEDIA_ENT_FL_*``)
@@ -274,6 +275,7 @@ struct media_entity {
 	/* Optional descriptors for drivers retaining the original enumeration ABI. */
 	u32 legacy_type;
 	u32 legacy_group_id;
+	u32 legacy_revision;
 	unsigned long flags;
 
 	u16 num_pads;

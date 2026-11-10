@@ -1120,6 +1120,10 @@ enum msm_isp_ioctl_cmd_code {
 #define VIDIOC_MSM_ISP_AHB_CLK_CFG \
 	_IOWR('V', MSM_ISP_AHB_CLK_CFG, struct msm_isp_ahb_clk_cfg)
 
+/* Alternate AHB command used by the LG MSM8996 camera HAL. */
+#define VIDIOC_MSM_ISP_AHB_CFG \
+	_IOWR('V', BASE_VIDIOC_PRIVATE + 28, struct msm_isp_ahb_clk_cfg)
+
 #define VIDIOC_MSM_ISP_DUAL_HW_MASTER_SLAVE_SYNC \
 	_IOWR('V', MSM_ISP_DUAL_HW_MASTER_SLAVE_SYNC, \
 	struct msm_isp_dual_hw_master_slave_sync)

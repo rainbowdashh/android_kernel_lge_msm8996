@@ -392,6 +392,11 @@ static inline int __msm_sd_register_subdev(struct v4l2_subdev *sd)
 	sd->entity.info.dev.major = VIDEO_MAJOR;
 	sd->entity.info.dev.minor = vdev->minor;
 	sd->entity.name = video_device_node_name(vdev);
+	/* Legacy CPP/VPE discovery reads the subdevice number from revision. */
+	if (IS_ENABLED(CONFIG_ARCH_MSM8996) &&
+	    (sd->entity.function == MSM_CAMERA_SUBDEV_CPP ||
+	     sd->entity.function == MSM_CAMERA_SUBDEV_VPE))
+		sd->entity.legacy_revision = vdev->num;
 #endif
 	sd->devnode = vdev;
 	return 0;
