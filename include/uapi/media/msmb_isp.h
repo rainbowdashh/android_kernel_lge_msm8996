@@ -379,6 +379,7 @@ struct msm_vfe_axi_stream_cfg_cmd {
 	uint32_t stream_handle[VFE_AXI_SRC_MAX];
 	enum msm_vfe_axi_stream_cmd cmd;
 	uint8_t sync_frame_id_src;
+	int32_t dummy; /* Retained for the MSM8996 userspace ioctl size. */
 };
 
 enum msm_vfe_axi_stream_update_type {
