@@ -1,16 +1,3 @@
-/* SPDX-License-Identifier: GPL-2.0-only */
-/* Copyright (c) 2018-2020, The Linux Foundation. All rights reserved.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 and
- * only version 2 as published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- */
-
 #ifndef __LINUX_MSM_CAM_SENSOR_H
 #define __LINUX_MSM_CAM_SENSOR_H
 
@@ -18,8 +5,6 @@
 #include <uapi/media/msm_camsensor_sdk.h>
 
 #include <linux/compat.h>
-
-#define SECURE_CAM_RST_MODULES
 
 #ifdef CONFIG_COMPAT
 
@@ -41,32 +26,24 @@ struct msm_sensor_power_setting_array32 {
 	uint16_t size_down;
 };
 
-struct msm_camera_i2c_reg_setting32 {
-	compat_uptr_t reg_setting;
-	uint16_t size;
-	enum msm_camera_i2c_reg_addr_type addr_type;
-	enum msm_camera_i2c_data_type data_type;
-	uint16_t delay;
-};
-
-struct msm_sensor_id_info_t32 {
-	unsigned short sensor_id_reg_addr;
-	unsigned short sensor_id;
-	unsigned short sensor_id_mask;
-	struct msm_camera_i2c_reg_setting32 setting;
-};
-
 struct msm_camera_sensor_slave_info32 {
 	char sensor_name[32];
 	char eeprom_name[32];
 	char actuator_name[32];
 	char ois_name[32];
 	char flash_name[32];
+
+#ifdef CONFIG_MACH_LGE
+	char proxy_name[32];
+	char tcs_name[32];
+	char iris_name[32];
+#endif
+
 	enum msm_sensor_camera_id_t camera_id;
 	uint16_t slave_addr;
 	enum i2c_freq_mode_t i2c_freq_mode;
 	enum msm_camera_i2c_reg_addr_type addr_type;
-	struct msm_sensor_id_info_t32 sensor_id_info;
+	struct msm_sensor_id_info_t sensor_id_info;
 	struct msm_sensor_power_setting_array32 power_setting_array;
 	uint8_t  is_init_params_valid;
 	struct msm_sensor_init_params sensor_init_params;
@@ -87,9 +64,6 @@ struct msm_camera_csid_params32 {
 	uint32_t csi_clk;
 	struct msm_camera_csid_lut_params32 lut_params;
 	uint8_t csi_3p_sel;
-	uint8_t is_secure;
-	uint32_t topology;
-	uint8_t is_streamon;
 };
 
 struct msm_camera_csi2_params32 {
@@ -115,15 +89,6 @@ struct msm_ir_led_cfg_data_t32 {
 
 struct msm_ir_cut_cfg_data_t32 {
 	enum msm_ir_cut_cfg_type_t cfg_type;
-};
-
-struct msm_laser_led_cfg_data_t32 {
-	enum msm_laser_led_cfg_type_t cfg_type;
-	compat_uptr_t                 setting;
-	compat_uptr_t                 debug_reg;
-	uint32_t                      debug_reg_size;
-	uint16_t                      i2c_addr;
-	enum i2c_freq_mode_t          i2c_freq_mode;
 };
 
 struct eeprom_read_t32 {
@@ -158,6 +123,14 @@ struct msm_camera_i2c_seq_reg_setting32 {
 	compat_uptr_t reg_setting;
 	uint16_t size;
 	enum msm_camera_i2c_reg_addr_type addr_type;
+	uint16_t delay;
+};
+
+struct msm_camera_i2c_reg_setting32 {
+	compat_uptr_t reg_setting;
+	uint16_t size;
+	enum msm_camera_i2c_reg_addr_type addr_type;
+	enum msm_camera_i2c_data_type data_type;
 	uint16_t delay;
 };
 
@@ -253,15 +226,61 @@ struct msm_ois_params_t32 {
 
 struct msm_ois_set_info_t32 {
 	struct msm_ois_params_t32 ois_params;
+#ifdef CONFIG_LG_OIS
+	compat_uptr_t ois_info;
+	compat_uptr_t setting;
+#endif
 };
 
 struct msm_ois_cfg_data32 {
 	int cfgtype;
+	uint16_t eeprom_slave_addr;
 	union {
 		struct msm_ois_set_info_t32 set_info;
 		compat_uptr_t settings;
 	} cfg;
 };
+
+#ifdef CONFIG_MACH_LGE
+struct msm_iris_params_t32 {
+	uint16_t data_size;
+	uint16_t setting_size;
+	uint32_t i2c_addr;
+	enum i2c_freq_mode_t i2c_freq_mode;
+	enum msm_camera_i2c_reg_addr_type i2c_addr_type;
+	enum msm_camera_i2c_data_type i2c_data_type;
+	compat_uptr_t settings;
+};
+
+struct msm_iris_set_info_t32 {
+	struct msm_iris_params_t32 iris_params;
+};
+
+struct msm_iris_cfg_data32 {
+	int cfgtype;
+	union {
+		struct msm_iris_set_info_t32 set_info;
+		compat_uptr_t settings;
+	} cfg;
+};
+
+struct msm_proxy_info_t32{
+	uint16_t proxy_val;
+	uint32_t proxy_conv;
+	uint32_t proxy_sig;
+	uint32_t proxy_amb;
+	uint32_t proxy_raw;
+	uint32_t cal_count;
+	uint32_t cal_done;
+};
+
+struct msm_proxy_cfg_data32 {
+	int cfgtype;
+	union {
+		struct msm_proxy_info_t set_info;
+	} cfg;
+};
+#endif
 
 struct msm_flash_init_info_t32 {
 	enum msm_flash_driver_type flash_driver_type;
@@ -311,8 +330,16 @@ struct msm_flash_cfg_data_t32 {
 #define VIDIOC_MSM_IR_CUT_CFG32 \
 	_IOWR('V', BASE_VIDIOC_PRIVATE + 15, struct msm_ir_cut_cfg_data_t32)
 
-#define VIDIOC_MSM_LASER_LED_CFG32 \
-	_IOWR('V', BASE_VIDIOC_PRIVATE + 16, struct msm_laser_led_cfg_data_t32)
+#ifdef CONFIG_MACH_LGE
+#define VIDIOC_MSM_PROXY_CFG32 \
+	_IOWR('V', BASE_VIDIOC_PRIVATE + 12, struct msm_proxy_cfg_data32)
+
+#define VIDIOC_MSM_TCS_CFG32 \
+	_IOWR('V', BASE_VIDIOC_PRIVATE + 16, struct msm_tcs_cfg_data32)
+
+#define VIDIOC_MSM_IRIS_CFG32 \
+	_IOWR('V', BASE_VIDIOC_PRIVATE + 17, struct msm_iris_cfg_data32)
+#endif
 
 #endif
 

@@ -1,5 +1,4 @@
-// SPDX-License-Identifier: GPL-2.0-only
-/* Copyright (c) 2013-2018, 2020, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -43,8 +42,7 @@ static const struct v4l2_subdev_internal_ops msm_sensor_init_internal_ops;
 static int msm_sensor_wait_for_probe_done(struct msm_sensor_init_t *s_init)
 {
 	int rc;
-	int tm = 20000;
-
+	int tm = 25000; //LGE
 	if (s_init->module_init_status == 1) {
 		CDBG("msm_cam_get_module_init_status -2\n");
 		return 0;
@@ -66,7 +64,7 @@ static int32_t msm_sensor_driver_cmd(struct msm_sensor_init_t *s_init,
 
 	/* Validate input parameters */
 	if (!s_init || !cfg) {
-		pr_err("failed: s_init %pK cfg %pK\n", s_init, cfg);
+		pr_err("failed: s_init %pK cfg %pK", s_init, cfg);
 		return -EINVAL;
 	}
 
@@ -74,16 +72,18 @@ static int32_t msm_sensor_driver_cmd(struct msm_sensor_init_t *s_init,
 	case CFG_SINIT_PROBE:
 		mutex_lock(&s_init->imutex);
 		s_init->module_init_status = 0;
+		pr_err("%s CFG_SINIT_PROBE E", __func__);
 		rc = msm_sensor_driver_probe(cfg->cfg.setting,
 			&cfg->probed_info,
 			cfg->entity_name);
+		pr_err("%s CFG_SINIT_PROBE X", __func__);
 		mutex_unlock(&s_init->imutex);
 		if (rc < 0)
-			pr_err_ratelimited("%s failed (non-fatal) rc %d\n",
-				__func__, rc);
+			pr_err("%s failed (non-fatal) rc %d", __func__, rc);
 		break;
 
 	case CFG_SINIT_PROBE_DONE:
+		pr_err("%s CFG_SINIT_PROBE_DONE", __func__);
 		s_init->module_init_status = 1;
 		wake_up(&s_init->state_wait);
 		break;
@@ -93,7 +93,7 @@ static int32_t msm_sensor_driver_cmd(struct msm_sensor_init_t *s_init,
 		break;
 
 	default:
-		pr_err("default\n");
+		pr_err("default");
 		break;
 	}
 
@@ -105,12 +105,11 @@ static long msm_sensor_init_subdev_ioctl(struct v4l2_subdev *sd,
 {
 	long rc = 0;
 	struct msm_sensor_init_t *s_init = v4l2_get_subdevdata(sd);
-
 	CDBG("Enter");
 
 	/* Validate input parameters */
 	if (!s_init) {
-		pr_err("failed: s_init %pK\n", s_init);
+		pr_err("failed: s_init %pK", s_init);
 		return -EINVAL;
 	}
 
@@ -142,12 +141,11 @@ static long msm_sensor_init_subdev_do_ioctl(
 	case VIDIOC_MSM_SENSOR_INIT_CFG32:
 		memset(&sensor_init_data, 0, sizeof(sensor_init_data));
 		sensor_init_data.cfgtype = u32->cfgtype;
-		sensor_init_data.cfg.setting =
-			(void *)compat_ptr(u32->cfg.setting);
+		sensor_init_data.cfg.setting = compat_ptr(u32->cfg.setting);
 		cmd = VIDIOC_MSM_SENSOR_INIT_CFG;
 		rc = msm_sensor_init_subdev_ioctl(sd, cmd, &sensor_init_data);
 		if (rc < 0) {
-			pr_err_ratelimited("%s:%d VIDIOC_MSM_SENSOR_INIT_CFG failed (non-fatal)\n",
+			pr_err("%s:%d VIDIOC_MSM_SENSOR_INIT_CFG failed (non-fatal)",
 				__func__, __LINE__);
 			return rc;
 		}
@@ -188,7 +186,8 @@ static int __init msm_sensor_init_module(void)
 	s_init->msm_sd.sd.internal_ops = &msm_sensor_init_internal_ops;
 	s_init->msm_sd.sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 	media_entity_pads_init(&s_init->msm_sd.sd.entity, 0, NULL);
-	s_init->msm_sd.sd.entity.function = MSM_CAMERA_SUBDEV_SENSOR_INIT;
+	s_init->msm_sd.sd.entity.legacy_type = MEDIA_ENT_F_V4L2_SUBDEV_UNKNOWN;
+	s_init->msm_sd.sd.entity.legacy_group_id = MSM_CAMERA_SUBDEV_SENSOR_INIT;
 	s_init->msm_sd.sd.entity.name = s_init->msm_sd.sd.name;
 	s_init->msm_sd.close_seq = MSM_SD_CLOSE_2ND_CATEGORY | 0x6;
 	ret = msm_sd_register(&s_init->msm_sd);
@@ -218,6 +217,7 @@ static void __exit msm_sensor_exit_module(void)
 	msm_sd_unregister(&s_init->msm_sd);
 	mutex_destroy(&s_init->imutex);
 	kfree(s_init);
+	return;
 }
 
 module_init(msm_sensor_init_module);

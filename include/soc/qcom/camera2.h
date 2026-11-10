@@ -112,6 +112,8 @@ struct msm_camera_power_ctrl_t {
 	struct msm_pinctrl_info pinctrl_info;
 	uint8_t cam_pinctrl_status;
 	size_t clk_info_size;
+	bool isDualMode;
+	int cameraID;
 };
 
 enum msm_camera_actuator_name {
@@ -151,6 +153,9 @@ struct msm_camera_sensor_board_info {
 	const char *actuator_name;
 	const char *ois_name;
 	const char *flash_name;
+	const char *proxy_name;
+	const char *tcs_name;
+	const char *iris_name;
 	const char *special_support_sensors[MAX_SPECIAL_SUPPORT_SIZE];
 	int32_t special_support_size;
 	struct msm_camera_slave_info *slave_info;
