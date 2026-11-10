@@ -648,43 +648,29 @@ EXPORT_SYMBOL(msm_camera_regulator_disable);
 int msm_camera_regulator_set_mode(struct msm_cam_regulator *vdd_info,
 				int cnt, bool mode)
 {
-	int i;
-	int rc;
-	struct msm_cam_regulator *tmp = vdd_info;
+	unsigned int regulator_mode = mode ? REGULATOR_MODE_FAST :
+					    REGULATOR_MODE_NORMAL;
+	int i, rc;
 
-	if (!tmp) {
-		pr_err("Invalid params\n");
+	if (!vdd_info || cnt <= 0)
 		return -EINVAL;
-	}
-	CDBG("cnt : %d\n", cnt);
 
 	for (i = 0; i < cnt; i++) {
-		if (tmp && !IS_ERR_OR_NULL(tmp->vdd)) {
-			CDBG("name : %s, enable : %d\n", tmp->name, mode);
-			if (mode) {
-				rc = regulator_set_mode(tmp->vdd,
-					REGULATOR_MODE_NORMAL);
-				if (rc < 0) {
-					pr_err("regulator enable failed %d\n",
-						i);
-					goto error;
-				}
-			} else {
-				rc = regulator_set_mode(tmp->vdd,
-					REGULATOR_MODE_NORMAL);
-				if (rc < 0)
-					pr_err("regulator disable failed %d\n",
-							i);
-				goto error;
-			}
+		if (IS_ERR_OR_NULL(vdd_info[i].vdd))
+			continue;
+
+		/* FAST hands GDSC control to CPP firmware; NORMAL takes it back. */
+		rc = regulator_set_mode(vdd_info[i].vdd, regulator_mode);
+		if (rc) {
+			pr_err("%s: %s mode %#x failed: %d\n", __func__,
+				vdd_info[i].name, regulator_mode, rc);
+			return rc;
 		}
-		tmp++;
 	}
 
 	return 0;
-error:
-	return rc;
 }
+
 EXPORT_SYMBOL(msm_camera_regulator_set_mode);
 
 
