@@ -11,6 +11,14 @@ menuconfig INPUT_FINGERPRINT
 
 if INPUT_FINGERPRINT
 
+config INPUT_FINGERPRINT_FPC1020
+	tristate "LG MSM8996 FPC1020 SPI fingerprint sensor"
+	depends on SPI_MASTER
+
+config LGE_USES_NEW_FPC_BLOBS
+	bool "LG fingerprint blobs use input-device sysfs"
+	depends on INPUT_FINGERPRINT_FPC1020
+
 config BBK_ET713
 	tristate "Egis ET713 fingerprint drvier support"
 	help

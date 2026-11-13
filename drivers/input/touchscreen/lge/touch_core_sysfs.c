@@ -553,6 +553,13 @@ static ssize_t store_debug_option_state(struct device *dev,
 	return count;
 }
 
+/* LG's fingerprint HAL enumerates virtual input directories by name. */
+static ssize_t show_name(struct device *dev, char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "touch_dev\n");
+}
+
+static TOUCH_ATTR(name, show_name, NULL);
 static TOUCH_ATTR(platform_data, show_platform_data, NULL);
 static TOUCH_ATTR(fw_upgrade, show_upgrade, store_upgrade);
 static TOUCH_ATTR(lpwg_data, show_lpwg_data, store_lpwg_data);
@@ -577,6 +584,7 @@ static TOUCH_ATTR(debug_option, show_debug_option_state,
 				store_debug_option_state);
 
 static struct attribute *touch_attribute_list[] = {
+	&touch_attr_name.attr,
 	&touch_attr_platform_data.attr,
 	&touch_attr_fw_upgrade.attr,
 	&touch_attr_lpwg_data.attr,

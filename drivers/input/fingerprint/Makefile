@@ -1,6 +1,7 @@
 #
 # Makefile for the fingerprint drivers.
 #
+obj-$(CONFIG_INPUT_FINGERPRINT_FPC1020) += fpc1020_tee.o
 
 ifeq ($(CONFIG_BBK_ET713),y)
 et713-objs := et713_platform.o
