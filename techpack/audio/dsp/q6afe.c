@@ -10975,21 +10975,27 @@ static int afe_set_cal_fb_spkr_prot(int32_t cal_type, size_t data_size,
 {
 	int ret = 0;
 	struct audio_cal_type_fb_spk_prot_cfg	*cal_data = data;
+	size_t legacy_size = offsetof(struct audio_cal_type_fb_spk_prot_cfg,
+				      cal_info.sp_version);
+	size_t info_size;
 
-	pr_debug("%s:\n", __func__);
+	pr_debug("%s: data_size %zu\n", __func__, data_size);
 
 	if (this_afe.cal_data[AFE_FB_SPKR_PROT_CAL] == NULL)
 		goto done;
 	if (cal_data == NULL)
 		goto done;
-	if (data_size != sizeof(*cal_data))
-		goto done;
+	/* Older MSM8996 HALs predate the appended SPv3 fields. */
+	if (data_size != sizeof(*cal_data) && data_size != legacy_size)
+		return -EINVAL;
+	info_size = data_size - offsetof(struct audio_cal_type_fb_spk_prot_cfg,
+					cal_info);
 
 	if (cal_data->cal_info.mode == MSM_SPKR_PROT_CALIBRATION_IN_PROGRESS)
 		__pm_wakeup_event(wl.ws, jiffies_to_msecs(WAKELOCK_TIMEOUT));
 	mutex_lock(&this_afe.cal_data[AFE_FB_SPKR_PROT_CAL]->lock);
-	memcpy(&this_afe.prot_cfg, &cal_data->cal_info,
-		sizeof(this_afe.prot_cfg));
+	memset(&this_afe.prot_cfg, 0, sizeof(this_afe.prot_cfg));
+	memcpy(&this_afe.prot_cfg, &cal_data->cal_info, info_size);
 	mutex_unlock(&this_afe.cal_data[AFE_FB_SPKR_PROT_CAL]->lock);
 done:
 	return ret;
