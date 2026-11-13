@@ -1,3 +1,6 @@
+obj-$(CONFIG_MSM_BCL_CTL) += msm8996-bcl.o
+obj-$(CONFIG_MSM8996_BCL_PERIPHERAL) += msm8996-bcl-peripheral.o
+obj-$(CONFIG_BATTERY_BCL) += msm8996-battery-current-limit.o
 obj-$(CONFIG_QCOM_TSENS)	+= qcom_tsens.o
 qcom_tsens-y			+= tsens.o tsens-common.o tsens-8916.o tsens-8974.o tsens-8960.o tsens-v2.o
 obj-$(CONFIG_QTI_ADC_TM) += adc-tm.o adc-tm-common.o adc-tm5.o adc-tm7.o

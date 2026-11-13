@@ -130,6 +130,12 @@ trip_point_type_show(struct device *dev, struct device_attribute *attr,
 		return result;
 
 	switch (type) {
+	case THERMAL_TRIP_CONFIGURABLE_HI:
+		return sprintf(buf, "configurable_hi\n");
+	case THERMAL_TRIP_CONFIGURABLE_LOW:
+		return sprintf(buf, "configurable_low\n");
+	case THERMAL_TRIP_CRITICAL_LOW:
+		return sprintf(buf, "critical_low\n");
 	case THERMAL_TRIP_CRITICAL:
 		return sprintf(buf, "critical\n");
 	case THERMAL_TRIP_HOT:
@@ -141,6 +147,28 @@ trip_point_type_show(struct device *dev, struct device_attribute *attr,
 	default:
 		return sprintf(buf, "unknown\n");
 	}
+}
+
+static ssize_t trip_point_type_activate(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct thermal_zone_device *tz = to_thermal_zone(dev);
+	bool enable;
+	int trip, ret;
+
+	if (!tz->ops->activate_trip_type || !tz->ops->get_trip_type)
+		return -EPERM;
+	if (sscanf(attr->attr.name, "trip_point_%d_type", &trip) != 1)
+		return -EINVAL;
+	if (sysfs_streq(buf, "enabled"))
+		enable = true;
+	else if (sysfs_streq(buf, "disabled"))
+		enable = false;
+	else
+		return -EINVAL;
+
+	ret = sensor_set_trip_enabled(tz, trip, enable);
+	return ret ? ret : count;
 }
 
 static ssize_t
@@ -160,7 +188,7 @@ trip_point_temp_store(struct device *dev, struct device_attribute *attr,
 	if (kstrtoint(buf, 10, &temperature))
 		return -EINVAL;
 
-	ret = tz->ops->set_trip_temp(tz, trip, temperature);
+	ret = sensor_set_trip_temp(tz, trip, temperature);
 	if (ret)
 		return ret;
 
@@ -644,6 +672,10 @@ static int create_trip_attrs(struct thermal_zone_device *tz, int mask)
 						tz->trip_type_attrs[indx].name;
 		tz->trip_type_attrs[indx].attr.attr.mode = S_IRUGO;
 		tz->trip_type_attrs[indx].attr.show = trip_point_type_show;
+		if (tz->ops->activate_trip_type) {
+			tz->trip_type_attrs[indx].attr.attr.mode |= S_IWUSR;
+			tz->trip_type_attrs[indx].attr.store = trip_point_type_activate;
+		}
 		attrs[indx] = &tz->trip_type_attrs[indx].attr.attr;
 
 		/* create trip temp attribute */
@@ -656,7 +688,7 @@ static int create_trip_attrs(struct thermal_zone_device *tz, int mask)
 		tz->trip_temp_attrs[indx].attr.attr.mode = S_IRUGO;
 		tz->trip_temp_attrs[indx].attr.show = trip_point_temp_show;
 		if (IS_ENABLED(CONFIG_THERMAL_WRITABLE_TRIPS) &&
-		    mask & (1 << indx)) {
+		    ((mask & (1 << indx)) || tz->ops->activate_trip_type)) {
 			tz->trip_temp_attrs[indx].attr.attr.mode |= S_IWUSR;
 			tz->trip_temp_attrs[indx].attr.store =
 							trip_point_temp_store;

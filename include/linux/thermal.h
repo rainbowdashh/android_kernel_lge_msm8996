@@ -75,6 +75,11 @@ enum thermal_device_mode {
 	THERMAL_DEVICE_ENABLED,
 };
 
+enum thermal_trip_activation_mode {
+	THERMAL_TRIP_ACTIVATION_DISABLED = 0,
+	THERMAL_TRIP_ACTIVATION_ENABLED,
+};
+
 enum thermal_trip_type {
 	THERMAL_TRIP_ACTIVE = 0,
 	THERMAL_TRIP_PASSIVE,
@@ -116,6 +121,8 @@ struct thermal_zone_device_ops {
 			 enum thermal_device_mode *);
 	int (*set_mode) (struct thermal_zone_device *,
 		enum thermal_device_mode);
+	int (*activate_trip_type)(struct thermal_zone_device *, int,
+				  enum thermal_trip_activation_mode);
 	int (*get_trip_type) (struct thermal_zone_device *, int,
 		enum thermal_trip_type *);
 	int (*get_trip_temp) (struct thermal_zone_device *, int, int *);
@@ -212,7 +219,31 @@ struct thermal_attr {
  * @poll_queue:	delayed work for polling
  * @notify_event: Last notification event
  */
+struct sensor_threshold {
+	long temp;
+	enum thermal_trip_type trip;
+	int (*notify)(enum thermal_trip_type type, int temp, void *data);
+	void *data;
+	u8 active;
+	struct list_head list;
+};
+
+struct sensor_info {
+	u32 sensor_id;
+	struct thermal_zone_device *tz;
+	int threshold_min;
+	int threshold_max;
+	int max_idx;
+	int min_idx;
+	struct list_head sensor_list;
+	struct list_head threshold_list;
+	struct mutex lock;
+	struct work_struct work;
+};
+
 struct thermal_zone_device {
+	struct sensor_threshold tz_threshold[2];
+	struct sensor_info sensor;
 	int id;
 	char type[THERMAL_NAME_LENGTH];
 	struct device device;
@@ -528,6 +559,15 @@ struct thermal_cooling_device *
 thermal_of_cooling_device_register(struct device_node *np, const char *, void *,
 				   const struct thermal_cooling_device_ops *);
 void thermal_cooling_device_unregister(struct thermal_cooling_device *);
+int sensor_get_temp(u32 sensor_id, int *temp);
+int sensor_get_id(char *name);
+int sensor_set_trip(u32 sensor_id, struct sensor_threshold *threshold);
+int sensor_cancel_trip(u32 sensor_id, struct sensor_threshold *threshold);
+int sensor_activate_trip(u32 sensor_id, struct sensor_threshold *threshold,
+			 bool enable);
+int thermal_sensor_trip(struct thermal_zone_device *tz,
+			enum thermal_trip_type trip, long temp);
+
 struct thermal_zone_device *thermal_zone_get_zone_by_name(const char *name);
 struct thermal_cooling_device *thermal_zone_get_cdev_by_name(const char *name);
 int thermal_zone_get_temp(struct thermal_zone_device *tz, int *temp);

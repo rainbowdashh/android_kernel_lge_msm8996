@@ -1336,6 +1336,7 @@ thermal_zone_device_register(const char *type, int trips, int mask,
 	/* A new thermal zone needs to be updated anyway. */
 	atomic_set(&tz->need_update, 1);
 
+	sensor_init(tz);
 	dev_set_name(&tz->device, "thermal_zone%d", tz->id);
 	result = device_register(&tz->device);
 	if (result)
@@ -1390,11 +1391,13 @@ thermal_zone_device_register(const char *type, int trips, int mask,
 	return tz;
 
 unregister:
+	sensor_exit(tz);
 	ida_simple_remove(&thermal_tz_ida, tz->id);
 	device_unregister(&tz->device);
 	return ERR_PTR(result);
 
 remove_device_groups:
+	sensor_exit(tz);
 	thermal_zone_destroy_device_groups(tz);
 remove_id:
 	ida_simple_remove(&thermal_tz_ida, tz->id);
@@ -1452,6 +1455,7 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
 	mutex_unlock(&thermal_list_lock);
 
 	cancel_delayed_work_sync(&tz->poll_queue);
+	sensor_exit(tz);
 
 	thermal_remove_hwmon_sysfs(tz);
 	ida_simple_remove(&thermal_tz_ida, tz->id);

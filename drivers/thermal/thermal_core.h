@@ -12,6 +12,12 @@
 #include <linux/device.h>
 #include <linux/thermal.h>
 
+/* Qualcomm legacy thermal threshold interface. */
+int sensor_init(struct thermal_zone_device *tz);
+void sensor_exit(struct thermal_zone_device *tz);
+int sensor_set_trip_temp(struct thermal_zone_device *tz, int trip, long temp);
+int sensor_set_trip_enabled(struct thermal_zone_device *tz, int trip, bool enable);
+
 /* Initial state of a cooling device during binding */
 #define THERMAL_NO_TARGET -1UL
 
