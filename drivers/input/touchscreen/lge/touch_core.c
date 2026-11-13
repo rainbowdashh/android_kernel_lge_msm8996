@@ -450,9 +450,6 @@ error:
 	return ret;
 }
 
-extern int tap2wake_status;
-extern int lpwg_status;
-
 void touch_suspend(struct device *dev)
 {
 	struct touch_core_data *ts = to_touch_core(dev);
@@ -470,12 +467,14 @@ void touch_suspend(struct device *dev)
 	ret = ts->driver->suspend(dev);
 	mutex_unlock(&ts->lock);
 	if (ts->driver->lpwg) {
-	    int tap2wake_knocked[4] = { 0, 0, 1, 0 };
-	    tap2wake_knocked[0] = tap2wake_status;
+		int param[4];
+
 		mutex_lock(&ts->lock);
-		TOUCH_I("tap2wake %s\n", (tap2wake_status) ? "Enabled" : "Disabled");
-		ts->driver->lpwg(ts->dev, LPWG_MASTER, tap2wake_knocked);
-		lpwg_status = tap2wake_status;
+		param[0] = ts->lpwg.mode;
+		param[1] = 0;
+		param[2] = ts->lpwg.sensor;
+		param[3] = ts->lpwg.qcover;
+		ts->driver->lpwg(ts->dev, LPWG_UPDATE_ALL, param);
 		mutex_unlock(&ts->lock);
 	}
 	TOUCH_I("%s End\n", __func__);
@@ -497,12 +496,14 @@ void touch_resume(struct device *dev)
 	ret = ts->driver->resume(dev);
 	mutex_unlock(&ts->lock);
 	if (ts->driver->lpwg) {
-		int tap2wake_knocked[4] = { 0, 1, 1, 0 };
-		tap2wake_knocked[0] = tap2wake_status;
+		int param[4];
+
 		mutex_lock(&ts->lock);
-		TOUCH_I("tap2wake %s\n", (tap2wake_status) ? "Enabled" : "Disabled");
-		ts->driver->lpwg(ts->dev, LPWG_MASTER, tap2wake_knocked);
-		lpwg_status = tap2wake_status;
+		param[0] = ts->lpwg.mode;
+		param[1] = 1;
+		param[2] = ts->lpwg.sensor;
+		param[3] = ts->lpwg.qcover;
+		ts->driver->lpwg(ts->dev, LPWG_UPDATE_ALL, param);
 		mutex_unlock(&ts->lock);
 	}
 	TOUCH_I("%s End\n", __func__);
