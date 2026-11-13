@@ -354,6 +354,7 @@ enum smbchg_wa {
 enum print_reason {
 	PR_REGISTER	= BIT(0),
 	PR_INTERRUPT	= BIT(1),
+	PR_LGE = BIT(12),
 	PR_STATUS	= BIT(2),
 	PR_DUMP		= BIT(3),
 	PR_PM		= BIT(4),
@@ -4433,10 +4434,6 @@ struct regulator_ops smbchg_otg_reg_ops = {
 	.enable		= smbchg_otg_regulator_enable,
 	.disable	= smbchg_otg_regulator_disable,
 	.is_enabled	= smbchg_otg_regulator_is_enable,
-#ifdef CONFIG_QPNP_SMBCHARGER_EXTENSION
-	.register_ocp_notification
-			= somc_usb_otg_regulator_register_ocp_notification,
-#endif
 };
 
 #define USBIN_CHGR_CFG			0xF1
