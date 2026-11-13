@@ -425,10 +425,12 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 	pr_debug("%s: enable = %d\n", __func__, enable);
 
 	if (enable) {
-		rc = mdss_dsi_request_gpios(ctrl_pdata);
-		if (rc) {
-			pr_err("gpio request failed\n");
-			return rc;
+		if (!ctrl_pdata->sw49408_reset_retained) {
+			rc = mdss_dsi_request_gpios(ctrl_pdata);
+			if (rc) {
+				pr_err("gpio request failed\n");
+				return rc;
+			}
 		}
 		if (!pinfo->cont_splash_enabled) {
 			if (gpio_is_valid(ctrl_pdata->disp_en_gpio)) {
@@ -501,7 +503,9 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 			ctrl_pdata->ctrl_state &= ~CTRL_STATE_PANEL_INIT;
 			pr_debug("%s: Reset panel done\n", __func__);
 		}
+		ctrl_pdata->sw49408_reset_retained = false;
 	} else {
+		ctrl_pdata->sw49408_reset_retained = false;
 		if (gpio_is_valid(ctrl_pdata->avdd_en_gpio)) {
 			if (ctrl_pdata->avdd_en_gpio_invert)
 				gpio_set_value((ctrl_pdata->avdd_en_gpio), 1);

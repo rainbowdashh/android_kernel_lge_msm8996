@@ -28,7 +28,6 @@
 static char ime_str[3][8] = {"OFF", "ON", "SWYPE"};
 static char incoming_call_str[3][8] = {"IDLE", "RINGING", "OFFHOOK"};
 static char mfts_str[4][8] = {"NONE", "FOLDER", "FLAT", "CURVED"};
-int lpwg_status = 0;
 
 static ssize_t show_platform_data(struct device *dev, char *buf)
 {
@@ -140,7 +139,10 @@ static ssize_t store_lpwg_data(struct device *dev,
 
 static ssize_t show_lpwg_notify(struct device *dev, char *buf)
 {
-	return sprintf(buf, "%d\n", lpwg_status);
+	struct touch_core_data *ts = to_touch_core(dev);
+
+	return scnprintf(buf, PAGE_SIZE, "%d\n",
+			 READ_ONCE(ts->lpwg.mode) != LPWG_NONE);
 }
 
 static ssize_t store_lpwg_notify(struct device *dev,
@@ -173,35 +175,37 @@ static ssize_t store_lpwg_notify(struct device *dev,
 	if (ts->driver->lpwg) {
 		mutex_lock(&ts->lock);
 		ts->driver->lpwg(ts->dev, code, param);
-		lpwg_status = (param[0]) ? 1 : 0;
 		mutex_unlock(&ts->lock);
 	}
 
 	return count;
 }
 
-int tap2wake_status = 0;
-
 static ssize_t show_tap2wake(struct device *dev, char *buf)
 {
-	return scnprintf(buf, PAGE_SIZE, "%d\n", tap2wake_status);
+	return show_lpwg_notify(dev, buf);
 }
 
 static ssize_t store_tap2wake(struct device *dev,
 		const char *buf, size_t count)
 {
-	int status = 0;
-	sscanf(buf, "%d", &status);
+	struct touch_core_data *ts = to_touch_core(dev);
+	int status, param[4], ret;
 
+	if (kstrtoint(buf, 10, &status) || status < 0 || status > 1)
+		return -EINVAL;
+	if (!ts->driver->lpwg)
+		return -EOPNOTSUPP;
 
-	if(status < 0 || status > 1) {
-		TOUCH_E("invalid tap2wake status(%d)\n", status);
-		return 0;
-	}
+	mutex_lock(&ts->lock);
+	param[0] = status ? LPWG_DOUBLE_TAP : LPWG_NONE;
+	param[1] = ts->lpwg.screen;
+	param[2] = ts->lpwg.sensor;
+	param[3] = ts->lpwg.qcover;
+	ret = ts->driver->lpwg(ts->dev, LPWG_UPDATE_ALL, param);
+	mutex_unlock(&ts->lock);
 
-	tap2wake_status = status;
-
-	return count;
+	return ret ? ret : count;
 }
 
 static ssize_t show_lockscreen_state(struct device *dev, char *buf)

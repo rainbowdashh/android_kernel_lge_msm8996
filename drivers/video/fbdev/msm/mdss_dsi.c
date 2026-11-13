@@ -364,14 +364,23 @@ static int mdss_dsi_panel_power_off(struct mdss_panel_data *pdata)
 	ctrl_pdata = container_of(pdata, struct mdss_dsi_ctrl_pdata,
 				panel_data);
 
-	ret = mdss_dsi_panel_reset(pdata, 0);
-	if (ret) {
-		pr_warn("%s: Panel reset failed. rc=%d\n", __func__, ret);
-		ret = 0;
-	}
+	/* SW49408 shares reset with touch. Keep it high during normal blanking
+	 * so the gesture configuration survives. LAB/IBB disable below enters
+	 * the existing DT-enabled touch-to-wake mode.
+	 */
+	if (ctrl_pdata->sw49408_panel && system_state == SYSTEM_RUNNING &&
+	    !pdata->panel_info.panel_dead) {
+		ctrl_pdata->sw49408_reset_retained = true;
+	} else {
+		ret = mdss_dsi_panel_reset(pdata, 0);
+		if (ret) {
+			pr_warn("%s: Panel reset failed. rc=%d\n", __func__, ret);
+			ret = 0;
+		}
 
-	if (mdss_dsi_pinctrl_set_state(ctrl_pdata, false))
-		pr_debug("reset disable: pinctrl not enabled\n");
+		if (mdss_dsi_pinctrl_set_state(ctrl_pdata, false))
+			pr_debug("reset disable: pinctrl not enabled\n");
+	}
 
 	ret = msm_dss_enable_vreg(
 		ctrl_pdata->panel_power_data.vreg_config,
