@@ -3362,6 +3362,8 @@
 		compatible = "qcom,msm-audio-ion";
 		qcom,smmu-version = <2>;
 		qcom,smmu-enabled;
+		/* Preserve the audio IOVA window used by the MSM8996 firmware. */
+		qcom,iommu-dma-addr-pool = <0x10000000 0x0fffffff>;
 		iommus = <&lpass_q6_smmu 1>;
 	};
 
