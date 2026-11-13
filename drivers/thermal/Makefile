@@ -5,7 +5,9 @@
 
 obj-$(CONFIG_THERMAL)		+= thermal_sys.o
 thermal_sys-y			+= thermal_core.o thermal_sysfs.o \
-					thermal_helpers.o
+					thermal_helpers.o msm-thermal-sensor.o
+obj-$(CONFIG_THERMAL_TSENS8974) += msm8996-tsens.o
+obj-$(CONFIG_THERMAL_MONITOR) += msm_thermal.o msm_thermal-dev.o
 
 # interface to/from other layers providing sensors
 thermal_sys-$(CONFIG_THERMAL_HWMON)		+= thermal_hwmon.o
