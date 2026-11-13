@@ -2,6 +2,18 @@
 
 menu "Qualcomm Technologies, Inc. Charger and Fuel Gauge support"
 
+config QPNP_SMBCHARGER_EXTENSION
+	bool "MSM8996 SMB charger extensions"
+	depends on QPNP_SMBCHARGER
+
+config LGE_FIX_BATT_TEMP_READING
+	bool "LG MSM8996 battery temperature thresholds"
+	depends on QPNP_SMBCHARGER_EXTENSION
+
+config LGE_ADJUSTABLE_CHARGE_LIMIT
+	bool "LG MSM8996 adjustable charge limit"
+	depends on QPNP_SMBCHARGER_EXTENSION
+
 config QPNP_FG
 	tristate "QPNP PMI8994 fuel gauge"
 	depends on MFD_SPMI_PMIC

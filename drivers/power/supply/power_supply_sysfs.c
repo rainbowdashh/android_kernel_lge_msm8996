@@ -47,6 +47,7 @@ static const char * const power_supply_type_text[] = {
 	"USB_HVDCP", "USB_HVDCP_3", "USB_HVDCP_3P5", "Wireless", "USB_FLOAT",
 	"BMS", "Parallel", "Main", "USB_C_UFP", "USB_C_DFP",
 	"Charge_Pump",
+	[POWER_SUPPLY_TYPE_RETRY_DET] = "Retry_Detection",
 };
 
 static const char * const power_supply_usb_type_text[] = {
@@ -519,6 +520,19 @@ static struct device_attribute power_supply_attrs[] = {
 	/* Local extensions of type int64_t */
 	POWER_SUPPLY_ATTR(charge_counter_ext),
 	/* Properties of type `const char *' */
+	POWER_SUPPLY_ATTR(chgerr_sts),
+	POWER_SUPPLY_ATTR(enable_shutdown_at_low_battery),
+	POWER_SUPPLY_ATTR(input_current_state),
+	POWER_SUPPLY_ATTR(int_cld),
+	POWER_SUPPLY_ATTR(lrc_enable),
+	POWER_SUPPLY_ATTR(lrc_not_startup),
+	POWER_SUPPLY_ATTR(lrc_socmax),
+	POWER_SUPPLY_ATTR(lrc_socmin),
+	POWER_SUPPLY_ATTR(max_charge_current),
+	POWER_SUPPLY_ATTR(smart_charging_activation),
+	POWER_SUPPLY_ATTR(smart_charging_interruption),
+	POWER_SUPPLY_ATTR(smart_charging_status),
+	POWER_SUPPLY_ATTR(usbin_det),
 	POWER_SUPPLY_ATTR(model_name),
 	POWER_SUPPLY_ATTR(manufacturer),
 	POWER_SUPPLY_ATTR(battery_type),
