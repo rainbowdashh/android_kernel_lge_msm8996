@@ -34,6 +34,7 @@
 #define NUM_CHANNELS_STEREO 2
 #define NUM_CHANNELS_THREE 3
 #define NUM_CHANNELS_QUAD 4
+#define CVP_VERSION_1 1
 #define CVP_VERSION_2 2
 #define GAIN_Q14_FORMAT(a) (a << 14)
 
@@ -4448,10 +4449,15 @@ static int voice_get_avcs_version_per_service(uint32_t service_id)
 		return -ENOMEM;
 
 	ret = q6core_get_service_version(service_id, ver_info, ver_size);
-	if (ret < 0)
+	if (ret == -EOPNOTSUPP) {
+		/* Older DSP firmware predates the AVCS service-version query. */
+		ret = CVP_VERSION_1;
+	} else if (ret < 0) {
 		goto done;
+	} else {
+		ret = ver_info->services[0].api_version;
+	}
 
-	ret = ver_info->services[0].api_version;
 	common.is_avcs_version_queried = true;
 done:
 	kfree(ver_info);
