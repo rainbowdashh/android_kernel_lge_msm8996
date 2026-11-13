@@ -12,6 +12,7 @@
 #include <linux/printk.h>
 #include <linux/string.h>
 #include <linux/soc/qcom/smem.h>
+#include <linux/soc/qcom/dirtysanta_g6.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
@@ -37,6 +38,40 @@ static char g6_dev_name[LG_G6_MODEL_NAME_SIZE] =
 static char g6_nt_code[LG_G6_NT_CODE_SIZE] =
 	CONFIG_DIRTYSANTA_FIXUP_G6_NTCODE;
 static int g6_sim_num = CONFIG_DIRTYSANTA_FIXUP_G6_SIMCOUNT;
+
+void __init dirtysanta_g6_fixup_cmdline(char *cmdline, size_t size)
+{
+	static const char key[] = "androidboot.serialno=";
+	static const char eng_prefix[] = "LGMG600L";
+	char prefix[LG_G6_MODEL_NAME_SIZE];
+	char *arg = cmdline, *serial, *suffix;
+	size_t i, len = 0, old_len = sizeof(eng_prefix) - 1;
+
+	/* Android and USB must see the corrected identity from early boot. */
+	while ((arg = strstr(arg, key))) {
+		if (arg == cmdline || arg[-1] == ' ')
+			break;
+		arg++;
+	}
+	if (!arg || !g6_dev_name[0])
+		return;
+
+	serial = arg + sizeof(key) - 1;
+	if (strncmp(serial, eng_prefix, old_len))
+		return;
+
+	/* Match LG's serial prefix convention, retaining the unique suffix. */
+	for (i = 0; g6_dev_name[i]; i++)
+		if (g6_dev_name[i] != '-')
+			prefix[len++] = g6_dev_name[i];
+	if (!len || strlen(cmdline) - old_len + len >= size)
+		return;
+
+	suffix = serial + old_len;
+	memmove(serial + len, suffix, strlen(suffix) + 1);
+	memcpy(serial, prefix, len);
+	pr_info("DirtySanta G6: corrected engineering bootloader serial prefix\n");
+}
 
 static void dirtysanta_g6_write_smem_string(char *dst, const char *src,
 					    unsigned int size)
