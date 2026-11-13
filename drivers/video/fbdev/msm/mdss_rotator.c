@@ -1846,7 +1846,10 @@ static int mdss_rotator_handle_entry(struct mdss_rot_hw_resource *hw,
 		return ret;
 	}
 
+	/* Keep pipe routing and writeback registers live until completion. */
+	mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_ON);
 	ret = mdss_rotator_commit_entry(hw, entry);
+	mdss_mdp_clk_ctrl(MDP_BLOCK_POWER_OFF);
 	if (ret)
 		pr_err("rotator commit failed %d\n", ret);
 
