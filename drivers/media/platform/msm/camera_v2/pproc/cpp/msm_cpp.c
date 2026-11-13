@@ -157,7 +157,11 @@ static int32_t msm_cpp_reset_vbif_and_load_fw(struct cpp_device *cpp_dev);
 	qcmd;			 \
 })
 
+#ifndef CONFIG_MACH_LGE
 #define MSM_CPP_MAX_TIMEOUT_TRIAL 1
+#else
+#define MSM_CPP_MAX_TIMEOUT_TRIAL 3
+#endif
 
 struct msm_cpp_timer_data_t {
 	struct cpp_device *cpp_dev;
@@ -2074,8 +2078,12 @@ static int msm_cpp_send_frame_to_hardware(struct cpp_device *cpp_dev,
 		spin_lock_irqsave(&cpp_timer.data.processed_frame_lock, flags);
 		msm_enqueue(&cpp_dev->processing_q,
 			&frame_qcmd->list_frame);
-		cpp_timer.data.processed_frame[cpp_dev->processing_q.len - 1] =
-			process_frame;
+		for (i = 0; i < MAX_CPP_PROCESSING_FRAME; i++) {
+			if (cpp_timer.data.processed_frame[i] == NULL) {
+				cpp_timer.data.processed_frame[i] = process_frame;
+				break;
+			}
+		}
 		queue_len = cpp_dev->processing_q.len;
 		spin_unlock_irqrestore(&cpp_timer.data.processed_frame_lock,
 			flags);
