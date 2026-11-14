@@ -350,6 +350,11 @@ static int mdss_dsi_regulator_init(struct platform_device *pdev,
 	return rc;
 }
 
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_HPLUS_COMMON)
+extern int mdss_hplus_panel_on(struct mdss_panel_data *pdata);
+extern int mdss_hplus_panel_off(struct mdss_panel_data *pdata);
+#endif
+
 static int mdss_dsi_panel_power_off(struct mdss_panel_data *pdata)
 {
 	int ret = 0;

@@ -68,7 +68,7 @@ disp_en_gpio_err:
 extern void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
 		struct dsi_panel_cmds *pcmds, u32 flags);
 
-int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
+int mdss_hplus_panel_reset(struct mdss_panel_data *pdata, int enable)
 {
 	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
 	struct mdss_panel_info *pinfo = NULL;
@@ -209,7 +209,7 @@ exit:
 #endif
 
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_OVERRIDE_MDSS_DSI_PANEL_ON)
-int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
+int mdss_hplus_panel_on(struct mdss_panel_data *pdata)
 {
 	struct mdss_dsi_ctrl_pdata *ctrl = NULL;
 	struct mdss_panel_info *pinfo;
@@ -361,7 +361,7 @@ end:
 #endif
 
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_OVERRIDE_MDSS_DSI_PANEL_OFF)
-int mdss_dsi_panel_off(struct mdss_panel_data *pdata)
+int mdss_hplus_panel_off(struct mdss_panel_data *pdata)
 {
 	struct mdss_dsi_ctrl_pdata *ctrl = NULL;
 	struct mdss_panel_info *pinfo;

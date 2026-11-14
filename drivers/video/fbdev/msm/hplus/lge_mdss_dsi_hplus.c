@@ -238,7 +238,7 @@ int lge_panel_power_on(struct mdss_panel_data *pdata)
 #endif
 
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_OVERRIDE_MDSS_DSI_PANEL_POWER_ON)
-int mdss_dsi_panel_power_on(struct mdss_panel_data *pdata)
+int mdss_hplus_panel_power_on(struct mdss_panel_data *pdata)
 {
 	int ret = 0;
 	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;
@@ -306,7 +306,7 @@ int mdss_dsi_panel_power_on(struct mdss_panel_data *pdata)
 #endif
 
 #if IS_ENABLED(CONFIG_LGE_DISPLAY_OVERRIDE_MDSS_DSI_PANEL_POWER_OFF)
-int mdss_dsi_panel_power_off(struct mdss_panel_data *pdata)
+int mdss_hplus_panel_power_off(struct mdss_panel_data *pdata)
 {
 	int ret = 0;
 	struct mdss_dsi_ctrl_pdata *ctrl_pdata = NULL;

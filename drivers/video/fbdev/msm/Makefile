@@ -37,6 +37,9 @@ endif
 
 mdss-dsi-objs := mdss_dsi.o mdss_dsi_host.o mdss_dsi_cmd.o mdss_dsi_status.o
 mdss-dsi-objs += mdss_dsi_panel.o mdss_lucye.o
+ifeq ($(CONFIG_LGE_DISPLAY_HPLUS_COMMON),y)
+mdss-dsi-objs += hplus/lge_mdss_dsi_panel_hplus.o
+endif
 ifeq ($(CONFIG_MACH_MSM8996_H1),y)
 mdss-dsi-objs += mdss_h1.o
 endif
@@ -73,4 +76,3 @@ obj-$(CONFIG_FB_MSM_MDSS_WRITEBACK) += mdss_wb.o
 
 obj-$(CONFIG_FB_MSM_MDSS) += mdss_fb.o mdss_util.o
 obj-$(CONFIG_COMPAT) += mdss_compat_utils.o
-obj-$(CONFIG_LGE_DISPLAY_HPLUS_COMMON) += hplus/lge_mdss_dsi_hplus.o hplus/lge_mdss_dsi_panel_hplus.o
