@@ -347,7 +347,7 @@ enum touch_device_type touch_get_device_type(void)
 int lge_get_panel(void)
 {
 #ifdef CONFIG_MACH_MSM8996_ELSA
-	return TYPE_LG4945;
+	return TYPE_SW49407_COMMAND;
 #else
 	return TYPE_LG4946;
 #endif
