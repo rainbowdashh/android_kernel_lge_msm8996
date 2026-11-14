@@ -676,7 +676,7 @@ struct msm_vidc_format_constraint *msm_comm_get_pixel_fmt_constraints(
 			break;
 	}
 	if (i == size) {
-		dprintk(VIDC_ERR, "Format constraint not found.\n");
+		dprintk(VIDC_DBG, "No optional format constraints for %#x\n", fourcc);
 		return NULL;
 	}
 	return &fmt[i];
@@ -685,9 +685,9 @@ u32 msm_comm_convert_color_fmt(u32 v4l2_fmt)
 {
 	switch (v4l2_fmt) {
 	case V4L2_PIX_FMT_NV12:
-		return COLOR_FMT_NV12;
+		return COLOR_FMT_NV12_128;
 	case V4L2_PIX_FMT_NV21:
-		return COLOR_FMT_NV21;
+		return COLOR_FMT_NV12_128;
 	case V4L2_PIX_FMT_NV12_512:
 		return COLOR_FMT_NV12_512;
 	case V4L2_PIX_FMT_SDE_Y_CBCR_H2V2_P010_VENUS:
@@ -797,6 +797,27 @@ int msm_comm_set_color_format_constraints(struct msm_vidc_inst *inst,
 exit:
 	kfree(pconstraint);
 	return rc;
+}
+
+void msm_comm_update_buffer_sizes(struct buf_queue *q, struct v4l2_buffer *b)
+{
+	struct vb2_buffer *vb;
+	unsigned int i;
+
+	/* The legacy HAL negotiates the final format after REQBUFS. Linux 4.4
+	 * checked q->plane_sizes on QBUF; 4.19 snapshots it in each buffer.
+	 * Only unqueued USERPTR buffers may adopt the negotiated sizes.
+	 * Caller holds q->lock.
+	 */
+	if (b->memory != V4L2_MEMORY_USERPTR ||
+	    b->index >= q->vb2_bufq.num_buffers)
+		return;
+	vb = q->vb2_bufq.bufs[b->index];
+	if (!vb || vb->state != VB2_BUF_STATE_DEQUEUED)
+		return;
+	for (i = 0; i < vb->num_planes; i++)
+		if (q->plane_sizes[i])
+			vb->planes[i].min_length = q->plane_sizes[i];
 }
 
 struct buf_queue *msm_comm_get_vb2q(

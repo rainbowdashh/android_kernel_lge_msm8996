@@ -1449,7 +1449,8 @@ struct msm_vidc_format_constraint enc_pix_format_constraints[] = {
 
 static u32 get_frame_size_nv12(int plane, u32 height, u32 width)
 {
-	return VENUS_BUFFER_SIZE(COLOR_FMT_NV12, width, height);
+	/* MSM8996 uses 128-byte NV12 strides, like the original HAL. */
+	return VENUS_BUFFER_SIZE(COLOR_FMT_NV12_128, width, height);
 }
 
 static u32 get_frame_size_nv12_ubwc(int plane, u32 height, u32 width)
@@ -1469,7 +1470,7 @@ static u32 get_frame_size_rgba_ubwc(int plane, u32 height, u32 width)
 
 static u32 get_frame_size_nv21(int plane, u32 height, u32 width)
 {
-	return VENUS_BUFFER_SIZE(COLOR_FMT_NV21, width, height);
+	return VENUS_BUFFER_SIZE(COLOR_FMT_NV12_128, width, height);
 }
 
 static u32 get_frame_size_compressed(int plane, u32 height, u32 width)
@@ -4367,6 +4368,12 @@ int msm_venc_s_fmt(struct msm_vidc_inst *inst, struct v4l2_format *f)
 				bufreq ? bufreq->buffer_size : 0;
 		}
 	}
+	/* The HAL can switch RGBA input to NV12 after REQBUFS without G_FMT.
+	 * Keep QBUF's negotiated minimum sizes in sync with S_FMT too.
+	 */
+	for (i = 0; i < f->fmt.pix_mp.num_planes; i++)
+		inst->bufq[fmt->type].plane_sizes[i] =
+			f->fmt.pix_mp.plane_fmt[i].sizeimage;
 exit:
 	return rc;
 }
@@ -4627,6 +4634,7 @@ int msm_venc_qbuf(struct msm_vidc_inst *inst, struct v4l2_buffer *b)
 		return -EINVAL;
 	}
 	mutex_lock(&q->lock);
+	msm_comm_update_buffer_sizes(q, b);
 	rc = vb2_qbuf(&q->vb2_bufq, b);
 	mutex_unlock(&q->lock);
 	if (rc)

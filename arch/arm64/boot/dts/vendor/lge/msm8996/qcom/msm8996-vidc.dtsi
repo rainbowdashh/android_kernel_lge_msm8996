@@ -159,6 +159,7 @@
 				<&venus_smmu 0x31>;
 			buffer-types = <0xfff>;
 			virtual-addr-pool = <0x70800000 0x6f800000>;
+			qcom,iommu-dma-addr-pool = <0x70800000 0x6f800000>;
 		};
 
 		firmware_cb {
@@ -182,6 +183,7 @@
 				<&venus_smmu 0x12b>;
 			buffer-types = <0x241>;
 			virtual-addr-pool = <0x4b000000 0x25800000>;
+			qcom,iommu-dma-addr-pool = <0x4b000000 0x25800000>;
 			qcom,secure-context-bank;
 		};
 
@@ -194,6 +196,7 @@
 //				<&venus_smmu 0x12c>;
 			buffer-types = <0x106>;
 			virtual-addr-pool = <0x25800000 0x25800000>;
+			qcom,iommu-dma-addr-pool = <0x25800000 0x25800000>;
 			qcom,secure-context-bank;
 		};
 
@@ -211,6 +214,7 @@
 				<&venus_smmu 0x140>;
 			buffer-types = <0x480>;
 			virtual-addr-pool = <0x1000000 0x24800000>;
+			qcom,iommu-dma-addr-pool = <0x1000000 0x24800000>;
 			qcom,secure-context-bank;
 		};
 	};
