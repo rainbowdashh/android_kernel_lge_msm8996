@@ -218,7 +218,7 @@ static int cpu_pll_program(struct clk_hw *hw, unsigned long rate,
 		return ret;
 	/* Ignore transient lock indications for the first 50 microseconds. */
 	udelay(50);
-	return readl_poll_timeout_atomic(d->base, status, status & BIT(31), 1, 500);
+	return readl_poll_timeout_atomic(d->base, status, status & BIT(31), 1, 10000);
 }
 
 static int cpu_pll_set_rate(struct clk_hw *hw, unsigned long rate,
@@ -250,7 +250,7 @@ static int cpu_pll_manual_enable(struct msm8996_cpu_domain *d)
 	if (ret)
 		return ret;
 	udelay(50);
-	ret = readl_poll_timeout_atomic(d->base, status, status & BIT(31), 1, 500);
+	ret = readl_poll_timeout_atomic(d->base, status, status & BIT(31), 1, 10000);
 	if (ret)
 		return ret;
 	return regmap_update_bits(map, 0, BIT(0), BIT(0));
@@ -553,7 +553,7 @@ static int cpu_alt_pll_disable(struct msm8996_cpu_domain *d)
 		if (ret)
 			return ret;
 		ret = readl_poll_timeout_atomic(d->base + 0x100, mode,
-					       mode & BIT(28), 1, 500);
+					       mode & BIT(28), 1, 10000);
 		if (ret)
 			return ret;
 		ret = regmap_update_bits(map, 0x100,
@@ -565,7 +565,7 @@ static int cpu_alt_pll_disable(struct msm8996_cpu_domain *d)
 		return ret;
 	mb();
 	return readl_poll_timeout_atomic(d->base + 0x100, mode,
-					!(mode & BIT(30)), 1, 500);
+					!(mode & BIT(30)), 1, 10000);
 }
 
 static int cpu_domain_init(struct platform_device *pdev,
@@ -648,7 +648,7 @@ static int cpu_domain_init(struct platform_device *pdev,
 			return ret;
 	}
 	udelay(50);
-	ret = readl_poll_timeout_atomic(d->base, status, status & BIT(31), 1, 500);
+	ret = readl_poll_timeout_atomic(d->base, status, status & BIT(31), 1, 10000);
 	if (ret)
 		return ret;
 	if (d->index < 2) {
@@ -673,7 +673,7 @@ static int cpu_domain_init(struct platform_device *pdev,
 		if (ret)
 			return ret;
 		ret = readl_poll_timeout_atomic(d->base + 0x100, status,
-					       status & BIT(30), 1, 500);
+					       status & BIT(30), 1, 10000);
 		if (ret)
 			return ret;
 		ret = regmap_update_bits(d->mux, 0x44, BIT(8), BIT(8));
