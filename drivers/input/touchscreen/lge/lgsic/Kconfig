@@ -7,3 +7,11 @@ config LGE_TOUCH_LGSIC_SW49408
 	depends on LGE_TOUCH_CORE_BASE && FB_MSM_MDSS
 	help
 	  Enable the SW49408 controller used by LG G6 devices.
+
+config LGE_TOUCH_LGSIC_LG4945
+	bool "LG V20 LG4945 touch controller"
+	depends on LGE_TOUCH_CORE && MACH_MSM8996_ELSA
+
+config LGE_TOUCH_LGSIC_SW49407
+	bool "LG V20 SW49407 touch controller"
+	depends on LGE_TOUCH_CORE && MACH_MSM8996_ELSA

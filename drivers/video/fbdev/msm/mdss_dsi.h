@@ -498,6 +498,7 @@ struct mdss_dsi_ctrl_pdata {
 	bool sw49408_reset_retained;
 	bool sw49408_panel;
 	bool h1_panel;
+	bool elsa_panel;
 	struct dsi_panel_cmds post_dms_on_cmds;
 	struct dsi_panel_cmds post_panel_on_cmds;
 	struct dsi_panel_cmds off_cmds;

@@ -36,7 +36,7 @@ static void mdss_dsi_touch_notify(struct mdss_dsi_ctrl_pdata *ctrl,
 				unsigned long event, void *data)
 {
 	if (IS_REACHABLE(CONFIG_LGE_TOUCH_CORE) &&
-	    (ctrl->sw49408_panel || ctrl->h1_panel) &&
+	    (ctrl->sw49408_panel || ctrl->h1_panel || ctrl->elsa_panel) &&
 	    ctrl->ndx == DSI_CTRL_LEFT)
 		touch_notifier_call_chain(event, data);
 }
@@ -520,7 +520,11 @@ int mdss_dsi_panel_reset(struct mdss_panel_data *pdata, int enable)
 			gpio_set_value((ctrl_pdata->disp_en_gpio), 0);
 			gpio_free(ctrl_pdata->disp_en_gpio);
 		}
-		mdss_dsi_touch_notify(ctrl_pdata, NOTIFY_TOUCH_RESET, NULL);
+		/* H1/Elsa have a separate touch reset. Panel power-off must
+		 * not invalidate the LPWG state they just programmed.
+		 */
+		if (ctrl_pdata->sw49408_panel)
+			mdss_dsi_touch_notify(ctrl_pdata, NOTIFY_TOUCH_RESET, NULL);
 		gpio_set_value((ctrl_pdata->rst_gpio), 0);
 		gpio_free(ctrl_pdata->rst_gpio);
 		if (gpio_is_valid(ctrl_pdata->lcd_mode_sel_gpio)) {
@@ -3085,6 +3089,8 @@ int mdss_dsi_panel_init(struct device_node *node,
 		return -ENODEV;
 	}
 
+	ctrl_pdata->elsa_panel = IS_ENABLED(CONFIG_MACH_MSM8996_ELSA) &&
+		of_device_is_compatible(node, "lge,elsa-panel");
 	ctrl_pdata->h1_panel = IS_ENABLED(CONFIG_MACH_MSM8996_H1) &&
 		of_device_is_compatible(node, "lge,h1-panel");
 	ctrl_pdata->sw49408_panel =

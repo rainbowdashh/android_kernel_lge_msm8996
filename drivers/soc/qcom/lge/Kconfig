@@ -330,6 +330,29 @@ config MACH_MSM8996_H1_LRA_US
 	depends on MACH_MSM8996_H1
 	select MACH_MSM8996_H1_US
 
+config MACH_MSM8996_ELSA
+	bool "LG V20 (elsa)"
+	select MACH_LGE
+
+config MACH_MSM8996_ELSA_GLOBAL_COM
+	bool "LG V20 international (h990)"
+	depends on MACH_MSM8996_ELSA
+
+config DIRTYSANTA_FIXUP
+	bool "V20 engineering bootloader modem identity fixup"
+	depends on MACH_MSM8996_ELSA && QCOM_SMEM=y
+
+config DIRTYSANTA_FIXUP_DEVICENAME
+	string "V20 modem model name"
+	depends on DIRTYSANTA_FIXUP
+	default "LG-H990"
+
+config DIRTYSANTA_FIXUP_SIMCOUNT
+	int "V20 modem SIM slots"
+	depends on DIRTYSANTA_FIXUP
+	range 1 2
+	default 2
+
 config MACH_MSM8996_LUCYE
 	bool "LG G6 (lucye)"
 	select MACH_LGE
@@ -365,3 +388,7 @@ config DIRTYSANTA_FIXUP_G6_SIMCOUNT
 	depends on DIRTYSANTA_FIXUP_G6
 	range 0 2
 	default 0
+
+config LGE_IRRC
+	bool "LG infrared remote controller"
+	depends on MACH_MSM8996_ELSA && GPIOLIB

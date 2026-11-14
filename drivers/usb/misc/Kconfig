@@ -318,3 +318,5 @@ config USB_QCOM_DIAG_BRIDGE
 
 source "drivers/usb/misc/anx7418/Kconfig"
 source "drivers/usb/misc/tusb422/Kconfig"
+
+source "drivers/usb/misc/anx7688/Kconfig"

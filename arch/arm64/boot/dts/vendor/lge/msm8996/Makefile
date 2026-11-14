@@ -26,5 +26,13 @@ $(obj)/%.dtb: $(src)/lge/g5/h1_us/%.dts FORCE
 	$(call if_changed_dep,dtc)
 endif
 
+ifeq ($(CONFIG_MACH_MSM8996_ELSA_GLOBAL_COM),y)
+elsa-dts := $(sort $(wildcard $(srctree)/$(src)/lge/v20/elsa_global_com/*.dts))
+dtb-y += $(patsubst %.dts,%.dtb,$(notdir $(elsa-dts)))
+
+$(obj)/%.dtb: $(src)/lge/v20/elsa_global_com/%.dts FORCE
+	$(call if_changed_dep,dtc)
+endif
+
 always := $(dtb-y)
 clean-files := *.dtb
