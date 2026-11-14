@@ -1,5 +1,8 @@
 # SPDX-License-Identifier: GPL-2.0-only
-dtc_cpp_flags += -include $(objtree)/include/generated/autoconf.h
+# scripts/Makefile.lib defines dtc_cpp_flags after including this file.
+# Keep the config header on each DTB target so LG's conditional DT properties
+# (including the engineering-aboot DSC parameters) reach the preprocessor.
+$(obj)/%.dtb: dtc_cpp_flags += -include $(objtree)/include/generated/autoconf.h
 
 # Preserve the board revision IDs expected by the LGE bootloader.
 ifeq ($(CONFIG_MACH_MSM8996_LUCYE_GLOBAL_COM),y)
