@@ -21,6 +21,7 @@
 #include "mdss_dsi.h"
 #include "mdss_dba_utils.h"
 #include "mdss_debug.h"
+#include "mdss_lucye.h"
 
 #define DT_CMD_HDR 6
 #define DEFAULT_MDP_TRANSFER_TIME 14000
@@ -197,7 +198,7 @@ static void mdss_dsi_panel_apply_settings(struct mdss_dsi_ctrl_pdata *ctrl,
 }
 
 
-static void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
+void mdss_dsi_panel_cmds_send(struct mdss_dsi_ctrl_pdata *ctrl,
 			struct dsi_panel_cmds *pcmds, u32 flags)
 {
 	struct dcs_cmd_req cmdreq;
@@ -980,6 +981,7 @@ static int mdss_dsi_panel_on(struct mdss_panel_data *pdata)
 	if (pinfo->compression_mode == COMPRESSION_DSC)
 		mdss_dsi_panel_dsc_pps_send(ctrl, pinfo);
 
+	mdss_lucye_apply(ctrl);
 	if (ctrl->ds_registered)
 		mdss_dba_utils_video_on(pinfo->dba_data, pinfo);
 
@@ -1091,7 +1093,13 @@ static int mdss_dsi_panel_low_power_config(struct mdss_panel_data *pdata,
 	pr_debug("%s: ctrl=%pK ndx=%d enable=%d\n", __func__, ctrl, ctrl->ndx,
 		enable);
 
-	/* Any panel specific low power commands/config */
+	/* SW49408 U3/U2 sequences for Android's standard doze transitions. */
+	mdss_lucye_low_power(ctrl, enable);
+	if (ctrl->sw49408_panel) {
+		u32 mode = enable ? 2 : 3;
+
+		mdss_dsi_touch_notify(ctrl, LCD_EVENT_LCD_MODE, &mode);
+	}
 
 	pr_debug("%s:-\n", __func__);
 	return 0;
@@ -1159,8 +1167,9 @@ static void mdss_dsi_parse_trigger(struct device_node *np, char *trigger,
 }
 
 
-static int mdss_dsi_parse_dcs_cmds(struct device_node *np,
-		struct dsi_panel_cmds *pcmds, char *cmd_key, char *link_key)
+int mdss_dsi_parse_dcs_cmds(struct device_node *np,
+		struct dsi_panel_cmds *pcmds, const char *cmd_key,
+		const char *link_key)
 {
 	const char *data;
 	int blen = 0, len;
@@ -2703,6 +2712,8 @@ static int  mdss_dsi_panel_config_res_properties(struct device_node *np,
 		"qcom,mdss-display-on-command",
 		"qcom,mdss-dsi-on-command-state");
 
+	mdss_lucye_parse(np, container_of(panel_data,
+					struct mdss_dsi_ctrl_pdata, panel_data));
 	mdss_dsi_parse_dcs_cmds(np, &pt->post_panel_on_cmds,
 		"qcom,mdss-dsi-post-panel-on-command", NULL);
 
