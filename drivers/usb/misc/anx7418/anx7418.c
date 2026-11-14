@@ -474,6 +474,36 @@ void __anx7418_pwr_down(struct anx7418 *anx)
 	gpio_set_value(anx->vconn_gpio, 0);
 }
 
+/* Older firmware can settle into UFP after the initial role read without
+ * reporting an interface-status interrupt. Keep the cached role in sync.
+ */
+static void anx7418_role_work(struct work_struct *work)
+{
+	struct anx7418 *anx = container_of(to_delayed_work(work),
+					 struct anx7418, role_work);
+	int status, mode;
+
+	down_write(&anx->rwsem);
+	if (!atomic_read(&anx->pwr_on) || dfp || IS_INTF_IRQ_SUPPORT(anx))
+		goto out;
+	status = anx7418_read_reg(anx->client, ANALOG_STATUS);
+	if (status >= 0) {
+		mode = status & DFP_OR_UFP ? DUAL_ROLE_PROP_MODE_UFP :
+					  DUAL_ROLE_PROP_MODE_DFP;
+		if (anx->mode != mode && !anx->is_dbg_acc) {
+			anx7418_set_mode(anx, mode);
+			anx7418_set_pr(anx, mode == DUAL_ROLE_PROP_MODE_UFP ?
+				DUAL_ROLE_PROP_PR_SNK : DUAL_ROLE_PROP_PR_SRC);
+			anx7418_set_dr(anx, mode == DUAL_ROLE_PROP_MODE_UFP ?
+				DUAL_ROLE_PROP_DR_DEVICE : DUAL_ROLE_PROP_DR_HOST);
+			dual_role_instance_changed(anx->dual_role);
+		}
+	}
+	schedule_delayed_work(&anx->role_work, msecs_to_jiffies(1000));
+out:
+	up_write(&anx->rwsem);
+}
+
 int anx7418_pwr_on(struct anx7418 *anx, int is_on)
 {
 	struct i2c_client *client = anx->client;
@@ -600,6 +630,10 @@ set_as_dfp:
 	}
 
 out:
+	if (is_on && !IS_INTF_IRQ_SUPPORT(anx) && !dfp)
+		mod_delayed_work(system_wq, &anx->role_work, msecs_to_jiffies(500));
+	else if (!is_on)
+		cancel_delayed_work(&anx->role_work);
 	up_write(&anx->rwsem);
 	return 0;
 }
@@ -1420,6 +1454,7 @@ static int anx7418_probe(struct i2c_client *client,
 	pd_psy_cfg.num_supplicants = ARRAY_SIZE(chg_supplicants);
 
 	INIT_DELAYED_WORK(&anx->chg_work, chg_work);
+	INIT_DELAYED_WORK(&anx->role_work, anx7418_role_work);
 
 	anx->pd_psy = devm_power_supply_register(cdev, &anx->pd_psy_d, &pd_psy_cfg);
 	if (IS_ERR(anx->pd_psy)) {
@@ -1467,6 +1502,7 @@ static int anx7418_remove(struct i2c_client *client)
 	devm_free_irq(cdev, client->irq, anx);
 	devm_free_irq(cdev, anx->cbl_det_irq, anx);
 	cancel_delayed_work_sync(&anx->chg_work);
+	cancel_delayed_work_sync(&anx->role_work);
 #ifdef CONFIG_DUAL_ROLE_USB_INTF
 	cancel_work_sync(&anx->try_src_work);
 	cancel_work_sync(&anx->try_snk_work);

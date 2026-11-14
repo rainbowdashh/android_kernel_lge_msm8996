@@ -18,7 +18,11 @@ static bool try_src(struct anx7418 *anx, unsigned long timeout)
 	__pm_wakeup_event(anx->wlock, 2000);
 
 	if (!(anx7418_read_reg(client, ANALOG_STATUS) & DFP_OR_UFP)) {
-		dev_dbg(cdev, "Current role is DFP, no need Try source\n");
+		dev_dbg(cdev, "Current role is DFP, synchronize software state\n");
+		anx7418_set_mode(anx, DUAL_ROLE_PROP_MODE_DFP);
+		anx7418_set_pr(anx, DUAL_ROLE_PROP_PR_SRC);
+		anx7418_set_dr(anx, DUAL_ROLE_PROP_DR_HOST);
+		dual_role_instance_changed(anx->dual_role);
 		return true;
 	}
 
@@ -89,7 +93,11 @@ static bool try_snk(struct anx7418 *anx, unsigned long timeout)
 	__pm_wakeup_event(anx->wlock, 2000);
 
 	if (anx7418_read_reg(client, ANALOG_STATUS) & DFP_OR_UFP) {
-		dev_dbg(cdev, "Current role is UFP, no need Try sink\n");
+		dev_dbg(cdev, "Current role is UFP, synchronize software state\n");
+		anx7418_set_mode(anx, DUAL_ROLE_PROP_MODE_UFP);
+		anx7418_set_pr(anx, DUAL_ROLE_PROP_PR_SNK);
+		anx7418_set_dr(anx, DUAL_ROLE_PROP_DR_DEVICE);
+		dual_role_instance_changed(anx->dual_role);
 		return true;
 	}
 
@@ -233,14 +241,22 @@ static int drp_set_property(struct dual_role_phy_instance *dual_role,
 
 		switch (*val) {
 		case DUAL_ROLE_PROP_MODE_UFP:
-			if (IS_INTF_IRQ_SUPPORT(anx))
-				schedule_work(&anx->try_snk_work);
-			goto out_prop_mode;
+			if (IS_INTF_IRQ_SUPPORT(anx)) {
+				if (schedule_work(&anx->try_snk_work))
+					goto out_prop_mode;
+			} else {
+				rc = try_snk(anx, TRY_ROLE_TIMEOUT * 3) ? 0 : -EIO;
+			}
+			goto out;
 
 		case DUAL_ROLE_PROP_MODE_DFP:
-			if (IS_INTF_IRQ_SUPPORT(anx))
-				schedule_work(&anx->try_src_work);
-			goto out_prop_mode;
+			if (IS_INTF_IRQ_SUPPORT(anx)) {
+				if (schedule_work(&anx->try_src_work))
+					goto out_prop_mode;
+			} else {
+				rc = try_src(anx, TRY_ROLE_TIMEOUT * 3) ? 0 : -EIO;
+			}
+			goto out;
 
 		default:
 			dev_err(cdev, "%s: unknown mode value. %d\n",
