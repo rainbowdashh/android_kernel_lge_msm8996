@@ -306,6 +306,30 @@ endmenu
 
 if ARCH_MSM8996
 
+config MACH_MSM8996_H1
+	bool "LG G5 (h1/alice)"
+	select MACH_LGE
+	help
+	  Enable LG G5 board support. Select one regional board below.
+
+config MACH_MSM8996_H1_GLOBAL_COM
+	bool "LG G5 international (h850)"
+	depends on MACH_MSM8996_H1
+
+config MACH_MSM8996_H1_US
+	bool
+	depends on MACH_MSM8996_H1
+
+config MACH_MSM8996_H1_TMO_US
+	bool "LG G5 T-Mobile (h830)"
+	depends on MACH_MSM8996_H1
+	select MACH_MSM8996_H1_US
+
+config MACH_MSM8996_H1_LRA_US
+	bool "LG G5 US unlocked (rs988)"
+	depends on MACH_MSM8996_H1
+	select MACH_MSM8996_H1_US
+
 config MACH_MSM8996_LUCYE
 	bool "LG G6 (lucye)"
 	select MACH_LGE
