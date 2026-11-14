@@ -687,6 +687,11 @@ static int clk_update_vdd(struct clk_vdd_class *vdd_class)
 	new_base = level * n_reg;
 
 	for (i = 0; i < vdd_class->num_regulators; i++) {
+		if (!r[i]) {
+			pr_warn_ratelimited("Skipping missing regulator %d for %s\n",
+					i, vdd_class->class_name);
+			continue;
+		}
 		pr_debug("Set Voltage level Min %d, Max %d\n", uv[new_base + i],
 				uv[max_lvl + i]);
 		rc = regulator_set_voltage(r[i], uv[new_base + i], INT_MAX);
@@ -710,10 +715,13 @@ static int clk_update_vdd(struct clk_vdd_class *vdd_class)
 	return rc;
 
 enable_disable_fail:
-	regulator_set_voltage(r[i], uv[cur_base + i], INT_MAX);
+	if (r[i])
+		regulator_set_voltage(r[i], uv[cur_base + i], INT_MAX);
 
 set_voltage_fail:
 	for (i--; i >= 0; i--) {
+		if (!r[i])
+			continue;
 		regulator_set_voltage(r[i], uv[cur_base + i], INT_MAX);
 		if (cur_lvl == 0 || cur_lvl == vdd_class->num_levels)
 			regulator_disable(r[i]);
