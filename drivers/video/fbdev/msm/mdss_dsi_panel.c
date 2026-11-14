@@ -3126,10 +3126,12 @@ int mdss_dsi_panel_init(struct device_node *node,
 	ctrl_pdata->on = mdss_dsi_panel_on;
 	ctrl_pdata->post_panel_on = mdss_dsi_post_panel_on;
 	ctrl_pdata->off = mdss_dsi_panel_off;
+#if IS_ENABLED(CONFIG_LGE_DISPLAY_HPLUS_COMMON)
 	if (ctrl_pdata->elsa_panel) {
 		ctrl_pdata->on = mdss_hplus_panel_on;
 		ctrl_pdata->off = mdss_hplus_panel_off;
 	}
+#endif
 	ctrl_pdata->low_power_config = mdss_dsi_panel_low_power_config;
 	ctrl_pdata->panel_data.set_backlight = mdss_dsi_panel_bl_ctrl;
 	ctrl_pdata->panel_data.apply_display_setting =
