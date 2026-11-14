@@ -31,11 +31,12 @@
 DEFINE_LED_TRIGGER(bl_led_trigger);
 #endif
 
-/* SW49408 shares reset and LCD operating modes with its touch controller. */
+/* LG incell controllers consume panel reset and LCD operating mode events. */
 static void mdss_dsi_touch_notify(struct mdss_dsi_ctrl_pdata *ctrl,
 				unsigned long event, void *data)
 {
-	if (IS_REACHABLE(CONFIG_LGE_TOUCH_CORE) && ctrl->sw49408_panel &&
+	if (IS_REACHABLE(CONFIG_LGE_TOUCH_CORE) &&
+	    (ctrl->sw49408_panel || ctrl->h1_panel) &&
 	    ctrl->ndx == DSI_CTRL_LEFT)
 		touch_notifier_call_chain(event, data);
 }
@@ -3084,6 +3085,8 @@ int mdss_dsi_panel_init(struct device_node *node,
 		return -ENODEV;
 	}
 
+	ctrl_pdata->h1_panel = IS_ENABLED(CONFIG_MACH_MSM8996_H1) &&
+		of_device_is_compatible(node, "lge,h1-panel");
 	ctrl_pdata->sw49408_panel =
 		of_device_is_compatible(node, "lge,sw49408-panel");
 	pinfo = &ctrl_pdata->panel_data.panel_info;

@@ -1,3 +1,7 @@
+config LGE_TOUCH_LGSIC_LG4946
+	bool "LG G5 LG4946 touch controller"
+	depends on LGE_TOUCH_CORE && MACH_MSM8996_H1
+
 config LGE_TOUCH_LGSIC_SW49408
 	bool "LG SW49408 touchscreen"
 	depends on LGE_TOUCH_CORE_BASE && FB_MSM_MDSS
