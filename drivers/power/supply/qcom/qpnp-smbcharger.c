@@ -17,6 +17,9 @@
 #include <linux/errno.h>
 #include <linux/delay.h>
 #include <linux/module.h>
+#ifdef CONFIG_MACH_MSM8996_H1
+#include <soc/qcom/lge/board_lge.h>
+#endif
 #include <linux/interrupt.h>
 #include <linux/slab.h>
 #include <linux/sched.h>
@@ -2444,7 +2447,7 @@ static void smbchg_parallel_usb_enable(struct smbchg_chip *chip,
 		return;
 
 #ifdef CONFIG_MACH_MSM8996_H1
-	if (lge_get_board_revno() == HW_REV_0_1) {
+	if (lge_get_board_rev_no() == HW_REV_0_1) {
 		pr_smb(PR_STATUS, "disable parallel charging at Rev0_1\n");
 		if (chip->parallel.current_max_ma != 0) {
 			pr_smb(PR_STATUS, "disabling parallel charger\n");
@@ -4229,6 +4232,27 @@ static void smbchg_usb_pd_en(struct smbchg_chip *chip)
 }
 #endif
 
+#if IS_ENABLED(CONFIG_LGE_USB_ANX7418)
+static void smbchg_put_anx_supply(void *data)
+{
+	power_supply_put(data);
+}
+
+static void smbchg_find_anx_supply(struct smbchg_chip *chip)
+{
+	struct power_supply *psy;
+
+	if (chip->typec_psy)
+		return;
+	/* ANX7418 needs battery/USB supplies before it can register usb_pd. */
+	psy = power_supply_get_by_name("usb_pd");
+	if (!psy)
+		return;
+	if (!devm_add_action_or_reset(chip->dev, smbchg_put_anx_supply, psy))
+		chip->typec_psy = psy;
+}
+#endif
+
 static void smbchg_external_power_changed(struct power_supply *psy)
 {
 	struct smbchg_chip *chip = power_supply_get_drvdata(psy);
@@ -4238,6 +4262,9 @@ static void smbchg_external_power_changed(struct power_supply *psy)
 	enum power_supply_type type = POWER_SUPPLY_TYPE_UNKNOWN;
 #endif
 
+#if IS_ENABLED(CONFIG_LGE_USB_ANX7418)
+	smbchg_find_anx_supply(chip);
+#endif
 #ifdef CONFIG_LGE_USB_TYPE_C
 	if (is_usb_pd_present(chip)) {
 		pr_smb(PR_MISC, "Enabling USB-PD\n");
@@ -6873,11 +6900,11 @@ static int smbchg_battery_set_property(struct power_supply *psy,
 		rc = smbchg_restricted_charging(chip, val->intval);
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_CAPABILITY:
-		if (chip->typec_psy)
+		if (chip->typec_psy || IS_ENABLED(CONFIG_LGE_USB_ANX7418))
 			update_typec_capability_status(chip, val);
 		break;
 	case POWER_SUPPLY_PROP_TYPEC_MODE:
-		if (chip->typec_psy)
+		if (chip->typec_psy || IS_ENABLED(CONFIG_LGE_USB_ANX7418))
 			update_typec_otg_status(chip, val->intval, false);
 		break;
 	case POWER_SUPPLY_PROP_ALLOW_HVDCP3:
