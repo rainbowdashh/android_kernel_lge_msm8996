@@ -778,6 +778,15 @@ config LEDS_NIC78BX
 	  To compile this driver as a module, choose M here: the module
 	  will be called leds-nic78bx.
 
+config LEDS_PMI8996_EMOTIONAL
+	bool "LG G5 PMI8996 RGB LED patterns"
+	depends on LEDS_CLASS && MACH_MSM8996_H1 && REGMAP_SPMI
+	select PWM
+	select PWM_QPNP
+	help
+	  Drive the G5 PMIC RGB LEDs and expose the lg_rgb_led/use_patterns
+	  interface required by the LG lights HAL.
+
 config LEDS_QTI_TRI_LED
 	tristate "LED support for Qualcomm Technologies, Inc. TRI_LED"
 	depends on LEDS_CLASS && MFD_SPMI_PMIC && PWM && OF

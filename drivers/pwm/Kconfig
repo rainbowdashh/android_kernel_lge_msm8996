@@ -340,6 +340,13 @@ config PWM_PXA
 	  To compile this driver as a module, choose M here: the module
 	  will be called pwm-pxa.
 
+config PWM_QPNP
+	bool "Qualcomm MSM8996 legacy PMIC PWM/LPG"
+	depends on ARCH_MSM8996 && OF && REGMAP_SPMI
+	help
+	  Support the single-channel qcom,qpnp-pwm bindings and LPG lookup
+	  table API used by the LG G5 RGB LED controller.
+
 config PWM_QTI_LPG
 	tristate "Qualcomm Technologies, Inc. LPG driver"
 	depends on  MFD_SPMI_PMIC && OF
