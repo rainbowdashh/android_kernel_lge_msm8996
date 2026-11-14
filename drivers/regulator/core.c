@@ -226,16 +226,13 @@ static void regulator_lock_supply(struct regulator_dev *rdev)
  */
 static void regulator_unlock_supply(struct regulator_dev *rdev)
 {
-	struct regulator *supply;
-
 	while (1) {
 		regulator_unlock(rdev);
-		supply = rdev->supply;
 
-		if (!rdev->supply)
+		if (!rdev->supply || !rdev->supply->rdev)
 			return;
 
-		rdev = supply->rdev;
+		rdev = rdev->supply->rdev;
 	}
 }
 
