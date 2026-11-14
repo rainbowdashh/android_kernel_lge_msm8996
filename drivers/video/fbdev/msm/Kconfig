@@ -171,3 +171,7 @@ config FB_MSM_MDSS_FRC_DEBUG
 	cadence.
 
 endif
+
+config LGE_DISPLAY_HPLUS_COMMON
+	bool "LG V20 H-Plus display support"
+	depends on MACH_MSM8996_ELSA && LGE_DISPLAY_COMMON

@@ -329,6 +329,8 @@ int touch_boot_mode_check(struct device *dev)
 	return ret;
 }
 
+int lge_get_panel(void);
+
 enum touch_device_type touch_get_device_type(void)
 {
 	enum touch_device_type ret = TYPE_LG4946;
@@ -340,6 +342,15 @@ enum touch_device_type touch_get_device_type(void)
 	TOUCH_I("%s = [%d]\n", __func__, ret);
 
 	return ret;
+}
+
+int lge_get_panel(void)
+{
+#ifdef CONFIG_MACH_MSM8996_ELSA
+	return TYPE_LG4945;
+#else
+	return TYPE_LG4946;
+#endif
 }
 
 int touch_bus_device_init(struct touch_hwif *hwif, void *driver)
