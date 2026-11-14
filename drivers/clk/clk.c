@@ -846,6 +846,13 @@ static int clk_vdd_class_init(struct clk_vdd_class *vdd, bool *added)
 
 		ret = clk_vote_vdd_level(vdd, vdd->num_levels - 1);
 		if (ret) {
+			if (ret == -ETIMEDOUT) {
+				pr_warn("VDD handoff for %s timed out; continuing without handoff vote\n",
+					vdd->class_name);
+				vdd->skip_handoff = true;
+				ret = 0;
+				goto done;
+			}
 			pr_err("failed to vote for %s, ret=%d\n",
 				vdd->class_name, ret);
 			goto done;
