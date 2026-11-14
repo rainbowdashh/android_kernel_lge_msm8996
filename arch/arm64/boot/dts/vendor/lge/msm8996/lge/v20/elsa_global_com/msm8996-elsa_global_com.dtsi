@@ -1,0 +1,948 @@
+/* Copyright (c) 2015, The Linux Foundation. All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 and
+ * only version 2 as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ */
+
+
+
+#include "../common/pinctrl.dtsi"
+#include "../common/misc.dtsi"
+#include "../common/panel.dtsi"
+#include "../common/touch-sic-sw49407.dtsi"
+#include "../common/pm.dtsi"
+#include "../common/hdmi.dtsi"
+#include "../common/connectivity.dtsi"
+#include "../common/usb-typec-anx7688.dtsi"
+#include "../../common-nfc.dtsi"
+#include "../../common-fingerprint.dtsi"
+#include "../../common-various.dtsi"
+
+/ {
+	modem-identity {
+		compatible = "lge,elsa-modem-fixup";
+	};
+	reserved-memory {
+		crash_fb_mem: crash_fb_mem@c0100000 {
+			linux,contiguous-region;
+			reg = <0 0xc0100000 0 0xc00000>;
+			label = "crash_fb_mem";
+		};
+
+		/delete-node/ cont_splash_mem@83401000;
+
+		cont_splash_mem: cont_splash_mem@84201000 {
+			reg = <0 0x84201000 0 0x15FF000>;
+			label = "cont_splash_mem";
+		};
+
+		/delete-node/ dfps_data_mem@83400000;
+
+		firmware_reserved: firmware@86200000 {
+			reg = <0 0x86200000 0 0x1e00000>;
+		};
+
+		modem_mem: modem_region@88800000 {
+			reg = <0 0x88000000 0 0x6900000>;
+		};
+	};
+};
+
+&soc {
+	wdog: qcom,wdt@9830000 {
+		qcom,bark-time = <16000>;
+	};
+
+	crash_fb {
+		compatible = "crash_fb";
+		mem-addr = <0xc0100000>;
+		mem-size = <0xc00000>;
+	};
+
+	bootlog {
+		compatible = "bootlog";
+	};
+
+	/* stendro: this likely disabled in hw, disable here too */
+	earjack-debugger {
+		compatible = "serial,earjack-debugger";
+		status = "disabled";
+		interrupt-parent = <&tlmm>;
+		serial,irq-gpio = <&tlmm 126 0>;
+	};
+
+	lge,monitor-thermal {
+		compatible = "lge,monitor-thermal";
+		status = "ok";
+		lge,hot-poll-time = <10000>;
+		lge,hot-crit-temp = <48>;
+		lge,poll-time = <60000>;
+		qcom,monitor-thermal-vadc = <&pm8994_vadc>;
+	};
+
+	/*delete QCT finger */
+	/delete-node/ qcom,qbt1000;
+
+	/delete-node/ qcom,cnss;
+	/delete-node/ qcom,wil6210;
+
+	qcom_seecom: qseecom@86600000 {
+		reg = <0x86600000 0x1A00000>;
+	};
+};
+
+&pm8994_vadc {
+	chan@5 {
+		label = "vcoin";
+		reg = <5>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <1>;
+		qcom,calibration-type = "absolute";
+		qcom,scale-function = <0>;
+		qcom,hw-settle-time = <0>;
+		qcom,fast-avg-setup = <0>;
+	};
+
+	chan@7 {
+		label = "vph_pwr";
+		reg = <7>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <1>;
+		qcom,calibration-type = "absolute";
+		qcom,scale-function = <0>;
+		qcom,hw-settle-time = <0>;
+		qcom,fast-avg-setup = <0>;
+	};
+
+	chan@39 {
+		label = "usb_id_lv";
+		reg = <0x39>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <0>;
+		qcom,hw-settle-time = <5>;
+		qcom,fast-avg-setup = <0>;
+	};
+
+	chan@72 {
+		label = "xo_therm";
+		reg = <0x72>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <4>;
+		qcom,hw-settle-time = <2>;
+		qcom,fast-avg-setup = <0>;
+		status = "ok";
+	};
+
+	chan@73 {
+		label = "bd_therm_1";
+		reg = <0x73>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <2>;
+		qcom,hw-settle-time = <2>;
+		qcom,fast-avg-setup = <0>;
+		status = "ok";
+	};
+
+	chan@74 {
+		label = "bd_therm_2";
+		reg = <0x74>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <2>;
+		qcom,hw-settle-time = <2>;
+		qcom,fast-avg-setup = <0>;
+		status = "ok";
+	};
+
+	chan@75 {
+		label = "pa_therm0";
+		reg = <0x75>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <2>;
+		qcom,hw-settle-time = <2>;
+		qcom,fast-avg-setup = <0>;
+		status = "ok";
+	};
+
+	chan@76 {
+		label = "pcb_rev";
+		reg = <0x76>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <0>;
+		qcom,hw-settle-time = <1>;
+		qcom,fast-avg-setup = <0>;
+	};
+
+	chan@77 {
+		label = "pa_therm1";
+		reg = <0x77>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <2>;
+		qcom,hw-settle-time = <2>;
+		qcom,fast-avg-setup = <0>;
+		status = "disabled";
+	};
+
+	chan@79 {
+		label = "usb_id_lv_pu";
+		reg = <0x79>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <0>;
+		qcom,hw-settle-time = <5>;
+		qcom,fast-avg-setup = <0>;
+	};
+
+	chan@7c {
+		label = "xo_therm_buf";
+		reg = <0x7c>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <4>;
+		qcom,hw-settle-time = <2>;
+		qcom,fast-avg-setup = <0>;
+		status = "disabled";
+	};
+};
+
+&pm8994_adc_tm {
+	chan@72 {
+		label = "xo_therm";
+		reg = <0x72>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <4>;
+		qcom,hw-settle-time = <2>;
+		qcom,fast-avg-setup = <0>;
+		qcom,btm-channel-number = <0x72>;
+		qcom,thermal-node;
+		status = "ok";
+	};
+
+	chan@73 {
+		label = "bd_therm_1";
+		reg = <0x73>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <2>;
+		qcom,hw-settle-time = <2>;
+		qcom,fast-avg-setup = <0>;
+		qcom,btm-channel-number = <0x48>;
+		qcom,thermal-node;
+		status = "ok";
+	};
+
+	chan@74 {
+		label = "bd_therm_2";
+		reg = <0x74>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <2>;
+		qcom,hw-settle-time = <2>;
+		qcom,fast-avg-setup = <0>;
+		qcom,btm-channel-number = <0x68>;
+		qcom,thermal-node;
+		status = "ok";
+	};
+
+	chan@75 {
+		label = "pa_therm0";
+		reg = <0x75>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <2>;
+		qcom,hw-settle-time = <2>;
+		qcom,fast-avg-setup = <0>;
+		qcom,btm-channel-number = <0x70>;
+		qcom,thermal-node;
+		status = "ok";
+	};
+
+	chan@77 {
+		label = "pa_therm1";
+		reg = <0x77>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <2>;
+		qcom,hw-settle-time = <2>;
+		qcom,fast-avg-setup = <0>;
+		qcom,btm-channel-number = <0x78>;
+		qcom,thermal-node;
+		status = "disabled";
+	};
+
+	chan@79 {
+		label = "usb_id_lv_pu";
+		reg = <0x79>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <2>;
+		qcom,hw-settle-time = <2>;
+		qcom,fast-avg-setup = <3>;
+		qcom,btm-channel-number = <0x80>;
+	};
+
+	chan@7c {
+		label = "xo_therm_buf";
+		reg = <0x7c>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "ratiometric";
+		qcom,scale-function = <4>;
+		qcom,hw-settle-time = <2>;
+		qcom,fast-avg-setup = <0>;
+		qcom,btm-channel-number = <0x88>;
+		qcom,thermal-node;
+		status = "disabled";
+	};
+};
+
+&pmi8994_vadc {
+	chan@0 {
+		label = "usbin";
+		reg = <0>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <4>;
+		qcom,calibration-type = "absolute";
+		qcom,scale-function = <0>;
+		qcom,hw-settle-time = <0>;
+		qcom,fast-avg-setup = <0>;
+	};
+
+	chan@1 {
+		label = "dcin";
+		reg = <1>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <4>;
+		qcom,calibration-type = "absolute";
+		qcom,scale-function = <0>;
+		qcom,hw-settle-time = <0>;
+		qcom,fast-avg-setup = <0>;
+	};
+
+	chan@10 {
+		label = "vbackup_adc";
+		reg = <0x10>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <0>;
+		qcom,calibration-type = "absolute";
+		qcom,scale-function = <0>;
+		qcom,hw-settle-time = <1>;
+		qcom,fast-avg-setup = <2>;
+	};
+
+	chan@43 {
+		label = "usb_dp";
+		reg = <0x43>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <1>;
+		qcom,calibration-type = "absolute";
+		qcom,scale-function = <0>;
+		qcom,hw-settle-time = <0>;
+		qcom,fast-avg-setup = <0>;
+	};
+
+	chan@44 {
+		label = "usb_dm";
+		reg = <0x44>;
+		qcom,decimation = <0>;
+		qcom,pre-div-channel-scaling = <1>;
+		qcom,calibration-type = "absolute";
+		qcom,scale-function = <0>;
+		qcom,hw-settle-time = <0>;
+		qcom,fast-avg-setup = <0>;
+	};
+};
+
+&pmi8994_mpps {
+	default-state {
+/* Must not define the mpp(mpp 3) on here */
+	mpp1 {
+			function = "analog";
+			qcom,dtest = <0>;
+			qcom,paired = <0>;
+			qcom,amux-route = <0>;
+			input-enable = <1>;
+			output-enable = <0>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	mpp2 {
+			function = "digital";
+			qcom,dtest = <0>;
+			qcom,paired = <0>;
+			power-source = <2>;
+			input-enable = <1>;
+			output-enable = <0>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	mpp4 {
+			function = "analog";
+			qcom,dtest = <0>;
+			qcom,paired = <0>;
+			qcom,amux-route = <1>;
+			power-source = <2>;
+			input-enable = <1>;
+			output-enable = <0>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+	};
+};
+
+&pmi8994_gpios {
+	default-state {
+	gpio1 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			qcom,drive-strength = <1>;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio2 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			qcom,pull-up-strength = <0>;
+			qcom,drive-strength = <1>;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-high;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio3 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			qcom,drive-strength = <1>;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio4 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			qcom,drive-strength = <1>;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio5 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-disable;
+			qcom,drive-strength = <2>;
+			drive-push-pull;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio6 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			qcom,drive-strength = <1>;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio7 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			qcom,drive-strength = <2>;
+			drive-open-source;
+			power-source = <2>;
+			input-enable = <1>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio8 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			qcom,pull-up-strength = <0>;
+			qcom,drive-strength = <1>;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-high;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio9 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			qcom,drive-strength = <1>;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio10 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			qcom,drive-strength = <1>;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+	};
+};
+
+&pmi8994_pwm_4 {
+	qcom,channel-owner = "lcd_bl";
+	qcom,dtest-line = <4>;
+	qcom,dtest-output = <1>;
+	status = "okay";
+};
+
+&pm8994_mpps {
+	default-state {
+/* Must not define the mpps(mpp 1 and 3) on here */
+	mpp2 {
+			bias-high-impedance;
+			status = "okay";
+		};
+
+	mpp4 {
+			bias-high-impedance;
+			status = "okay";
+		};
+
+	mpp5 {
+			bias-high-impedance;
+			status = "okay";
+		};
+
+	mpp6 {
+			bias-high-impedance;
+			status = "okay";
+		};
+
+	mpp7 {
+			bias-high-impedance;
+			status = "okay";
+		};
+
+	mpp8 {
+			bias-high-impedance;
+			status = "okay";
+		};
+	};
+};
+
+&pm8994_gpios {
+	default-state {
+/* Must not define the gpios(gpio 20 and 21) on here */
+	gpio2 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			qcom,pull-up-strength = <0>;
+			qcom,drive-strength = <1>;
+			power-source = <2>;
+			input-enable = <1>;
+			output-enable = <0>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio4 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			qcom,drive-strength = <1>;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio5 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			qcom,drive-strength = <2>;
+			power-source = <0>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio6 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			qcom,pull-up-strength = <0>;
+			power-source = <2>;
+			input-enable = <1>;
+			output-enable = <0>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio7 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			qcom,pull-up-strength = <0>;
+			power-source = <2>;
+			input-enable = <1>;
+			output-enable = <0>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio8 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			qcom,drive-strength = <1>;
+			drive-push-pull;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio9 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			qcom,drive-strength = <1>;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio10 {
+			bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio11 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			qcom,drive-strength = <1>;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio12 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			qcom,drive-strength = <1>;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-high;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio13 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			qcom,pull-up-strength = <0>;
+			power-source = <2>;
+			input-enable = <1>;
+			output-enable = <0>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio14 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			qcom,pull-up-strength = <0>;
+			power-source = <2>;
+			input-enable = <1>;
+			output-enable = <0>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio15 {
+			function = "func1";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-disable;
+			qcom,drive-strength = <2>;
+			drive-push-pull;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio16 {
+			function = "func1";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-disable;
+			qcom,drive-strength = <3>;
+			drive-push-pull;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio17 {
+			function = "func2";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-disable;
+			qcom,drive-strength = <2>;
+			drive-push-pull;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio18 {
+			function = "func2";
+			qcom,drive-strength = <2>;
+			drive-push-pull;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+
+	gpio19 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			qcom,drive-strength = <1>;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+	gpio22 {
+			function = "normal";
+			/delete-property/ bias-disable;
+			/delete-property/ bias-pull-down;
+			/delete-property/ qcom,pull-up-strength;
+			bias-pull-down;
+			qcom,drive-strength = <1>;
+			drive-push-pull;
+			power-source = <2>;
+			input-enable = <0>;
+			output-enable = <1>;
+			/delete-property/ output-low;
+			/delete-property/ output-high;
+			output-low;
+			/delete-property/ bias-high-impedance;
+			status = "okay";
+		};
+	};
+};
+
+&pcie1 {
+       status = "disabled";
+};
+
+&pcie2 {
+       status = "disabled";
+};
+
+&pil_modem {
+       /delete-property/ qcom,mx-spike-wa;
+};
