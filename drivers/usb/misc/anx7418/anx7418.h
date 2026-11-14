@@ -72,6 +72,7 @@ struct anx7418 {
 	int volt_max;
 	int ctype_charger;
 	struct delayed_work chg_work;
+	struct delayed_work role_work;
 };
 
 enum anx7418_charger_type {
