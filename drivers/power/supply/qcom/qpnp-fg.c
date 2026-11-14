@@ -6881,6 +6881,7 @@ static int fg_batt_profile_init(struct fg_chip *chip)
 	struct device_node *node = chip->pdev->dev.of_node;
 	struct device_node *batt_node, *profile_node;
 	const char *data, *batt_type_str;
+	const char *profile_type;
 	bool tried_again = false, vbat_in_range, profiles_same;
 	u8 reg = 0;
 
@@ -6928,8 +6929,11 @@ wait:
 	if (fg_debug_mask & FG_STATUS)
 		pr_info("battery id = %dKOhms\n", batt_id);
 
+	profile_type = fg_batt_type;
+	if (!profile_type)
+		of_property_read_string(node, "qcom,battery-type", &profile_type);
 	profile_node = of_batterydata_get_best_profile(batt_node, batt_id,
-							fg_batt_type);
+							profile_type);
 	if (IS_ERR_OR_NULL(profile_node)) {
 		rc = PTR_ERR(profile_node);
 		if (rc == -EPROBE_DEFER) {
