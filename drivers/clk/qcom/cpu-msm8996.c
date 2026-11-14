@@ -598,6 +598,12 @@ static int cpu_domain_init(struct platform_device *pdev,
 
 	if (d->index < 2) {
 		ret = cpu_alt_pll_disable(d);
+		if (ret == -ETIMEDOUT) {
+			dev_warn(&pdev->dev,
+				"%s alternate PLL did not report shutdown; continuing handoff\n",
+				name);
+			ret = 0;
+		}
 		if (ret)
 			return ret;
 	}
