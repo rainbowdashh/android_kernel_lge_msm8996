@@ -42,4 +42,5 @@ obj-$(CONFIG_LGE_USB_DEBUGGER)		+= lge_usb_debugger.o
 obj-$(CONFIG_LGE_DUAL_SCREEN)		+= lge_ds3.o
 ccflags-y				+= -I$(srctree)/drivers/usb/pd
 
+obj-$(CONFIG_LGE_USB_ANX7418) += anx7418/
 obj-$(CONFIG_TUSB422) += tusb422/
