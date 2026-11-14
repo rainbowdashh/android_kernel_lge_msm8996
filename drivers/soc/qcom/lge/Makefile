@@ -24,3 +24,5 @@ obj-$(CONFIG_LGE_PM_PRM) += power/dd/lge_dd.o
 obj-$(CONFIG_LGE_MME_BUS) += lge_mme_bus.o
 obj-$(CONFIG_LGE_MME_DRV) += wmc_drv.o
 wmc_drv-$(CONFIG_LGE_MME_DRV) += lge_mme_drv.o
+
+obj-$(CONFIG_LGE_IRRC) += lge_uei_irrc.o

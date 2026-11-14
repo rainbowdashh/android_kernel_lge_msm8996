@@ -1,3 +1,4 @@
+#include "mdss_hdmi_slimport.h"
 // SPDX-License-Identifier: GPL-2.0-only
 /* Copyright (c) 2010-2018, 2020, 2021, The Linux Foundation. All rights reserved. */
 
@@ -3004,6 +3005,37 @@ static int hdmi_tx_set_mhl_max_pclk(struct platform_device *pdev, u32 max_val)
 
 	return 0;
 }
+
+#if IS_ENABLED(CONFIG_LGE_DP_ANX7688)
+static int hdmi_tx_set_slimport_hpd(struct platform_device *pdev, u8 on)
+{
+	struct hdmi_tx_ctrl *ctrl = platform_get_drvdata(pdev);
+	int ret;
+
+	if (!ctrl)
+		return -ENODEV;
+	if (!!on == !!ctrl->hpd_feature_on)
+		return 0;
+	ret = hdmi_tx_sysfs_enable_hpd(ctrl, !!on);
+	if (!ret)
+		ctrl->hpd_feature_on = !!on;
+	return ret;
+}
+
+int msm_hdmi_register_slimport(struct platform_device *pdev,
+		struct msm_hdmi_slimport_ops *ops, void *data)
+{
+	struct hdmi_tx_ctrl *ctrl = platform_get_drvdata(pdev);
+
+	if (!ctrl)
+		return -EPROBE_DEFER;
+	if (!ops)
+		return -EINVAL;
+	ops->set_upstream_hpd = hdmi_tx_set_slimport_hpd;
+	ctrl->ds_registered = true;
+	return 0;
+}
+#endif
 
 int msm_hdmi_register_mhl(struct platform_device *pdev,
 			  struct msm_hdmi_mhl_ops *ops, void *data)

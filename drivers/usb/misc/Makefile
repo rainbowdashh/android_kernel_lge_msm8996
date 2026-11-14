@@ -44,3 +44,5 @@ ccflags-y				+= -I$(srctree)/drivers/usb/pd
 
 obj-$(CONFIG_LGE_USB_ANX7418) += anx7418/
 obj-$(CONFIG_TUSB422) += tusb422/
+
+obj-$(CONFIG_LGE_USB_ANX7688) += anx7688/

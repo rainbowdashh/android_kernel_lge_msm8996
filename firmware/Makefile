@@ -32,6 +32,10 @@ fw-shipped-$(CONFIG_LGE_USB_LATTICE_SLS11HC) += lattice/u11hc_spi_lge_des_impl_1
 fw-shipped-$(CONFIG_SAR_ALMF04_C2_C3_12QFN) += almf04/ALMF04_Sar2CNew_V2.04T.fw
 fw-shipped-$(CONFIG_SAR_ALMF04QFN_2_3CH_NIT) += almf04/ALMF04_Sar3CH_NIT_V3.11T.fw
 fw-shipped-$(CONFIG_SAR_2nd_ALMF04QFN_2_3CH_NIT) += almf04/ALMF04_Sar3CH_NIT_V3.11T.fw
+ifeq ($(CONFIG_MACH_MSM8996_ELSA),y)
+fw-shipped-y += touch/elsa/L0L57P1_1_35.img touch/elsa/L0L57P1_2_00.img touch/elsa/L1L57P1_1_14.img touch/elsa/elsa_limit.txt touch/elsa/elsa_limit_mfts.txt
+endif
+
 fw-shipped-all := $(fw-shipped-y) $(fw-shipped-m) $(fw-shipped-)
 
 # Directories which we _might_ need to create, so we have a rule for them.

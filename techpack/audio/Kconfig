@@ -87,6 +87,11 @@ config SND_SOC_MSM_HDMI_CODEC_RX
 config SND_EVENT
 	def_bool y
 
+config SND_SOC_ES9018
+	bool "LG V20 ESS headphone DAC"
+	depends on I2C && MACH_MSM8996_ELSA
+	select SND_USE_SEC_MI2S
+
 config SND_SOC_ES9218P
 	bool "ESS ES9218P headphone DAC"
 	select SND_USE_SEC_MI2S
