@@ -216,7 +216,7 @@ static void regulator_lock_supply(struct regulator_dev *rdev)
 {
 	int i;
 
-	for (i = 0; rdev; rdev = rdev_get_supply(rdev), i++)
+	for (i = 0; !IS_ERR_OR_NULL(rdev); rdev = rdev_get_supply(rdev), i++)
 		regulator_lock_nested(rdev, i);
 }
 
@@ -226,10 +226,11 @@ static void regulator_lock_supply(struct regulator_dev *rdev)
  */
 static void regulator_unlock_supply(struct regulator_dev *rdev)
 {
-	while (1) {
+	while (!IS_ERR_OR_NULL(rdev)) {
 		regulator_unlock(rdev);
 
-		if (!rdev->supply || !rdev->supply->rdev)
+		if (IS_ERR_OR_NULL(rdev->supply) ||
+			IS_ERR_OR_NULL(rdev->supply->rdev))
 			return;
 
 		rdev = rdev->supply->rdev;
