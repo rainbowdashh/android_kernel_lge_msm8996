@@ -742,6 +742,10 @@ static int cpu_register_domain(struct platform_device *pdev, struct msm8996_cpu_
 	int ret;
 
 	ret = cpu_domain_init(pdev, d, name);
+	if (ret == -ETIMEDOUT) {
+		dev_warn(dev, "%s domain handoff timed out; continuing\n", name);
+		ret = 0;
+	}
 	if (ret)
 		return ret;
 
