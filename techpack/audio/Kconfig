@@ -95,6 +95,14 @@ config SND_SOC_ES9218P
 config SND_USE_SEC_MI2S
 	bool
 
+config SND_USE_QUAT_MI2S
+	bool "Use quaternary MI2S on LG MSM8996"
+	depends on ARCH_MSM8996
+
+config SND_USE_SKU_INFO
+	bool "Select LG MSM8996 audio calibration by SKU"
+	depends on ARCH_MSM8996
+
 config SND_USE_TERT_MI2S
 	bool "Use tertiary MI2S for Bluetooth audio"
 
