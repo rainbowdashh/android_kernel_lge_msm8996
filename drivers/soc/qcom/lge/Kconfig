@@ -334,6 +334,26 @@ config MACH_MSM8996_ELSA
 	bool "LG V20 (elsa)"
 	select MACH_LGE
 
+config MACH_MSM8996_ELSA_ATT_US
+	bool "LG ELSA_ATT_US board"
+	depends on MACH_MSM8996_ELSA
+
+config MACH_MSM8996_ELSA_TMO_US
+	bool "LG ELSA_TMO_US board"
+	depends on MACH_MSM8996_ELSA
+
+config MACH_MSM8996_ELSA_SPR_US
+	bool "LG ELSA_SPR_US board"
+	depends on MACH_MSM8996_ELSA
+
+config MACH_MSM8996_ELSA_NAO_US
+	bool "LG ELSA_NAO_US board"
+	depends on MACH_MSM8996_ELSA
+
+config MACH_MSM8996_ELSA_VZW
+	bool "LG ELSA_VZW board"
+	depends on MACH_MSM8996_ELSA
+
 config MACH_MSM8996_ELSA_GLOBAL_COM
 	bool "LG V20 international (h990)"
 	depends on MACH_MSM8996_ELSA
@@ -358,6 +378,18 @@ config MACH_MSM8996_LUCYE
 	select MACH_LGE
 	help
 	  Enable the common board support for the LG G6 family.
+
+config MACH_MSM8996_LUCYE_TMO_US
+	bool "LG LUCYE_TMO_US board"
+	depends on MACH_MSM8996_LUCYE
+
+config MACH_MSM8996_LUCYE_GLOBAL_CA
+	bool "LG LUCYE_GLOBAL_CA board"
+	depends on MACH_MSM8996_LUCYE
+
+config MACH_MSM8996_LUCYE_NAO_US
+	bool "LG LUCYE_NAO_US board"
+	depends on MACH_MSM8996_LUCYE
 
 config MACH_MSM8996_LUCYE_GLOBAL_COM
 	bool "LG G6 international (h870d)"

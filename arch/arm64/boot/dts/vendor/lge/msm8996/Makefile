@@ -36,3 +36,45 @@ endif
 
 always := $(dtb-y)
 clean-files := *.dtb
+
+ifeq ($(CONFIG_MACH_MSM8996_LUCYE_NAO_US),y)
+dtb-y += $(patsubst %.dts,%.dtb,$(notdir $(wildcard $(srctree)/$(src)/lge/g6/lucye_nao_us/*.dts)))
+$(obj)/%.dtb: $(src)/lge/g6/lucye_nao_us/%.dts FORCE
+	$(call if_changed_dep,dtc)
+endif
+
+ifeq ($(CONFIG_MACH_MSM8996_LUCYE_TMO_US),y)
+dtb-y += $(patsubst %.dts,%.dtb,$(notdir $(wildcard $(srctree)/$(src)/lge/g6/lucye_tmo_us/*.dts)))
+$(obj)/%.dtb: $(src)/lge/g6/lucye_tmo_us/%.dts FORCE
+	$(call if_changed_dep,dtc)
+endif
+
+ifeq ($(CONFIG_MACH_MSM8996_ELSA_ATT_US),y)
+dtb-y += $(patsubst %.dts,%.dtb,$(notdir $(wildcard $(srctree)/$(src)/lge/v20/elsa_att_us/*.dts)))
+$(obj)/%.dtb: $(src)/lge/v20/elsa_att_us/%.dts FORCE
+	$(call if_changed_dep,dtc)
+endif
+
+ifeq ($(CONFIG_MACH_MSM8996_ELSA_TMO_US),y)
+dtb-y += $(patsubst %.dts,%.dtb,$(notdir $(wildcard $(srctree)/$(src)/lge/v20/elsa_tmo_us/*.dts)))
+$(obj)/%.dtb: $(src)/lge/v20/elsa_tmo_us/%.dts FORCE
+	$(call if_changed_dep,dtc)
+endif
+
+ifeq ($(CONFIG_MACH_MSM8996_ELSA_SPR_US),y)
+dtb-y += $(patsubst %.dts,%.dtb,$(notdir $(wildcard $(srctree)/$(src)/lge/v20/elsa_spr_us/*.dts)))
+$(obj)/%.dtb: $(src)/lge/v20/elsa_spr_us/%.dts FORCE
+	$(call if_changed_dep,dtc)
+endif
+
+ifeq ($(CONFIG_MACH_MSM8996_ELSA_NAO_US),y)
+dtb-y += $(patsubst %.dts,%.dtb,$(notdir $(wildcard $(srctree)/$(src)/lge/v20/elsa_nao_us/*.dts)))
+$(obj)/%.dtb: $(src)/lge/v20/elsa_nao_us/%.dts FORCE
+	$(call if_changed_dep,dtc)
+endif
+
+ifeq ($(CONFIG_MACH_MSM8996_ELSA_VZW),y)
+dtb-y += $(patsubst %.dts,%.dtb,$(notdir $(wildcard $(srctree)/$(src)/lge/v20/elsa_vzw/*.dts)))
+$(obj)/%.dtb: $(src)/lge/v20/elsa_vzw/%.dts FORCE
+	$(call if_changed_dep,dtc)
+endif

@@ -64,7 +64,7 @@
 };
 
 &mdss_dsi0 {
-	qcom,dsi-pref-prim-pan = <&dsi_dual_lgd_lg4945_cmd>;
+	qcom,dsi-pref-prim-pan = <&dsi_sw49407_dsc_cmd>;
 	lge,extra-gpio-names = "vddio", "vpnl";
 
 	lge,gpio-vddio = <&tlmm 79 0>;
@@ -456,44 +456,24 @@
 		};
 
 	gpio15 {
-			function = "normal";
-			input-enable = <1>;
-			output-enable = <0>;
-			/delete-property/ output-low;
-			/delete-property/ output-high;
-			/delete-property/ bias-high-impedance;
-			status = "okay";
-		};
+		/* CODEC_MCLK: inherit the common clock output, as in 4.4. */
+		status = "okay";
+	};
 
 	gpio16 {
-			function = "normal";
-			input-enable = <1>;
-			output-enable = <0>;
-			/delete-property/ output-low;
-			/delete-property/ output-high;
-			/delete-property/ bias-high-impedance;
-			status = "okay";
-		};
+		/* PMI_CLK_IN: inherit the common clock output, as in 4.4. */
+		status = "okay";
+	};
 
 	gpio17 {
-			function = "normal";
-			input-enable = <1>;
-			output-enable = <0>;
-			/delete-property/ output-low;
-			/delete-property/ output-high;
-			/delete-property/ bias-high-impedance;
-			status = "okay";
-		};
+		/* AOD_RTC: inherit the common clock output, as in 4.4. */
+		status = "okay";
+	};
 
 	gpio18 {
-			function = "normal";
-			input-enable = <1>;
-			output-enable = <0>;
-			/delete-property/ output-low;
-			/delete-property/ output-high;
-			/delete-property/ bias-high-impedance;
-			status = "okay";
-		};
+		/* WIFI_SLEEP_CLK: inherit the common clock output, as in 4.4. */
+		status = "okay";
+	};
 
 	gpio19 {
 			function = "normal";
