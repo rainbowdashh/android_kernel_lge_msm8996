@@ -825,11 +825,12 @@ static bool clk_is_rate_level_valid(struct clk_core *core, unsigned long rate)
 	return level >= 0;
 }
 
-static int clk_vdd_class_init(struct clk_vdd_class *vdd)
+static int clk_vdd_class_init(struct clk_vdd_class *vdd, bool *added)
 {
 	struct clk_handoff_vdd *v;
 	int ret = 0;
 
+	*added = false;
 	if (vdd->skip_handoff)
 		return 0;
 
@@ -858,13 +859,33 @@ static int clk_vdd_class_init(struct clk_vdd_class *vdd)
 	}
 
 	v->vdd_class = vdd;
-
 	list_add_tail(&v->list, &clk_handoff_vdd_list);
+	*added = true;
 
 done:
 	mutex_unlock(&vdd_class_list_lock);
 
 	return ret;
+}
+
+static void clk_vdd_class_deinit(struct clk_vdd_class *vdd)
+{
+	struct clk_handoff_vdd *v, *tmp;
+
+	if (vdd->skip_handoff)
+		return;
+
+	mutex_lock(&vdd_class_list_lock);
+	list_for_each_entry_safe(v, tmp, &clk_handoff_vdd_list, list) {
+		if (v->vdd_class != vdd)
+			continue;
+		list_del(&v->list);
+		if (!vdd_class_handoff_completed)
+			clk_unvote_vdd_level(vdd, vdd->num_levels - 1);
+		kfree(v);
+		break;
+	}
+	mutex_unlock(&vdd_class_list_lock);
 }
 
 /***        clk api        ***/
@@ -4397,6 +4418,7 @@ struct clk *clk_register(struct device *dev, struct clk_hw *hw)
 {
 	int i, ret;
 	struct clk_core *core;
+	bool vdd_handoff_added = false;
 
 	core = kzalloc(sizeof(*core), GFP_KERNEL);
 	if (!core) {
@@ -4432,7 +4454,7 @@ struct clk *clk_register(struct device *dev, struct clk_hw *hw)
 	hw->core = core;
 
 	if (core->vdd_class) {
-		ret = clk_vdd_class_init(core->vdd_class);
+		ret = clk_vdd_class_init(core->vdd_class, &vdd_handoff_added);
 		if (ret) {
 			pr_err("Failed to initialize vdd class\n");
 			goto fail_parent_names;
@@ -4490,6 +4512,8 @@ fail_parent_names_copy:
 		kfree_const(core->parent_names[i]);
 	kfree(core->parent_names);
 fail_parent_names:
+	if (vdd_handoff_added)
+		clk_vdd_class_deinit(core->vdd_class);
 fail_ops:
 	kfree_const(core->name);
 fail_name:
