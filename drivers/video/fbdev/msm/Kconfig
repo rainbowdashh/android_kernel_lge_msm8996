@@ -172,9 +172,9 @@ config FB_MSM_MDSS_FRC_DEBUG
 
 endif
 
-config LGE_DISPLAY_HPLUS_COMMON
-	bool "LG V20 H-Plus display support"
-	depends on MACH_MSM8996_ELSA && LGE_DISPLAY_COMMON
+config LGE_DIRTY_ABOOT_FIXUP
+	bool "LG dirty bootloader display fixup"
+	depends on LGE_DISPLAY_COMMON
 config LGE_DISPLAY_OVERRIDE_MDSS_DSI_PANEL_RESET
 	bool
 	default y if LGE_DISPLAY_HPLUS_COMMON
