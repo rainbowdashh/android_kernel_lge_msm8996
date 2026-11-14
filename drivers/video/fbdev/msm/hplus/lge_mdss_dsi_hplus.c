@@ -261,6 +261,11 @@ int mdss_hplus_panel_power_on(struct mdss_panel_data *pdata)
 	if (mdss_dsi_pinctrl_set_state(ctrl_pdata, true))
 		pr_err("[Display] pinctrl not enabled\n");
 
+	lge_extra_gpio_set_value(ctrl_pdata, "vddio", 1);
+	usleep_range(3000, 3000);
+	lge_extra_gpio_set_value(ctrl_pdata, "vpnl", 1);
+	usleep_range(3000, 3000);
+
 #if defined(CONFIG_LGE_DISPLAY_AOD_SUPPORTED)
 	if (ctrl_pdata->panel_data.panel_info.aod_labibb_ctrl == true) {
 		ret = msm_dss_enable_vreg(
@@ -332,10 +337,13 @@ int mdss_hplus_panel_power_off(struct mdss_panel_data *pdata)
 		return ret;
 	}
 #endif
+	lge_extra_gpio_set_value(ctrl_pdata, "vpnl", 0);
+	usleep_range(1000, 1000);
+	lge_extra_gpio_set_value(ctrl_pdata, "vddio", 0);
+	usleep_range(1000, 1000);
 	ret = msm_dss_enable_vreg(
 		ctrl_pdata->panel_power_data.vreg_config,
 		ctrl_pdata->panel_power_data.num_vreg, 0);
-	if (ret)
 		pr_err("%s: failed to disable vregs for %s\n",
 			__func__, __mdss_dsi_pm_name(DSI_PANEL_PM));
 end:
