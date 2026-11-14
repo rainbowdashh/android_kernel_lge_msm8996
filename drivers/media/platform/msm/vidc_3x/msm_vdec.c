@@ -612,7 +612,7 @@ static int vdec_hal_to_v4l2(int id, int value);
 static u32 get_frame_size_nv12(int plane,
 					u32 height, u32 width)
 {
-	return VENUS_BUFFER_SIZE(COLOR_FMT_NV12, width, height);
+	return VENUS_BUFFER_SIZE(COLOR_FMT_NV12_128, width, height);
 }
 
 static u32 get_frame_size_nv12_ubwc(int plane, u32 height, u32 width)
@@ -1049,6 +1049,7 @@ int msm_vdec_qbuf(struct msm_vidc_inst *inst, struct v4l2_buffer *b)
 	}
 
 	mutex_lock(&q->lock);
+	msm_comm_update_buffer_sizes(q, b);
 	rc = vb2_qbuf(&q->vb2_bufq, b);
 	mutex_unlock(&q->lock);
 

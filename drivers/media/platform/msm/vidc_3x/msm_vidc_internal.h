@@ -35,6 +35,7 @@
 #include <media/msm_vidc.h>
 #include <media/msm_media_info.h>
 
+#include "msm_vidc_legacy_controls.h"
 #include "vidc_hfi_api.h"
 
 #define MSM_VIDC_DRV_NAME "msm_vidc_driver"
