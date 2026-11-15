@@ -6,6 +6,47 @@
 #include <linux/of.h>
 #include <linux/string.h>
 #include <linux/soc/qcom/smem.h>
+#include <linux/soc/qcom/dirtysanta_elsa.h>
+
+void __init dirtysanta_elsa_fixup_cmdline(char *cmdline)
+{
+	static const char serial_key[] = "androidboot.serialno=LGUS996";
+	static const char serial_prefix[] = "androidboot.serialno=LGH990";
+	static const char eng_model[] = "model.name=LG-US996";
+	char *arg = cmdline;
+
+	if (!IS_ENABLED(CONFIG_MACH_MSM8996_ELSA_GLOBAL_COM))
+		return;
+
+	/* Match H990's 4.4 command-line replacements before Android parses it.
+	 * Both substitutions shrink the string and retain the unique suffix.
+	 */
+	while ((arg = strstr(arg, serial_key))) {
+		if (arg == cmdline || arg[-1] == ' ') {
+			memmove(arg + sizeof(serial_prefix) - 1,
+				arg + sizeof(serial_key) - 1,
+				strlen(arg + sizeof(serial_key) - 1) + 1);
+			memcpy(arg, serial_prefix, sizeof(serial_prefix) - 1);
+			arg += sizeof(serial_prefix) - 1;
+		} else {
+			arg++;
+		}
+	}
+
+	arg = cmdline;
+	while ((arg = strstr(arg, eng_model))) {
+		char *end = arg + sizeof(eng_model) - 1;
+
+		if ((arg == cmdline || arg[-1] == ' ') &&
+		    (*end == ' ' || !*end)) {
+			if (*end)
+				end++;
+			memmove(arg, end, strlen(end) + 1);
+		} else {
+			arg++;
+		}
+	}
+}
 
 struct elsa_vendor0 {
 	int hw_rev;

@@ -43,6 +43,7 @@
 #include <linux/sched/task.h>
 #include <linux/mm.h>
 #include <linux/soc/qcom/dirtysanta_g6.h>
+#include <linux/soc/qcom/dirtysanta_elsa.h>
 
 #include <asm/acpi.h>
 #include <asm/fixmap.h>
@@ -311,6 +312,7 @@ void __init setup_arch(char **cmdline_p)
 
 	setup_machine_fdt(__fdt_pointer);
 	dirtysanta_g6_fixup_cmdline(boot_command_line, COMMAND_LINE_SIZE);
+	dirtysanta_elsa_fixup_cmdline(boot_command_line);
 
 	/*
 	 * Initialise the static keys early as they may be enabled by the
