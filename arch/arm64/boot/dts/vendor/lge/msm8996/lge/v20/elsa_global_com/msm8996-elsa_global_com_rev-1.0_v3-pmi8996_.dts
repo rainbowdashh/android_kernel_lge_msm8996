@@ -475,14 +475,9 @@
 		};
 
 	gpio17 {
-			function = "normal";
-			input-enable = <1>;
-			output-enable = <0>;
-			/delete-property/ output-low;
-			/delete-property/ output-high;
-			/delete-property/ bias-high-impedance;
-			status = "okay";
-		};
+		/* Keep the inherited AOD_RTC clock mux and output settings. */
+		status = "okay";
+	};
 
 	gpio18 {
 			function = "normal";
