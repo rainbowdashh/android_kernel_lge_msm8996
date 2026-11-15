@@ -12,6 +12,7 @@
 #include <linux/mutex.h>
 #include <linux/of_device.h>
 #include <linux/slab.h>
+#include <linux/mm.h>
 #include <sound/core.h>
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
@@ -127,11 +128,10 @@ static int crosstalk_mode;
 
 #define WEIGHT_0_DB 0x4000
 /* all the FEs which can support channel mixer */
-static struct msm_pcm_channel_mixer channel_mixer[MSM_FRONTEND_DAI_MM_SIZE];
+static struct msm_pcm_channel_mixer *channel_mixer;
 
 /* all the FES which can support channel mixer for bidirection */
-static struct msm_pcm_channel_mixer
-	channel_mixer_v2[MSM_FRONTEND_DAI_MM_SIZE][2];
+static struct msm_pcm_channel_mixer (*channel_mixer_v2)[2];
 
 /* input BE for each FE */
 static int channel_input[MSM_FRONTEND_DAI_MM_SIZE][ADM_MAX_CHANNELS];
@@ -908,7 +908,7 @@ static unsigned long session_copp_map[MSM_FRONTEND_DAI_MAX][2]
 static struct msm_pcm_routing_app_type_data app_type_cfg[MAX_APP_TYPES];
 static struct msm_pcm_routing_app_type_data lsm_app_type_cfg[MAX_APP_TYPES];
 static struct msm_pcm_stream_app_type_cfg
-	fe_dai_app_type_cfg[MSM_FRONTEND_DAI_MAX][2][MSM_BACKEND_DAI_MAX];
+	(*fe_dai_app_type_cfg)[2][MSM_BACKEND_DAI_MAX];
 
 static int last_be_id_configured[MSM_FRONTEND_DAI_MAX][MAX_SESSION_TYPES];
 
@@ -33632,8 +33632,32 @@ err:
 	return ret;
 }
 
+static void msm_routing_free_tables(void)
+{
+	kvfree(fe_dai_app_type_cfg);
+	kvfree(channel_mixer_v2);
+	kvfree(channel_mixer);
+	fe_dai_app_type_cfg = NULL;
+	channel_mixer_v2 = NULL;
+	channel_mixer = NULL;
+}
+
 int __init msm_soc_routing_platform_init(void)
 {
+	int ret;
+
+	/* Keep these tables out of the loader's BSS window. */
+	channel_mixer = kvcalloc(MSM_FRONTEND_DAI_MM_SIZE,
+				sizeof(*channel_mixer), GFP_KERNEL);
+	channel_mixer_v2 = kvcalloc(MSM_FRONTEND_DAI_MM_SIZE,
+				   sizeof(*channel_mixer_v2), GFP_KERNEL);
+	fe_dai_app_type_cfg = kvcalloc(MSM_FRONTEND_DAI_MAX,
+				      sizeof(*fe_dai_app_type_cfg), GFP_KERNEL);
+	if (!channel_mixer || !channel_mixer_v2 || !fe_dai_app_type_cfg) {
+		msm_routing_free_tables();
+		return -ENOMEM;
+	}
+
 	mutex_init(&routing_lock);
 	if (msm_routing_init_cal_data())
 		pr_err("%s: could not init cal data!\n", __func__);
@@ -33644,15 +33668,24 @@ int __init msm_soc_routing_platform_init(void)
 	memset(&be_dai_name_table, 0, sizeof(be_dai_name_table));
 	memset(&last_be_id_configured, 0, sizeof(last_be_id_configured));
 
-	return platform_driver_register(&msm_routing_pcm_driver);
+	ret = platform_driver_register(&msm_routing_pcm_driver);
+	if (ret) {
+		afe_set_routing_callback(NULL);
+		msm_routing_delete_cal_data();
+		mutex_destroy(&routing_lock);
+		msm_routing_free_tables();
+	}
+	return ret;
 }
 
 void msm_soc_routing_platform_exit(void)
 {
+	platform_driver_unregister(&msm_routing_pcm_driver);
+	afe_set_routing_callback(NULL);
 	msm_routing_delete_cal_data();
 	memset(&be_dai_name_table, 0, sizeof(be_dai_name_table));
 	mutex_destroy(&routing_lock);
-	platform_driver_unregister(&msm_routing_pcm_driver);
+	msm_routing_free_tables();
 }
 
 MODULE_DESCRIPTION("MSM routing platform driver");
