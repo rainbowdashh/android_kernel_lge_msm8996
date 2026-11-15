@@ -352,6 +352,12 @@ notify:
 							(void *)&param))
 			pr_err("[AOD] Failt to send notify to touch\n");
 	}
+#else
+	if (ctrl->ndx == DSI_CTRL_LEFT) {
+		u32 mode = 3;
+
+		touch_notifier_call_chain(LCD_EVENT_LCD_MODE, &mode);
+	}
 #endif
 
 end:
@@ -433,6 +439,12 @@ notify:
 		if(touch_notifier_call_chain(LCD_EVENT_LCD_MODE,
 						(void *)&param))
 			pr_err("[AOD] Failt to send notify to touch\n");
+	}
+#else
+	if (ctrl->ndx == DSI_CTRL_LEFT) {
+		u32 mode = 0;
+
+		touch_notifier_call_chain(LCD_EVENT_LCD_MODE, &mode);
 	}
 #endif
 end:

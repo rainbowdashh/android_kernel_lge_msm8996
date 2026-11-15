@@ -172,6 +172,11 @@ config FB_MSM_MDSS_FRC_DEBUG
 
 endif
 
+config LGE_DISPLAY_HPLUS_COMMON
+	bool "LG Elsa H-Plus panel callbacks"
+	depends on LGE_DISPLAY_COMMON && MACH_MSM8996_ELSA
+	default y
+
 config LGE_DIRTY_ABOOT_FIXUP
 	bool "LG dirty bootloader display fixup"
 	depends on LGE_DISPLAY_COMMON
