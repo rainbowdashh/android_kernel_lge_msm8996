@@ -258,6 +258,12 @@ SECTIONS
 	HEAD_SYMBOLS
 }
 
+#ifdef CONFIG_MACH_MSM8996_LUCYE_GLOBAL_COM
+/* LK fixes the DTB at 0x82000000; leave 64 KiB beyond the kernel BSS. */
+ASSERT((_end - _text) <= 0x01f70000,
+	"G6 kernel runtime image overlaps LK DTB window; reduce built-in footprint")
+#endif
+
 /*
  * The HYP init code and ID map text can't be longer than a page each,
  * and should not cross a page boundary.
