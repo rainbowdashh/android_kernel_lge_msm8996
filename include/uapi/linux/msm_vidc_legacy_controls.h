@@ -1,8 +1,7 @@
-/* SPDX-License-Identifier: GPL-2.0-only */
-/* MSM8996 userspace uses the control ABI shipped with LG's Linux 4.4.
- * Keep these numbers local to the 3xx driver; newer video techpacks use a
- * different control namespace. Values below are from the working reference
- * include/uapi/linux/v4l2-controls.h.
+/* SPDX-License-Identifier: GPL-2.0-only WITH Linux-syscall-note */
+/* MSM8996 uses the control ABI shipped with LG's Linux 4.4.
+ * Share these definitions between userspace and the 3xx driver. Newer
+ * in-kernel video techpacks retain their own control namespace.
  */
 #ifndef MSM_VIDC_LEGACY_CONTROLS_H
 #define MSM_VIDC_LEGACY_CONTROLS_H
