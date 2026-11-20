@@ -24,10 +24,16 @@ static inline unsigned int VENUS_EXTRADATA_SIZE(int width, int height)
 	return 16 * 1024;
 }
 
+/* Userspace must use the same legacy control IDs as the MSM8996 driver. */
+#ifndef __KERNEL__
+#include <linux/v4l2-controls.h>
+#else
 #define V4L2_CID_MPEG_VIDC_VIDEO_IDR_PERIOD   (V4L2_CID_MPEG_MSM_VIDC_BASE+5)
 
 #define V4L2_CID_MPEG_VIDC_VIDEO_STREAM_OUTPUT_MODE \
 		(V4L2_CID_MPEG_MSM_VIDC_BASE + 22)
+#endif
+
 enum v4l2_mpeg_vidc_video_decoder_multi_stream {
 	V4L2_CID_MPEG_VIDC_VIDEO_STREAM_OUTPUT_PRIMARY = 0,
 	V4L2_CID_MPEG_VIDC_VIDEO_STREAM_OUTPUT_SECONDARY = 1,

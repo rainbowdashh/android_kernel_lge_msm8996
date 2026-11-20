@@ -1929,4 +1929,9 @@ enum v4l2_detect_md_mode {
 #define V4L2_CID_DETECT_MD_THRESHOLD_GRID	(V4L2_CID_DETECT_CLASS_BASE + 3)
 #define V4L2_CID_DETECT_MD_REGION_GRID		(V4L2_CID_DETECT_CLASS_BASE + 4)
 
+/* Export the MSM8996 ABI used by the legacy 3xx driver to userspace. */
+#ifndef __KERNEL__
+#include <linux/msm_vidc_legacy_controls.h>
+#endif
+
 #endif
