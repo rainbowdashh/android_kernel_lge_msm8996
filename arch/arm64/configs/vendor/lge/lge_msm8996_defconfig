@@ -595,16 +595,15 @@ CONFIG_PRINTK_TIME=y
 CONFIG_DEBUG_INFO=y
 CONFIG_DEBUG_INFO_REDUCED=y
 CONFIG_MAGIC_SYSRQ=y
+CONFIG_PANIC_ON_OOPS=y
 CONFIG_PANIC_TIMEOUT=5
 # CONFIG_DEBUG_PREEMPT is not set
 # CONFIG_DEBUG_BUGVERBOSE is not set
 CONFIG_IPC_LOGGING=y
 
-# UART bring-up
-CONFIG_CMDLINE="console=ttyMSM0,115200n8 loglevel=8 coherent_pool=2M androidboot.selinux=permissive "
+# CONFIG_SERIAL_MSM is not set
+CONFIG_CMDLINE="coherent_pool=2M androidboot.selinux=permissive"
 CONFIG_CMDLINE_EXTEND=y
-CONFIG_SERIAL_MSM=y
-CONFIG_SERIAL_MSM_CONSOLE=y
 
 # 4.19 transport, shared memory and ADC dependencies
 CONFIG_HWSPINLOCK=y

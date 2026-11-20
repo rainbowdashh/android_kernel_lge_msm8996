@@ -35,17 +35,6 @@
 			label = "crash_fb_mem";
 		};
 
-		pstore_ram: ramoops@c0d00000 {
-			compatible = "ramoops";
-			reg = <0 0xc0d00000 0 0x100000>;
-			record-size = <0x20000>;
-			console-size = <0x20000>;
-			pmsg-size = <0x20000>;
-			dump-oops;
-			no-map;
-			status = "okay";
-		};
-
 		/delete-node/ cont_splash_mem@83401000;
 
 		cont_splash_mem: cont_splash_mem@84201000 {

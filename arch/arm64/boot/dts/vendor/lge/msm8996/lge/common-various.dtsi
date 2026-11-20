@@ -35,13 +35,12 @@
 	};
 
 	reserved_memory: reserved-memory {
-		ramoops_mem: ramoops@c0000000 {
+		pstore_ram: ramoops@c0d00000 {
 			compatible = "ramoops";
-			reg = <0 0xc0000000 0 0x00100000>;
-			console-size = <0x00080000>;
-			pmsg-size = <0x00040000>;
-			record-size = <0x00008000>;
-			ftrace-size = <0x00020000>;
+			reg = <0 0xc0d00000 0 0x100000>;
+			record-size = <0x20000>;
+			console-size = <0x20000>;
+			pmsg-size = <0x20000>;
 			no-map;
 		};
 
