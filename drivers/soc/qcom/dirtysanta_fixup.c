@@ -6,14 +6,17 @@
 #include <linux/of.h>
 #include <linux/string.h>
 #include <linux/soc/qcom/smem.h>
+#include <linux/soc/qcom/dirtysanta.h>
 #include <linux/soc/qcom/dirtysanta_elsa.h>
 
-void __init dirtysanta_elsa_fixup_cmdline(char *cmdline)
+void __init dirtysanta_elsa_fixup_cmdline(char *cmdline, size_t size)
 {
 	static const char serial_key[] = "androidboot.serialno=LGUS996";
 	static const char serial_prefix[] = "androidboot.serialno=LGH990";
 	static const char eng_model[] = "model.name=LG-US996";
 	char *arg = cmdline;
+
+	dirtysanta_fixup_boot_state(cmdline, size);
 
 	if (!IS_ENABLED(CONFIG_MACH_MSM8996_ELSA_GLOBAL_COM))
 		return;

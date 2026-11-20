@@ -13,6 +13,7 @@
 #include <linux/string.h>
 #include <linux/soc/qcom/smem.h>
 #include <linux/soc/qcom/dirtysanta_g6.h>
+#include <linux/soc/qcom/dirtysanta.h>
 #include <linux/module.h>
 #include <linux/of.h>
 #include <linux/platform_device.h>
@@ -46,6 +47,8 @@ void __init dirtysanta_g6_fixup_cmdline(char *cmdline, size_t size)
 	char prefix[LG_G6_MODEL_NAME_SIZE];
 	char *arg = cmdline, *serial, *suffix;
 	size_t i, len = 0, old_len = sizeof(eng_prefix) - 1;
+
+	dirtysanta_fixup_boot_state(cmdline, size);
 
 	/* Android and USB must see the corrected identity from early boot. */
 	while ((arg = strstr(arg, key))) {

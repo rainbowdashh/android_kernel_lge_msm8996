@@ -6,9 +6,9 @@
 #include <linux/kconfig.h>
 
 #if IS_ENABLED(CONFIG_DIRTYSANTA_FIXUP)
-void __init dirtysanta_elsa_fixup_cmdline(char *cmdline);
+void __init dirtysanta_elsa_fixup_cmdline(char *cmdline, size_t size);
 #else
-static inline void dirtysanta_elsa_fixup_cmdline(char *cmdline) { }
+static inline void dirtysanta_elsa_fixup_cmdline(char *cmdline, size_t size) { }
 #endif
 
 #endif
