@@ -35,6 +35,15 @@
 	};
 
 	reserved_memory: reserved-memory {
+		pstore_ram: ramoops@c0d00000 {
+			compatible = "ramoops";
+			reg = <0 0xc0d00000 0 0x100000>;
+			record-size = <0x20000>;
+			console-size = <0x20000>;
+			pmsg-size = <0x20000>;
+			no-map;
+		};
+
 		/delete-node/ peripheral_region@8ea00000;
 		peripheral_mem: peripheral_region@8e900000 {
 			compatible = "removed-dma-pool";
