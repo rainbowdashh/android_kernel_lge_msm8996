@@ -3947,7 +3947,7 @@ exit:
 	return ret;
 }
 
-int BCMFASTPATH
+netdev_tx_t BCMFASTPATH
 dhd_start_xmit(struct sk_buff *skb, struct net_device *net)
 {
 	int ret;
