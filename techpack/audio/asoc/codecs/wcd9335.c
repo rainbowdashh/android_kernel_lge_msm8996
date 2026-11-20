@@ -11870,6 +11870,9 @@ static int tasha_hw_params(struct snd_pcm_substream *substream,
 	int rx_fs_rate = -EINVAL;
 	int i2s_bit_mode;
 	struct snd_soc_component *component = dai->component;
+	struct wcd9xxx_codec_dai_data *dai_data = &tasha->dai[dai->id];
+	u32 old_rate = dai_data->rate;
+	u32 old_bit_width = dai_data->bit_width;
 
 	pr_debug("%s: dai_name = %s DAI-ID %x rate %d num_ch %d\n", __func__,
 		 dai->name, dai->id, params_rate(params),
@@ -12021,6 +12024,33 @@ static int tasha_hw_params(struct snd_pcm_substream *substream,
 	};
 	if (dai->id == AIF4_VIFEED)
 		tasha->dai[dai->id].bit_width = 32;
+
+	/* DPCM may power RX before hw_params supplies the new sample format. */
+	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK &&
+	    tasha->intf_type == WCD9XXX_INTERFACE_TYPE_SLIMBUS &&
+	    dai_data->ch_mask &&
+	    (old_rate != dai_data->rate ||
+	     old_bit_width != dai_data->bit_width)) {
+		ret = wcd9xxx_disconnect_port(tasha->wcd9xxx,
+				&dai_data->wcd9xxx_ch_list, dai_data->grph);
+		if (ret)
+			return ret;
+		ret = tasha_codec_enable_slim_chmask(dai_data, false);
+		if (ret)
+			return ret;
+		ret = wcd9xxx_close_slim_sch_rx(tasha->wcd9xxx,
+				&dai_data->wcd9xxx_ch_list, dai_data->grph);
+		if (ret)
+			return ret;
+		ret = tasha_codec_enable_slim_chmask(dai_data, true);
+		if (ret)
+			return ret;
+		ret = wcd9xxx_cfg_slim_sch_rx(tasha->wcd9xxx,
+				&dai_data->wcd9xxx_ch_list, dai_data->rate,
+				dai_data->bit_width, &dai_data->grph);
+		if (ret)
+			return ret;
+	}
 
 	return 0;
 }
