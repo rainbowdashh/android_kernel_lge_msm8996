@@ -5091,6 +5091,7 @@ static int fg_power_get_property(struct power_supply *psy,
 {
 	struct fg_chip *chip =  power_supply_get_drvdata(psy);
 	bool vbatt_low_sts;
+	int rc;
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_BATTERY_TYPE:
@@ -5168,7 +5169,10 @@ static int fg_power_get_property(struct power_supply *psy,
 		val->intval = get_sram_prop_now(chip, FG_DATA_CC_CHARGE);
 		break;
 	case POWER_SUPPLY_PROP_CHARGE_COUNTER:
-		val->intval = fg_get_current_cc(chip);
+		rc = fg_get_current_cc(chip);
+		if (rc < 0)
+			return -ENODATA;
+		val->intval = rc;
 		break;
 	case POWER_SUPPLY_PROP_HI_POWER:
 		val->intval = !!chip->bcl_lpm_disabled;
