@@ -960,5 +960,5 @@
 
 /* cpu pmu override */
 &cpu_pmu {
-	compatible = "qcom,kryo-pmuv3";
+	compatible = "qcom,kryo-pmuv3", "arm,armv8-pmuv3";
 };
