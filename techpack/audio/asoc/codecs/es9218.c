@@ -382,8 +382,8 @@ struct es9218_regmap {
 	{ "RAMRD", 					ESS9218_RAM_RD, 		0 }
 };
 
-static ssize_t get_fade_term_param(struct device *dev,
-	                    struct device_attribute *attr, char *buf) {
+static ssize_t get_fade_term_param(struct kobject *kobj,
+	                    struct kobj_attribute *attr, char *buf) {
 
 	unsigned val = 1;
 	sprintf(buf, "%s : current fade term %d   ",__func__, get_fade_term_define());
@@ -393,8 +393,8 @@ static ssize_t get_fade_term_param(struct device *dev,
 }
 
 
-static ssize_t set_fade_term_param(struct device *dev,
-			 struct device_attribute *attr,
+static ssize_t set_fade_term_param(struct kobject *kobj,
+			 struct kobj_attribute *attr,
 			 const char *buf, size_t count) {
 
 	int value;
@@ -407,8 +407,8 @@ static ssize_t set_fade_term_param(struct device *dev,
 
 }
 
-static ssize_t get_fade_mute_param(struct device *dev,
-	                    struct device_attribute *attr, char *buf) {
+static ssize_t get_fade_mute_param(struct kobject *kobj,
+	                    struct kobj_attribute *attr, char *buf) {
 
 	unsigned val = 1;
 	sprintf(buf, "%s : current fade count %d   ",__func__, get_fade_count_define());
@@ -417,8 +417,8 @@ static ssize_t get_fade_mute_param(struct device *dev,
         return val;
 }
 
-static ssize_t set_fade_mute_param(struct device *dev,
-			 struct device_attribute *attr,
+static ssize_t set_fade_mute_param(struct kobject *kobj,
+			 struct kobj_attribute *attr,
 			 const char *buf, size_t count) {
 
 	int value;
@@ -431,8 +431,8 @@ static ssize_t set_fade_mute_param(struct device *dev,
 
 }
 
-static DEVICE_ATTR(fade_mute_count, S_IWUSR | S_IRUGO, get_fade_mute_param, set_fade_mute_param);
-static DEVICE_ATTR(fade_mute_term, S_IWUSR | S_IRUGO, get_fade_term_param, set_fade_term_param);
+static struct kobj_attribute dev_attr_fade_mute_count = __ATTR(fade_mute_count, S_IWUSR | S_IRUGO, get_fade_mute_param, set_fade_mute_param);
+static struct kobj_attribute dev_attr_fade_mute_term = __ATTR(fade_mute_term, S_IWUSR | S_IRUGO, get_fade_term_param, set_fade_term_param);
 
 
 
@@ -445,8 +445,8 @@ void es9218_check_dop(void) {
     return;
 }
 
-static ssize_t es9218_registers_show(struct device *dev,
-			      struct device_attribute *attr, char *buf) {
+static ssize_t es9218_registers_show(struct kobject *kobj,
+			      struct kobj_attribute *attr, char *buf) {
 	unsigned i, n, reg_count;
 	u8 read_buf;
 
@@ -462,8 +462,8 @@ static ssize_t es9218_registers_show(struct device *dev,
 	return n;
 }
 
-static ssize_t es9218_registers_store(struct device *dev,
-			       struct device_attribute *attr,
+static ssize_t es9218_registers_store(struct kobject *kobj,
+			       struct kobj_attribute *attr,
 			       const char *buf, size_t count) {
 	unsigned i, reg_count, value;
 	int error = 0;
@@ -504,7 +504,7 @@ static ssize_t es9218_registers_store(struct device *dev,
 	return -1;
 }
 
-static DEVICE_ATTR(registers, S_IWUSR | S_IRUGO,
+static struct kobj_attribute dev_attr_registers = __ATTR(registers, S_IWUSR | S_IRUGO,
 		es9218_registers_show, es9218_registers_store);
 /*
 static void es9218_print_regdump(void)
@@ -753,8 +753,8 @@ static int es9218_sabre_amp_stop(struct i2c_client *client, int headset) {
 
 #ifdef ES9218_SYSFS
 /* Left balance volume */
-static ssize_t set_forced_left_volume(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t set_forced_left_volume(struct kobject *kobj,
+                   struct kobj_attribute *attr,
                    const char *buf, size_t count) {
     int input_val; // value representing dB decrease for left channel
     sscanf(buf, "%d", &input_val);
@@ -762,20 +762,23 @@ static ssize_t set_forced_left_volume(struct device *dev,
 	/* NOTE: This value is halved internally, so there's no need to use float */
 	g_left_volume = input_val;
 
+    if (es9218_power_state < ESS_PS_HIFI)
+        return count;
+
     es9218_write_reg(g_es9218_priv->i2c_client, ESS9218_VOL1, g_left_volume);
 
     return count;
 }
-static ssize_t get_forced_left_volume(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t get_forced_left_volume(struct kobject *kobj,
+                   struct kobj_attribute *attr,
                    char *buf) {
     return sprintf(buf, "%i\n", g_left_volume);
 }
-static DEVICE_ATTR(left_volume, S_IWUSR|S_IRUGO, get_forced_left_volume, set_forced_left_volume);
+static struct kobj_attribute dev_attr_left_volume = __ATTR(left_volume, S_IWUSR|S_IRUGO, get_forced_left_volume, set_forced_left_volume);
 
 /* Right balance volume */
-static ssize_t set_forced_right_volume(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t set_forced_right_volume(struct kobject *kobj,
+                   struct kobj_attribute *attr,
                    const char *buf, size_t count) {
     int input_val; // value representing dB decrease for left channel
     sscanf(buf, "%d", &input_val);
@@ -783,42 +786,51 @@ static ssize_t set_forced_right_volume(struct device *dev,
 	/* NOTE: This value is halved internally, so there's no need to use float */
 	g_right_volume = input_val;
 
+    if (es9218_power_state < ESS_PS_HIFI)
+        return count;
+
     es9218_write_reg(g_es9218_priv->i2c_client, ESS9218_VOL2, g_right_volume);
 
     return count;
 }
-static ssize_t get_forced_right_volume(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t get_forced_right_volume(struct kobject *kobj,
+                   struct kobj_attribute *attr,
                    char *buf) {
     return sprintf(buf, "%i\n", g_right_volume);
 }
-static DEVICE_ATTR(right_volume, S_IWUSR|S_IRUGO, get_forced_right_volume, set_forced_right_volume);
+static struct kobj_attribute dev_attr_right_volume = __ATTR(right_volume, S_IWUSR|S_IRUGO, get_forced_right_volume, set_forced_right_volume);
 
 /* Headset type */
-static ssize_t set_forced_headset_type(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t set_forced_headset_type(struct kobject *kobj,
+                   struct kobj_attribute *attr,
                    const char *buf, size_t count) {
     int input_val; //0, 1, 2
     sscanf(buf, "%d", &input_val);
     
-    es9218_sabre_hifitwo2lpb();
     g_volume = 0;
     g_headset_type = input_val + 1;
 
-    es9218_sabre_bypass2hifi();
+    mutex_lock(&g_es9218_priv->power_lock);
+    if (es9218_power_state == ESS_PS_HIFI)
+        es9218_sabre_hifi2bypass();
+    if (es9218_power_state == ESS_PS_BYPASS) {
+        es9218_sabre_hifitwo2lpb();
+        es9218_sabre_bypass2hifi();
+    }
+    mutex_unlock(&g_es9218_priv->power_lock);
 
     return count;
 }
-static ssize_t get_forced_headset_type(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t get_forced_headset_type(struct kobject *kobj,
+                   struct kobj_attribute *attr,
                    char *buf) {
     return sprintf(buf, "%i\n", g_headset_type);
 }
-static DEVICE_ATTR(headset_type, S_IWUSR|S_IRUGO, get_forced_headset_type, set_forced_headset_type);
+static struct kobj_attribute dev_attr_headset_type = __ATTR(headset_type, S_IWUSR|S_IRUGO, get_forced_headset_type, set_forced_headset_type);
 
 /* AVC Volume */
-static ssize_t set_forced_avc_volume(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t set_forced_avc_volume(struct kobject *kobj,
+                   struct kobj_attribute *attr,
                    const char *buf, size_t count) {
     int input_vol;
     sscanf(buf, "%d", &input_vol);
@@ -844,16 +856,16 @@ static ssize_t set_forced_avc_volume(struct device *dev,
 
     return count;
 }
-static ssize_t get_forced_avc_volume(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t get_forced_avc_volume(struct kobject *kobj,
+                   struct kobj_attribute *attr,
                    char *buf) {
     return sprintf(buf, "%i\n", g_avc_volume);
 }
-static DEVICE_ATTR(avc_volume, S_IWUSR|S_IRUGO, get_forced_avc_volume, set_forced_avc_volume);
+static struct kobj_attribute dev_attr_avc_volume = __ATTR(avc_volume, S_IWUSR|S_IRUGO, get_forced_avc_volume, set_forced_avc_volume);
 
 /* ESS Filter */
-static ssize_t set_forced_ess_filter(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t set_forced_ess_filter(struct kobject *kobj,
+                   struct kobj_attribute *attr,
                    const char *buf, size_t count) {
     int input_filter;
     sscanf(buf, "%d", &input_filter);
@@ -900,12 +912,12 @@ static ssize_t set_forced_ess_filter(struct device *dev,
     
     return count;
 }
-static ssize_t get_forced_ess_filter(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t get_forced_ess_filter(struct kobject *kobj,
+                   struct kobj_attribute *attr,
                    char *buf) {
     return sprintf(buf, "%i\n", g_sabre_cf_num);
 }
-static DEVICE_ATTR(ess_filter, S_IWUSR|S_IRUGO, get_forced_ess_filter, set_forced_ess_filter);
+static struct kobj_attribute dev_attr_ess_filter = __ATTR(ess_filter, S_IWUSR|S_IRUGO, get_forced_ess_filter, set_forced_ess_filter);
 
 /* Custom ESS Filter (filter [3] has to be selected) */
 #define MAX_FILTER_DATA_SIZE     16 /* shape, symmetry, followed by 14 stage 2 coefficients */
@@ -917,30 +929,30 @@ static DEVICE_ATTR(ess_filter, S_IWUSR|S_IRUGO, get_forced_ess_filter, set_force
  * 1 ('\0' char)
  */
 #define MAX_FILTER_STRING_SIZE   2 + (8 * 14) + MAX_FILTER_DATA_SIZE + 1
-static ssize_t set_forced_ess_custom_filter(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t set_forced_ess_custom_filter(struct kobject *kobj,
+                   struct kobj_attribute *attr,
                    const char *buf, size_t count) {
 	char *datatoken, *delimiter = ",";
-	char *received_data;
+	char *received_data, *filter_string;
 	int filter_data[MAX_FILTER_DATA_SIZE], i = 0;
 
-	if ( es9218_power_state < ESS_PS_HIFI ) {
-		pr_err("%s() : invalid state = %s\n", __func__, power_state[es9218_power_state]);
-		return -EINVAL;
-	}
-
-	received_data = kzalloc(MAX_FILTER_STRING_SIZE * sizeof(char), GFP_KERNEL);
-	sscanf(buf, "%s", received_data);
+	filter_string = kstrndup(buf, count, GFP_KERNEL);
+	if (!filter_string)
+		return -ENOMEM;
+	received_data = filter_string;
 
 	/* Tokenize received data and save into the filter data array (everything is an integer) */
 	while ((datatoken = strsep(&received_data, delimiter)) != NULL && i < MAX_FILTER_DATA_SIZE) {
 		if (kstrtoint(datatoken, 10, &filter_data[i]) != 0) {
 			pr_err("Failed to convert filter data!");
-			kfree(received_data);
+			kfree(filter_string);
 			return -EINVAL;
 		}
 		i++;
 	}
+	kfree(filter_string);
+	if (i != MAX_FILTER_DATA_SIZE)
+		return -EINVAL;
 
 	/* Load the received data into the custom filter */
 	if(filter_data[0] >= 0 && filter_data[0] !=  5 && filter_data[0] <= 7) /* Load filter shape config */
@@ -965,16 +977,18 @@ static ssize_t set_forced_ess_custom_filter(struct device *dev,
 		 * that read or write to the custom filter a bit faster as well.
 		 */
 
-	/* Apply the filter (just to update the data internally in case custom filter is not selected) */
-	es9218_sabre_cfg_custom_filter(&es9218_sabre_custom_ft[g_sabre_cf_num]);
+	if ( es9218_power_state < ESS_PS_HIFI ) {
+		pr_info("%s(): deferred, state = %s\n", __func__, power_state[es9218_power_state]);
+		return count;
+	}
 
-	/* We already used up the received data, so free all previously allocated space. */
-	kfree(received_data);
+	/* Apply the filter. */
+	es9218_sabre_cfg_custom_filter(&es9218_sabre_custom_ft[g_sabre_cf_num]);
 
 	return count;
 }
-static ssize_t get_forced_ess_custom_filter(struct device *dev,
-                   struct device_attribute *attr,
+static ssize_t get_forced_ess_custom_filter(struct kobject *kobj,
+                   struct kobj_attribute *attr,
                    char *buf) {
 	char send_data[MAX_FILTER_STRING_SIZE];
 	char tempbuf[10]; /* There will never be an element on the filter data that takes more than 9 chars */
@@ -1020,7 +1034,7 @@ static ssize_t get_forced_ess_custom_filter(struct device *dev,
 
 	return sprintf(buf, "%s\n", send_data);
 }
-static DEVICE_ATTR(ess_custom_filter, S_IWUSR|S_IRUGO, get_forced_ess_custom_filter, set_forced_ess_custom_filter);
+static struct kobj_attribute dev_attr_ess_custom_filter = __ATTR(ess_custom_filter, S_IWUSR|S_IRUGO, get_forced_ess_custom_filter, set_forced_ess_custom_filter);
 
 /* Resulting sysfs attributes and groups */
 static struct attribute *es9218_attrs[] = {
